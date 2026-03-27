@@ -63,19 +63,7 @@ const KpiGrid = ({ kpis }) => {
   
   {/* Etiqueta superior */}
   <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-4">
-    Velocidad Real
-  </p>
-
-  {/* Número Central con Resplandor */}
-  <div className="relative mb-6">
-    <h3 className="text-7xl font-black text-white italic tracking-tighter leading-none z-10 relative">
-      {kpis?.velocidadReal || '0'}
-    </h3>
-    <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity" />
-  </div>
-
-  <p className="text-[9px] font-bold text-blue-500/60 uppercase tracking-[0.2em] mb-8">
-    Unidades / Hora
+    EN ESPERA
   </p>
 
   {/* --- NUEVA SECCIÓN: VEHÍCULOS EN ESPERA --- */}
