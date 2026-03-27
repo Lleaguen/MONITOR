@@ -48,9 +48,7 @@ function App() {
       />
       
       <main className="flex-1 flex flex-col overflow-y-auto">
-        <Header title={activeTab === 'command' ? "OCASA COMMAND CENTER" : "AJUSTE DE PARÁMETROS"} 
-          lastUpdate={kpis?.ultimaActualizacion}
-        />
+        <Header title={activeTab === 'command' ? "OCASA COMMAND CENTER" : "AJUSTE DE PARÁMETROS"} lastUpdate={dashboardData?.kpis?.ultimaActualizacion}/>
         
         <div className="p-10">
           {activeTab === 'command' ? (
