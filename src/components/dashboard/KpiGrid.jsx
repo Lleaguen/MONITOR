@@ -59,17 +59,52 @@ const KpiGrid = ({ kpis }) => {
       </Card>
 
       {/* 4. VELOCIDAD REAL (Look Neón) */}
-      <div className="bg-blue-600/10 border border-blue-500/30 rounded-2xl p-8 flex flex-col items-center justify-center relative shadow-[0_0_50px_rgba(59,130,246,0.1)] group">
-        <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-4">Velocidad Real</p>
-        <div className="relative">
-          <h3 className="text-7xl font-black text-white italic tracking-tighter leading-none z-10 relative">
-            {kpis?.velocidadReal || '0'}
-          </h3>
-          {/* Resplandor azul detrás del número */}
-          <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity" />
-        </div>
-        <p className="text-[9px] font-bold text-blue-500/60 mt-6 uppercase tracking-[0.2em]">Unidades / Hora</p>
-      </div>
+     <div className="bg-blue-600/10 border border-blue-500/30 rounded-2xl p-8 flex flex-col items-center justify-center relative shadow-[0_0_50px_rgba(59,130,246,0.1)] group overflow-hidden">
+  
+  {/* Etiqueta superior */}
+  <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-4">
+    Velocidad Real
+  </p>
+
+  {/* Número Central con Resplandor */}
+  <div className="relative mb-6">
+    <h3 className="text-7xl font-black text-white italic tracking-tighter leading-none z-10 relative">
+      {kpis?.velocidadReal || '0'}
+    </h3>
+    <div className="absolute inset-0 bg-blue-500 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity" />
+  </div>
+
+  <p className="text-[9px] font-bold text-blue-500/60 uppercase tracking-[0.2em] mb-8">
+    Unidades / Hora
+  </p>
+
+  {/* --- NUEVA SECCIÓN: VEHÍCULOS EN ESPERA --- */}
+  <div className="w-full pt-6 border-t border-blue-500/20 grid grid-cols-3 gap-4">
+    <div className="flex flex-col items-center">
+      <span className="text-[8px] font-black text-blue-400/50 uppercase tracking-widest mb-1">Chasis</span>
+      <span className="text-xl font-black text-white italic">{kpis?.espera?.chasis || 0}</span>
+    </div>
+    
+    <div className="flex flex-col items-center border-x border-blue-500/20">
+      <span className="text-[8px] font-black text-blue-400/50 uppercase tracking-widest mb-1">Meli/Cam</span>
+      <span className="text-xl font-black text-white italic">{kpis?.espera?.camioneta || 0}</span>
+    </div>
+    
+    <div className="flex flex-col items-center">
+      <span className="text-[8px] font-black text-blue-400/50 uppercase tracking-widest mb-1">Semis</span>
+      <span className="text-xl font-black text-white italic">{kpis?.espera?.semi || 0}</span>
+    </div>
+  </div>
+
+  {/* Badge de TOTAL flotante en la esquina superior derecha */}
+  <div className="absolute top-4 right-6 text-right">
+    <span className="block text-[7px] font-black text-blue-500/40 uppercase tracking-widest">En Playa</span>
+    <span className="text-sm font-black text-blue-400 italic">
+      {kpis?.espera?.total || 0} VEH
+    </span>
+  </div>
+</div>
+
     </div>
   );
 };
