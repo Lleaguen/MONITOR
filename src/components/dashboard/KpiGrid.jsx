@@ -50,9 +50,9 @@ const KpiGrid = ({ kpis }) => {
             </p>
           </div>
           <div>
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Proy - Bipeado</p>
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Velocidad Real</p>
             <p className="text-xl font-black text-orange-500 tracking-tighter">
-              {kpis?.proyectadoBipeado || '0'}
+              {kpis?.velocidadReal || '0'}
             </p>
           </div>
         </div>

@@ -83,12 +83,12 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
       arribado: arribadoExcel.toLocaleString(),
       bipeado: totalPiezasSistema.toLocaleString(),
       arribadoBipeado: (arribadoExcel - totalPiezasSistema).toLocaleString(),
-      proyectadoBipeado: (proyectadoManual - totalPiezasSistema).toLocaleString(),
+      velocidadReal: velocidadRealCalculada.toLocaleString(),
+    //   proyectadoBipeado: (proyectadoManual - totalPiezasSistema).toLocaleString(),
       descargaHora: objXHoraGlobal > 0 ? objXHoraGlobal.toLocaleString() : "0",
       pArribado: Math.round((arribadoExcel / proyectadoManual) * 100) || 0,
       pBipeo: Math.round((totalPiezasSistema / proyectadoManual) * 100) || 0,
       // Se muestra el conteo de la última hora
-      velocidadReal: velocidadRealCalculada.toLocaleString()
     },
     matrix, 
     chartData: [], 
