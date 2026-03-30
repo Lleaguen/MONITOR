@@ -94,7 +94,7 @@ const KpiGrid = ({ kpis }) => {
   <div className="absolute top-4 left-6 text-left">
     <span className="block text-[7px] font-black text-blue-500/40 uppercase tracking-widest">Atracados</span>
     <span className="text-sm font-black text-blue-400 italic">
-      {kpis?.espera?.Atracados || 0} VEH
+      {kpis?.espera?.atracados || 0} VEH
     </span>
   </div>
 </div>
