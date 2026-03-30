@@ -41,7 +41,7 @@ const KpiGrid = ({ kpis }) => {
       </Card>
 
       {/* 3. DELTAS / DESVÍOS */}
-      <Card title="Deltas / Desvíos" color="orange">
+      <Card title="Esperado / Real" color="orange">
         <div className="space-y-4">
           <div>
             <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Descarga x Hora</p>
