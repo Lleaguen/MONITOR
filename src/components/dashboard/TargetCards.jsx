@@ -4,7 +4,7 @@ import { Card } from '../ui/Card';
 const TargetCardItem = ({ time, percentage, units, colorClass, statusColor }) => (
   <Card className="relative overflow-hidden group">
     <div className="flex justify-between items-center mb-6">
-      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Post {time} Target</p>
+      <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Corte {time}</p>
       <div className={`w-5 h-5 rounded-full border-2 ${statusColor} flex items-center justify-center text-[10px] font-black`}>
         {percentage >= 90 ? 'L' : '!'}
       </div>
@@ -13,8 +13,8 @@ const TargetCardItem = ({ time, percentage, units, colorClass, statusColor }) =>
     <div className="flex justify-between items-end">
       <h4 className="text-5xl font-black text-white tracking-tighter italic">{percentage}%</h4>
       <div className="text-right">
-        <p className="text-[9px] font-bold text-slate-600 uppercase">Proyectado</p>
-        <p className="text-xs font-black text-slate-400 font-mono tracking-tighter">{units.toLocaleString()} units</p>
+        <p className="text-[9px] font-bold text-slate-600 uppercase">Bipeado</p>
+        <p className="text-xs font-black text-slate-400 font-mono tracking-tighter">{units.toLocaleString()} piezas</p>
       </div>
     </div>
 

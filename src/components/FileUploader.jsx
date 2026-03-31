@@ -47,8 +47,8 @@ const FileUploader = ({ onAllDataLoaded }) => {
         </div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-black tracking-tight mb-2 uppercase italic">Data Ingest Center</h2>
-          <p className="text-sm text-slate-500 font-medium">Carga ambos reportes para sincronizar el monitor</p>
+          <h2 className="text-2xl font-black tracking-tight mb-2 uppercase italic">Centro de Carga de Datos</h2>
+          <p className="text-sm text-slate-500 font-medium">Cargá ambos reportes para sincronizar el monitor</p>
         </div>
 
         <div className="grid grid-cols-2 gap-6 w-full">

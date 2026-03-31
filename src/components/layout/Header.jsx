@@ -8,15 +8,14 @@ const Header = ({ title, lastUpdate }) => {
           {title}
         </h2>
         <nav className="flex gap-6 text-[9px] font-black text-slate-600 uppercase tracking-widest">
-          <span className="hover:text-blue-400 cursor-pointer transition-colors">Global Map</span>
-          <span className="hover:text-blue-400 cursor-pointer transition-colors">Network Pulse</span>
+          <span className="hover:text-blue-400 cursor-pointer transition-colors">Mapa Global</span>
+          <span className="hover:text-blue-400 cursor-pointer transition-colors">Pulso de Red</span>
         </nav>
       </div>
-      
+
       <div className="flex items-center gap-3 px-4 py-2 bg-[#0d1525] border border-white/10 rounded-full shadow-inner">
-        {/* <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]" /> */}
         <span className="text-[9px] text-green-500 font-black uppercase tracking-[0.2em]">
-          {lastUpdate}
+          Últ. actualización: {lastUpdate}
         </span>
       </div>
     </header>

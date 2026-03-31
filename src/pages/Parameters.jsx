@@ -2,56 +2,84 @@ import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Save, AlertCircle } from 'lucide-react';
 
-const Parameters = ({ config, setConfig }) => {
-  // 1. Estado local para que escribir sea INSTANTÁNEO
-  const [localProyectado, setLocalProyectado] = useState(config.proyectado);
+const NumericField = ({ label, value, onChange, onApply, color = "blue-400" }) => (
+  <div>
+    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">
+      {label}
+    </label>
+    <div className="flex gap-3">
+      <input
+        type="number"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && onApply()}
+        className={`w-full bg-[#080c14] border border-white/20 rounded-xl px-4 py-3 text-2xl md:text-3xl font-black text-${color} focus:border-blue-500 outline-none transition-all font-mono`}
+      />
+      <button
+        onClick={onApply}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl flex items-center gap-2 font-black text-xs uppercase tracking-widest transition-all active:scale-95 shrink-0"
+      >
+        <Save size={14} /> Aplicar
+      </button>
+    </div>
+  </div>
+);
 
-  // 2. Función que se ejecuta al hacer clic en Aplicar
-  const handleApply = () => {
-    setConfig({ ...config, proyectado: Number(localProyectado) });
+const Parameters = ({ config, setConfig }) => {
+  const [local, setLocal] = useState({
+    proyectado:      config.proyectado,
+    objetivoHU:      config.objetivoHU,
+    productividadHU: config.productividadHU,
+  });
+
+  const apply = (key) => {
+    setConfig({ ...config, [key]: Number(local[key]) });
   };
 
   return (
     <div className="max-w-3xl animate-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-3 mb-8">
-        <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase">Configuración de Operación</h2>
-      </div>
+      <h2 className="text-xl md:text-2xl font-black text-white italic tracking-tighter uppercase mb-8">
+        Configuración de Operación
+      </h2>
 
       <div className="space-y-6">
-        <Card title="Metas Globales">
+        <Card title="Metas Globales de Descarga">
           <div className="space-y-6 p-2">
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">
-                Proyectado de Entrada (Piezas Totales)
-              </label>
-              <div className="flex gap-4">
-                <input 
-                  type="number" 
-                  // 3. Usamos el valor local
-                  value={localProyectado}
-                  // 4. Actualizamos solo el local al escribir (sin lag)
-                  onChange={(e) => setLocalProyectado(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleApply()} // Opcional: Aplicar con Enter
-                  className="w-full bg-[#080c14] border border-white/20 rounded-xl px-6 py-4 text-4xl font-black text-blue-400 focus:border-blue-500 outline-none transition-all font-mono"
-                />
-                <button 
-                  // 5. El proceso pesado de App.js solo se dispara acá
-                  onClick={handleApply}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 rounded-xl flex items-center gap-2 font-black text-xs uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] active:scale-95"
-                >
-                  <Save size={16} /> Aplicar
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-3 p-4 bg-blue-500/5 border border-blue-500/10 rounded-xl">
-              <AlertCircle className="text-blue-500 shrink-0" size={16} />
-              <p className="text-[10px] text-blue-200/60 font-bold uppercase tracking-wider leading-relaxed">
-                El ingreso de datos ahora es fluido. El cálculo global se ejecutará únicamente al presionar "Aplicar" o la tecla Enter.
-              </p>
-            </div>
+            <NumericField
+              label="Proyectado de Entrada (Piezas Totales)"
+              value={local.proyectado}
+              onChange={v => setLocal(l => ({ ...l, proyectado: v }))}
+              onApply={() => apply('proyectado')}
+              color="blue-400"
+            />
           </div>
         </Card>
+
+        <Card title="Parámetros de Armado HU">
+          <div className="space-y-6 p-2">
+            <NumericField
+              label="Objetivo de Avance HU (%)"
+              value={local.objetivoHU}
+              onChange={v => setLocal(l => ({ ...l, objetivoHU: v }))}
+              onApply={() => apply('objetivoHU')}
+              color="yellow-400"
+            />
+            <NumericField
+              label="Productividad por Usuario (piezas/hora)"
+              value={local.productividadHU}
+              onChange={v => setLocal(l => ({ ...l, productividadHU: v }))}
+              onApply={() => apply('productividadHU')}
+              color="emerald-400"
+            />
+          </div>
+        </Card>
+
+        <div className="flex gap-3 p-4 bg-blue-500/5 border border-blue-500/10 rounded-xl">
+          <AlertCircle className="text-blue-500 shrink-0" size={16} />
+          <p className="text-[10px] text-blue-200/60 font-bold uppercase tracking-wider leading-relaxed">
+            Los cambios se aplican al presionar "Aplicar" o la tecla Enter en cada campo.
+          </p>
+        </div>
       </div>
     </div>
   );
