@@ -1,6 +1,7 @@
 import React from 'react';
 import KpiGrid from '../components/dashboard/KpiGrid';
 import MainChart from '../components/dashboard/MainChart';
+import VehiculosChart from '../components/dashboard/VehiculosChart';
 import MatrixPanel from '../components/dashboard/MatrixPanel';
 import HUTable from '../components/dashboard/HUTable';
 import TargetCards from '../components/dashboard/TargetCards';
@@ -60,6 +61,11 @@ const CommandCenter = ({ data }) => {
         </div>
       </section>
 
+      {/* 3. GRÁFICA DE VEHÍCULOS POR TIPO */}
+      <section>
+        <VehiculosChart vehiculosChartData={data.vehiculosChartData} />
+      </section>
+
       {/* 3. TABLA HU */}
       <section>
         <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
@@ -71,7 +77,7 @@ const CommandCenter = ({ data }) => {
           </button>
         </div>
         <div className="overflow-x-auto">
-          <HUTable tableData={data.tableData} />
+          <HUTable tableData={data.tableData} objetivo={data.huStats?.objetivoHU} />
         </div>
         <HUObjetivoWidget huStats={data.huStats} />
       </section>

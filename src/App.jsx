@@ -4,6 +4,8 @@ import Header from './components/layout/Header';
 import CommandCenter from './pages/CommandCenter';
 import Parameters from './pages/Parameters';
 import CutOff from './pages/CutOff';
+import Voluminoso from './pages/Voluminoso';
+import ArribosChasis from './pages/ArribosChasis';
 import FileUploader from './components/FileUploader'; 
 import { processCombinedData } from './utils/dataProcessor';
 
@@ -21,7 +23,6 @@ function App() {
 
   const dashboardData = useMemo(() => {
     if (!dataFiles) return null;
-    console.log("Sincronizando monitor con proyectado:", config.proyectado);
     return processCombinedData(dataFiles.csv, dataFiles.excel, config.proyectado, config.objetivoHU, config.productividadHU);
   }, [dataFiles, config.proyectado, config.objetivoHU, config.productividadHU]);
 
@@ -50,13 +51,23 @@ function App() {
         setActiveTab={setActiveTab}
         onNewDispatch={() => setIsUpdating(true)}
       />
-      <main className="flex-1 flex flex-col overflow-y-auto">
-        <Header title={activeTab === 'command' ? "CENTRO DE MANDO OCASA" : activeTab === 'cutoff' ? "CONTROL CPT / HU" : "AJUSTE DE PARÁMETROS"} lastUpdate={dashboardData?.kpis?.ultimaActualizacion}/>
-        <div className="p-4 md:p-8 lg:p-10">
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+        <Header title={
+          activeTab === 'command' ? "CENTRO DE MANDO OCASA" :
+          activeTab === 'cutoff' ? "CONTROL CPT / HU" :
+          activeTab === 'voluminoso' ? "VOLUMINOSO / PAQUETERÍA" :
+          activeTab === 'chasis' ? "ARRIBS. DE CHASIS" :
+          "AJUSTE DE PARÁMETROS"
+        } lastUpdate={dashboardData?.kpis?.ultimaActualizacion}/>
+        <div className="p-4 md:p-6 lg:p-10 flex-1">
           {activeTab === 'command' ? (
             <CommandCenter data={dashboardData} />
           ) : activeTab === 'cutoff' ? (
             <CutOff data={dashboardData} />
+          ) : activeTab === 'voluminoso' ? (
+            <Voluminoso data={dashboardData} />
+          ) : activeTab === 'chasis' ? (
+            <ArribosChasis data={dashboardData} />
           ) : (
             <Parameters config={config} setConfig={setConfig} />
           )}

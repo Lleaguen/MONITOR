@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 // ── Fila de zona dentro de un CPT ──
-const ZonaRow = ({ z }) => {
-  const bueno = z.avance >= 99;
+const ZonaRow = ({ z, objetivo }) => {
+  const bueno = z.avance >= objetivo;
   const controlOk = z.pendiente === 0;
   return (
     <tr className="border-b border-white/[0.03] text-[10px] hover:bg-white/[0.02] transition-colors">
@@ -37,9 +37,9 @@ const ZonaRow = ({ z }) => {
 };
 
 // ── Bloque de un CPT ──
-const CPTBlock = ({ cpt, zonas, totCPT }) => {
+const CPTBlock = ({ cpt, zonas, totCPT, objetivo }) => {
   const [open, setOpen] = useState(true);
-  const bueno = totCPT.avance >= 99;
+  const bueno = totCPT.avance >= objetivo;
 
   return (
     <>
@@ -64,7 +64,7 @@ const CPTBlock = ({ cpt, zonas, totCPT }) => {
         </td>
       </tr>
       {/* Filas de zonas */}
-      {open && zonas.map((z, i) => <ZonaRow key={i} z={z} />)}
+      {open && zonas.map((z, i) => <ZonaRow key={i} z={z} objetivo={objetivo} />)}
       {/* Subtotal del CPT */}
       {open && (
         <tr className="border-b border-white/10 bg-white/[0.02] text-[10px]">
@@ -91,7 +91,7 @@ const CPTBlock = ({ cpt, zonas, totCPT }) => {
 // ── Página principal ──
 const CutOff = ({ data }) => {
   if (!data) return null;
-  const { tableData = [], totalesHU = {} } = data;
+  const { tableData = [], totalesHU = {}, huStats = {} } = data;
   const tot = {
     etiquetado:    totalesHU.etiquetado    || 0,
     huAbierto:     totalesHU.huAbierto     || 0,
@@ -103,22 +103,22 @@ const CutOff = ({ data }) => {
     usuarios:      totalesHU.usuarios      || 0,
     avance:        totalesHU.avance        || 0,
   };
-  const objetivo = 99.7;
+  const objetivo = huStats.objetivoHU || 99.7;
   const faltante = Math.max(Math.ceil((objetivo / 100) * tot.etiquetado) - tot.huCerrado, 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
 
       {/* ── RESUMEN GLOBAL ── */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#111827]/60 border border-white/5 rounded-2xl p-5 space-y-3">
           <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Piezas</p>
           <p className="text-3xl font-black text-white italic">{tot.etiquetado.toLocaleString()}</p>
         </div>
         <div className="bg-[#111827]/60 border border-white/5 rounded-2xl p-5 space-y-2">
-          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">HU Abierto</span><span className="text-sm font-black text-slate-300">{tot.huAbierto.toLocaleString()}</span></div>
-          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">HU Cerrado</span><span className="text-sm font-black text-slate-300">{tot.huCerrado.toLocaleString()}</span></div>
-          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pendiente HU</span><span className="text-sm font-black text-orange-400">{tot.pendiente.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Piezas HU Abierto</span><span className="text-sm font-black text-slate-300">{tot.huAbierto.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Piezas HU Cerrado</span><span className="text-sm font-black text-slate-300">{tot.huCerrado.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Piezas Pendientes</span><span className="text-sm font-black text-orange-400">{tot.pendiente.toLocaleString()}</span></div>
         </div>
         <div className={`rounded-2xl flex flex-col items-center justify-center border p-5 ${tot.avance >= objetivo ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-orange-500/10 border-orange-500/30'}`}>
           <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avance Global</p>
@@ -126,35 +126,35 @@ const CutOff = ({ data }) => {
           <p className="text-[9px] font-black text-slate-600 mt-2">Objetivo: {objetivo}%</p>
         </div>
         <div className="bg-[#111827]/60 border border-white/5 rounded-2xl p-5 space-y-2">
-          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">HU Finalizada</span><span className="text-sm font-black text-slate-300">{tot.huFinalizadas.toLocaleString()}</span></div>
-          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">En Despacho</span><span className="text-sm font-black text-slate-300">{tot.huEnDespacho.toLocaleString()}</span></div>
-          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Despachado</span><span className="text-sm font-black text-slate-300">{tot.despachado.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">HUs Finalizados</span><span className="text-sm font-black text-slate-300">{tot.huFinalizadas.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">HUs en Despacho</span><span className="text-sm font-black text-slate-300">{tot.huEnDespacho.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">HUs Enviados</span><span className="text-sm font-black text-slate-300">{tot.despachado.toLocaleString()}</span></div>
           <div className="flex justify-between border-t border-white/5 pt-2 mt-1"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Faltante p/ {objetivo}%</span><span className={`text-sm font-black ${faltante === 0 ? 'text-emerald-400' : 'text-red-400'}`}>{faltante.toLocaleString()}</span></div>
         </div>
       </div>
 
       {/* ── TABLA POR CPT / ZONA ── */}
-      <div className="bg-[#111827]/10 rounded-2xl border border-white/5 overflow-hidden">
-        <table className="w-full text-left">
+      <div className="bg-[#111827]/10 rounded-2xl border border-white/5 overflow-x-auto">
+        <table className="w-full min-w-[800px] text-left">
           <thead>
             <tr className="text-[8px] font-black text-slate-600 uppercase tracking-[0.15em] border-b border-white/10">
               {/* ARMADO */}
               <th className="px-4 py-3">SUB-CA</th>
-              <th className="py-3 text-right">Etiquetado</th>
-              <th className="py-3 text-right">HU Abierto</th>
-              <th className="py-3 text-right">HU Cerrado</th>
-              <th className="py-3 text-right pr-4">Pendiente</th>
+              <th className="py-3 text-right">Piezas Etiq.</th>
+              <th className="py-3 text-right">Pzas HU Ab.</th>
+              <th className="py-3 text-right">Pzas HU Cerr.</th>
+              <th className="py-3 text-right pr-4">Pzas Pend.</th>
               <th className="py-3 pl-6">% Avance</th>
               {/* DESPACHO */}
-              <th className="py-3 text-right pl-6 border-l border-white/5">HU Final.</th>
-              <th className="py-3 text-right">En Despacho</th>
-              <th className="py-3 text-right">Despachado</th>
+              <th className="py-3 text-right pl-6 border-l border-white/5">HUs Final.</th>
+              <th className="py-3 text-right">HUs Desp.</th>
+              <th className="py-3 text-right">HUs Env.</th>
               <th className="py-3 text-center">Control</th>
             </tr>
           </thead>
           <tbody>
             {tableData.map(({ cpt, zonas, totCPT }) => (
-              <CPTBlock key={cpt} cpt={cpt} zonas={zonas} totCPT={totCPT} />
+              <CPTBlock key={cpt} cpt={cpt} zonas={zonas} totCPT={totCPT} objetivo={objetivo} />
             ))}
           </tbody>
           {/* Total global */}
