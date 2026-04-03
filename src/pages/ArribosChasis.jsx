@@ -15,7 +15,7 @@ const ArribosChasis = ({ data }) => {
     const copy = [...arrivals];
     if (orden === 'piezas_desc') return copy.sort((a, b) => b.piezas - a.piezas);
     if (orden === 'piezas_asc')  return copy.sort((a, b) => a.piezas - b.piezas);
-    return copy.sort((a, b) => a.hora.localeCompare(b.hora));
+    return copy.sort((a, b) => b.hora.localeCompare(a.hora)); // más reciente primero
   }, [arrivals, orden]);
 
   const totalPiezas = arrivals.reduce((a, r) => a + r.piezas, 0);

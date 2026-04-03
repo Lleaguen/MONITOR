@@ -67,17 +67,17 @@ const KpiGrid = ({ kpis }) => {
             <div className="flex flex-col items-center">
               <span className="text-[8px] font-black text-blue-400/50 uppercase tracking-widest mb-1">Chasis</span>
               <span className="text-lg lg:text-xl font-black text-white italic">{kpis?.espera?.chasis || 0}</span>
-              <span className="text-[7px] font-black text-blue-400/40 mt-1">{kpis?.espera?.darsenasChasis || 0} dárs.</span>
+              <span className="text-[9px] font-black text-blue-400/60 mt-1">{kpis?.espera?.darsenasChasis || 0} dárs.</span>
             </div>
             <div className="flex flex-col items-center border-x border-blue-500/20">
               <span className="text-[8px] font-black text-blue-400/50 uppercase tracking-widest mb-1">Cam</span>
               <span className="text-lg lg:text-xl font-black text-white italic">{kpis?.espera?.camioneta || 0}</span>
-              <span className="text-[7px] font-black text-blue-400/40 mt-1">{kpis?.espera?.darsenаsCamioneta || 0} dárs.</span>
+              <span className="text-[9px] font-black text-blue-400/60 mt-1">{kpis?.espera?.darsenаsCamioneta || 0} dárs.</span>
             </div>
             <div className="flex flex-col items-center">
               <span className="text-[8px] font-black text-blue-400/50 uppercase tracking-widest mb-1">Semi</span>
               <span className="text-lg lg:text-xl font-black text-white italic">{kpis?.espera?.semi || 0}</span>
-              <span className="text-[7px] font-black text-blue-400/40 mt-1">{kpis?.espera?.darsenaSemi || 0} dárs.</span>
+              <span className="text-[9px] font-black text-blue-400/60 mt-1">{kpis?.espera?.darsenaSemi || 0} dárs.</span>
             </div>
           </div>
           <div className="absolute top-3 right-4 text-right">

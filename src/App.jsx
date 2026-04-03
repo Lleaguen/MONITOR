@@ -45,13 +45,13 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#080c14] text-slate-300 font-sans">
+    <div className="flex flex-col md:flex-row h-screen bg-[#080c14] text-slate-300 font-sans overflow-hidden">
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onNewDispatch={() => setIsUpdating(true)}
       />
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto md:ml-[60px]">
         <Header title={
           activeTab === 'command' ? "CENTRO DE MANDO OCASA" :
           activeTab === 'cutoff' ? "CONTROL CPT / HU" :

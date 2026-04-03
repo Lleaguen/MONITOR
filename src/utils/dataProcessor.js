@@ -132,10 +132,33 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
       headers.forEach((h, i) => { obj[h] = row[i]; });
       return obj;
     })
-    .filter(item =>
-      String(item['TIPO DE OPERACION'] || "").toUpperCase().includes("DESCARGA") &&
-      String(item['Accion'] || "").toLowerCase() === "add"
-    );
+    .filter(item => {
+      const tipoOp = String(item['TIPO DE OPERACION'] || "").toUpperCase().includes("DESCARGA");
+      const accion = String(item['Accion'] || "").toLowerCase() === "add";
+      if (!tipoOp || !accion) return false;
+
+      // Semi: solo desde las 12:00
+      const tipo = getTipoVehiculo(item['TIPO DE VEHICULO']);
+      if (tipo === 'semi') {
+        const raw = String(item['Fecha y hora'] || "").trim();
+        const num = parseFloat(raw);
+        let hora = null;
+        if (!isNaN(num) && num > 1000) {
+          hora = Math.floor((num - Math.floor(num)) * 24);
+        } else {
+          const norm = raw.replace(/\s+/g, ' ').replace(/a\.\s*m\./gi, 'AM').replace(/p\.\s*m\./gi, 'PM');
+          const m = norm.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?$/i);
+          if (m) {
+            let h = parseInt(m[4], 10);
+            if (m[7]?.toUpperCase() === 'PM' && h !== 12) h += 12;
+            if (m[7]?.toUpperCase() === 'AM' && h === 12) h = 0;
+            hora = h;
+          }
+        }
+        if (hora !== null && hora < 12) return false;
+      }
+      return true;
+    });
 
   // ── 2. PATENTES TMS ÚNICAS ──
   const patentesTMSMap = new Map();
@@ -182,18 +205,46 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
       }
     }
 
+    // Debug semi
+    if (!found && getTipoVehiculo(doc['TIPO DE VEHICULO']) === 'semi') {
+      console.log('[SEMI NO MATCH]', doc['PATENTE'], '→ patentes ED:', patenteED);
+    }
     matchEDaTMS.set(idx, found);
   });
 
   // ── 4. VEHÍCULOS EN ESPERA + DÁRSENAS ACTIVAS ──
-  // Dársenas activas = docas únicas con Hub Status = in_hub, clasificadas por sector
-  const darsenasActivas = { chasis: new Set(), camioneta: new Set(), semi: new Set() };
+  // Calculamos ultimaTs aquí para usarlo en dársenas activas
+  let ultimaTs = 0;
+  csvData.forEach(d => {
+    const raw = d['Inbound Date Included'];
+    if (!raw) return;
+    const f = dayjs(raw, "DD/MM/YYYY HH:mm:ss");
+    if (f.isValid()) {
+      const ts = f.valueOf();
+      if (ts > ultimaTs) ultimaTs = ts;
+    }
+  });
+
+  // Dársena activa = doca con bipeo en los últimos 10 minutos (relativo a ultimaReferencia)
+  const DIEZ_MIN_MS = 10 * 60 * 1000;
+  const ultimoBipeoPorDoca = new Map(); // doca → último tsMs
 
   csvData.forEach(d => {
-    const status = String(d['Hub Status'] || "").toLowerCase().trim();
-    if (status !== 'in_hub') return;
     const doca = String(d['Inbound Dock ID'] || "").trim();
     if (!doca) return;
+    const raw = d['Inbound Date Included'];
+    if (!raw) return;
+    const f = dayjs(raw, "DD/MM/YYYY HH:mm:ss");
+    if (!f.isValid()) return;
+    const ts = f.valueOf();
+    if (!ultimoBipeoPorDoca.has(doca) || ts > ultimoBipeoPorDoca.get(doca)) {
+      ultimoBipeoPorDoca.set(doca, ts);
+    }
+  });
+
+  const darsenasActivas = { chasis: new Set(), camioneta: new Set(), semi: new Set() };
+  ultimoBipeoPorDoca.forEach((ts, doca) => {
+    if ((ultimaTs - ts) > DIEZ_MIN_MS) return; // sin bipeo reciente → inactiva
     const num = parseInt(doca.replace(/\D/g, ""), 10);
     if (isNaN(num)) return;
     if (num >= 20 && num <= 26) darsenasActivas.semi.add(doca);
@@ -270,14 +321,13 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
   });
 
   // ── 7. LOOP ÚNICO SOBRE CSV ──
-  let ultimaTs = 0;
+  // ultimaTs ya fue calculado en paso 4, acá completamos el resto
   let totalPiezasSistema = 0;
   const bipeoPorHora = new Array(24).fill(0);
   const filasTMS = [];
 
   csvData.forEach(d => {
     if (!d['Shipment ID']) return;
-    totalPiezasSistema++;
     const raw = d['Inbound Date Included'];
     if (!raw) return;
     const f = dayjs(raw, "DD/MM/YYYY HH:mm:ss");
@@ -285,7 +335,10 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
     const tsMs = f.valueOf();
     const h = f.hour();
     if (tsMs > ultimaTs) ultimaTs = tsMs;
-    if (h >= 10 && h <= 23) bipeoPorHora[h]++;
+    // Solo contamos piezas desde las 9:00
+    if (h < 9) return;
+    totalPiezasSistema++;
+    if (h <= 23) bipeoPorHora[h]++;
     filasTMS.push({ tsMs, patente: normalizarPatente(d['Truck ID']), doca: String(d['Inbound Dock ID'] || "").trim(), h });
   });
 
@@ -309,11 +362,32 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
 
   // ── 8. KPIs ──
   const ahora = dayjs();
-  const arribadoExcel = easyDockingClean.reduce(
-    (acc, curr) => acc + (parseFloat(curr['CANT PAQUETES']) || 0), 0
-  );
+  const arribadoExcel = easyDockingClean.reduce((acc, curr) => {
+    const raw = String(curr['Fecha y hora'] || "").trim();
+    const num = parseFloat(raw);
+    let hora = null;
+    if (!isNaN(num) && num > 1000) {
+      hora = Math.floor((num - Math.floor(num)) * 24);
+    } else {
+      const norm = raw.replace(/\s+/g, ' ').replace(/a\.\s*m\./gi, 'AM').replace(/p\.\s*m\./gi, 'PM');
+      const m = norm.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?$/i);
+      if (m) {
+        let h = parseInt(m[4], 10);
+        if (m[7]?.toUpperCase() === 'PM' && h !== 12) h += 12;
+        if (m[7]?.toUpperCase() === 'AM' && h === 12) h = 0;
+        hora = h;
+      }
+    }
+    const paquetes = parseFloat(curr['CANT PAQUETES']) || 0;
+    if (hora !== null && hora < 9) {
+      console.log('[EXCLUIDO hora<9]', hora, raw, paquetes);
+      return acc;
+    }
+    return acc + paquetes;
+  }, 0);
+  // Usamos ultimaReferencia (último bipeo del archivo) como base, no la hora actual del sistema
   const horasRestantes = Math.max(
-    ahora.clone().set('hour', 22).set('minute', 0).diff(ahora, 'hour', true), 0.5
+    ultimaReferencia.clone().set('hour', 22).set('minute', 0).diff(ultimaReferencia, 'hour', true), 0.5
   );
   const objXHoraGlobal = Math.round((proyectadoManual - totalPiezasSistema) / horasRestantes);
   const velocidadReal = Math.round(
@@ -321,7 +395,7 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
   );
 
   // ── 9. CHART DATA ──
-  const HORAS = Array.from({ length: 14 }, (_, i) => i + 10);
+  const HORAS = Array.from({ length: 15 }, (_, i) => i + 9);
   const arriboPorHora = new Array(24).fill(0);
 
   // Convierte serial numérico de Excel a hora (0-23)
@@ -351,7 +425,7 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
       }
     }
 
-    if (hora === null || hora < 10 || hora > 23) return;
+    if (hora === null || hora < 9 || hora > 23) return;
     arriboPorHora[hora] += parseFloat(doc['CANT PAQUETES']) || 0;
 
     // También contamos vehículos por tipo y hora
@@ -457,9 +531,15 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
     }
   });
 
-  // Asignamos cada usuario solo a su última zona/CPT
+  // Solo contamos usuarios activos si su último bipeo fue hace menos de 5 minutos
+  // Usamos ultimaReferencia como base (no Date.now()) para que funcione con archivos históricos
+  const ultimaReferenciaMs = ultimaTs > 0 ? ultimaTs : Date.now();
+  const CINCO_MIN_MS = 5 * 60 * 1000;
+
+  // Asignamos cada usuario solo a su última zona/CPT — solo si activo en últimos 5 min
   CPT_ORDEN.forEach(c => { cptData[c].usuariosSetCPT = new Set(); });
   ultimaActividadUsuario.forEach((info, usr) => {
+    if ((ultimaReferenciaMs - info.ts) > CINCO_MIN_MS) return;
     const { cpt, zona } = info;
     if (!cptData[cpt]) return;
     cptData[cpt].usuariosSetCPT.add(usr);
@@ -468,7 +548,11 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
     }
   });
 
-  const usuariosSetGlobal = new Set(ultimaActividadUsuario.keys());
+  const usuariosSetGlobal = new Set(
+    Array.from(ultimaActividadUsuario.entries())
+      .filter(([, info]) => (ultimaReferenciaMs - info.ts) <= CINCO_MIN_MS)
+      .map(([usr]) => usr)
+  );
 
   const tableData = CPT_ORDEN
     .filter(cpt => Object.keys(cptData[cpt].zonas).length > 0)
@@ -476,7 +560,7 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
       const zonas = Object.entries(cptData[cpt].zonas).map(([zona, z]) => {
         const pendiente = z.etiquetado - z.huAbierto - z.huCerrado;
         const avance = z.etiquetado > 0
-          ? Math.round((z.huCerrado / z.etiquetado) * 10000) / 100
+          ? Math.round(((z.huCerrado + z.huAbierto) / z.etiquetado) * 10000) / 100
           : 0;
         return {
           zona,
@@ -504,7 +588,7 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
 
       totCPT.usuarios = cptData[cpt].usuariosSetCPT.size;
       totCPT.avance = totCPT.etiquetado > 0
-        ? Math.round((totCPT.huCerrado / totCPT.etiquetado) * 10000) / 100
+        ? Math.round(((totCPT.huCerrado + totCPT.huAbierto) / totCPT.etiquetado) * 10000) / 100
         : 0;
 
       return { cpt, zonas, totCPT };
@@ -522,7 +606,7 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
 
   totalesHU.usuarios = usuariosSetGlobal.size;
   totalesHU.avance = totalesHU.etiquetado > 0
-    ? Math.round((totalesHU.huCerrado / totalesHU.etiquetado) * 10000) / 100
+    ? Math.round(((totalesHU.huCerrado + totalesHU.huAbierto) / totalesHU.etiquetado) * 10000) / 100
     : 0;
 
   // ── ARRIVALS DE CHASIS — solo los que NO descargaron aún ──
