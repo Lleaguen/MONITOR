@@ -663,19 +663,63 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
 
     if (!volPorZona[zona]) volPorZona[zona] = { zona, cpt, paqueteria: 0, voluminoso: 0 };
 
-    const h = parseFloat(d['Height'] || 0);
-    const l = parseFloat(d['Length'] || 0);
-    const w = parseFloat(d['Width']  || 0);
+    const dimH = parseFloat(d['Height'] || 0);
+    const dimL = parseFloat(d['Length'] || 0);
+    const dimW = parseFloat(d['Width']  || 0);
+    const peso = parseFloat(d['Weight'] || 0);
 
-    if (h <= 50 && l <= 50 && w <= 50) {
-      volPorZona[zona].paqueteria++;
-    } else {
+    // Voluminoso: alguna dimensión >= 50cm O peso > 20kg (peso en gramos → 20000g)
+    const esVoluminoso = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
+
+    if (esVoluminoso) {
       volPorZona[zona].voluminoso++;
+    } else {
+      volPorZona[zona].paqueteria++;
     }
   });
 
   // Agrupamos por CPT para la vista
   const volData = Object.values(volPorZona).sort((a, b) => a.cpt.localeCompare(b.cpt));
+
+  // ── SUPER BIGGER ──
+  // Super Bigger: peso > 30kg Y alguna dimensión > 150cm
+  const superBiggerPorHora = new Array(24).fill(0);
+  const superBiggerList = [];
+
+  csvData.forEach(d => {
+    if (!d['Shipment ID']) return;
+    const dimH = parseFloat(d['Height'] || 0);
+    const dimL = parseFloat(d['Length'] || 0);
+    const dimW = parseFloat(d['Width']  || 0);
+    const peso = parseFloat(d['Weight'] || 0);
+
+    // Super Bigger: peso > 30kg (30000g) Y alguna dimensión > 150cm
+    const esSuperBigger = peso > 30000 && (dimH > 150 || dimL > 150 || dimW > 150);
+    if (!esSuperBigger) return;
+
+    // Hora de bipeo
+    const raw = d['Inbound Date Included'];
+    let hora = null;
+    if (raw) {
+      const f = dayjs(raw, "DD/MM/YYYY HH:mm:ss");
+      if (f.isValid()) hora = f.hour();
+    }
+    if (hora !== null && hora >= 9 && hora <= 23) superBiggerPorHora[hora]++;
+
+    superBiggerList.push({
+      shipmentId: String(d['Shipment ID'] || ""),
+      height: dimH,
+      length: dimL,
+      width:  dimW,
+      weight: Math.round(peso / 1000 * 100) / 100, // convertir g → kg
+      hora:   hora !== null ? `${String(hora).padStart(2,'0')}:00` : '--',
+    });
+  });
+
+  const superBiggerChartData = Array.from({ length: 15 }, (_, i) => i + 9).map(h => ({
+    hora: `${String(h).padStart(2,'0')}:00`,
+    cantidad: superBiggerPorHora[h] || 0,
+  }));
 
   // ── 13. USUARIOS NECESARIOS PARA HU ──
   const horasHasta22 = Math.max(
@@ -710,6 +754,8 @@ export const processCombinedData = (csvData, excelRaw, proyectadoManual = 239000
     totalesHU,
     volData,
     arrivalChasis,
+    superBiggerList,
+    superBiggerChartData,
     huStats: {
       objetivoHU,
       productividadHU,

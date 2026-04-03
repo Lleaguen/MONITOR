@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Settings, ClipboardList, Package, Truck, Plus, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Settings, ClipboardList, Package, Truck, Maximize2, Plus, Menu, X } from 'lucide-react';
 
 const NavItem = ({ icon, text, active, onClick, expanded }) => (
   <div
@@ -65,6 +65,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch }) => {
             { tab: 'cutoff',  icon: <ClipboardList size={18}/>, text: 'CutOff' },
             { tab: 'voluminoso', icon: <Package size={18}/>, text: 'Voluminoso' },
             { tab: 'chasis', icon: <Truck size={18}/>, text: 'Arribs. Chasis' },
+            { tab: 'superbigger', icon: <Maximize2 size={18}/>, text: 'Super Bigger' },
             { tab: 'params', icon: <Settings size={18}/>, text: 'Parámetros' },
           ].map(({ tab, icon, text }) => (
             <div key={tab} onClick={() => handleNav(tab)}
@@ -108,6 +109,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch }) => {
           <NavItem icon={<ClipboardList size={18}/>} text="CutOff" active={activeTab === 'cutoff'} onClick={() => handleNav('cutoff')} expanded={expanded} />
           <NavItem icon={<Package size={18}/>} text="Voluminoso" active={activeTab === 'voluminoso'} onClick={() => handleNav('voluminoso')} expanded={expanded} />
           <NavItem icon={<Truck size={18}/>} text="Arribs. Chasis" active={activeTab === 'chasis'} onClick={() => handleNav('chasis')} expanded={expanded} />
+          <NavItem icon={<Maximize2 size={18}/>} text="Super Bigger" active={activeTab === 'superbigger'} onClick={() => handleNav('superbigger')} expanded={expanded} />
           <NavItem icon={<Settings size={18}/>} text="Parámetros" active={activeTab === 'params'} onClick={() => handleNav('params')} expanded={expanded} />
         </nav>
 

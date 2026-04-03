@@ -6,6 +6,7 @@ import Parameters from './pages/Parameters';
 import CutOff from './pages/CutOff';
 import Voluminoso from './pages/Voluminoso';
 import ArribosChasis from './pages/ArribosChasis';
+import SuperBigger from './pages/SuperBigger';
 import FileUploader from './components/FileUploader'; 
 import { processCombinedData } from './utils/dataProcessor';
 
@@ -57,6 +58,7 @@ function App() {
           activeTab === 'cutoff' ? "CONTROL CPT / HU" :
           activeTab === 'voluminoso' ? "VOLUMINOSO / PAQUETERÍA" :
           activeTab === 'chasis' ? "ARRIBS. DE CHASIS" :
+          activeTab === 'superbigger' ? "SUPER BIGGER" :
           "AJUSTE DE PARÁMETROS"
         } lastUpdate={dashboardData?.kpis?.ultimaActualizacion}/>
         <div className="p-4 md:p-6 lg:p-10 flex-1">
@@ -68,6 +70,8 @@ function App() {
             <Voluminoso data={dashboardData} />
           ) : activeTab === 'chasis' ? (
             <ArribosChasis data={dashboardData} />
+          ) : activeTab === 'superbigger' ? (
+            <SuperBigger data={dashboardData} />
           ) : (
             <Parameters config={config} setConfig={setConfig} />
           )}
