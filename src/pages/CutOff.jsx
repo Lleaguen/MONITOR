@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import StatCard from '../components/ui/StatCard';
+import ProgressBar from '../components/ui/ProgressBar';
+import PageWrapper from '../components/ui/PageWrapper';
 
 // ── Fila de zona dentro de un CPT ──
 const ZonaRow = ({ z, objetivo }) => {
@@ -14,14 +17,7 @@ const ZonaRow = ({ z, objetivo }) => {
       <td className="py-3 text-right font-black text-slate-300">{z.huCerrado.toLocaleString()}</td>
       <td className="py-3 text-right font-black text-orange-400">{z.pendiente > 0 ? z.pendiente.toLocaleString() : '-'}</td>
       <td className="py-3 pl-6 w-44">
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-[2px] bg-slate-800 rounded-full overflow-hidden">
-            <div className={`h-full ${bueno ? 'bg-emerald-400' : 'bg-orange-400'}`} style={{ width: `${Math.min(z.avance, 100)}%` }} />
-          </div>
-          <span className={`w-12 text-right font-black ${bueno ? 'text-emerald-400' : 'text-orange-400'}`}>
-            {z.avance.toFixed(2)}%
-          </span>
-        </div>
+        <ProgressBar value={z.avance} threshold={objetivo} />
       </td>
       {/* DESPACHO */}
       <td className="py-3 text-right font-bold text-slate-500 pl-6">{z.huFinalizadas > 0 ? z.huFinalizadas.toLocaleString() : '-'}</td>
@@ -107,24 +103,20 @@ const CutOff = ({ data }) => {
   const faltante = Math.max(Math.ceil((objetivo / 100) * tot.etiquetado) - tot.huCerrado, 0);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-
-      {/* ── RESUMEN GLOBAL ── */}
+    <PageWrapper>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#111827]/60 border border-white/5 rounded-2xl p-5 space-y-3">
-          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Piezas</p>
-          <p className="text-3xl font-black text-white italic">{tot.etiquetado.toLocaleString()}</p>
-        </div>
+        <StatCard label="Total Piezas"    value={tot.etiquetado.toLocaleString()} />
         <div className="bg-[#111827]/60 border border-white/5 rounded-2xl p-5 space-y-2">
           <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Piezas HU Abierto</span><span className="text-sm font-black text-slate-300">{tot.huAbierto.toLocaleString()}</span></div>
           <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Piezas HU Cerrado</span><span className="text-sm font-black text-slate-300">{tot.huCerrado.toLocaleString()}</span></div>
           <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Piezas Pendientes</span><span className="text-sm font-black text-orange-400">{tot.pendiente.toLocaleString()}</span></div>
         </div>
-        <div className={`rounded-2xl flex flex-col items-center justify-center border p-5 ${tot.avance >= objetivo ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-orange-500/10 border-orange-500/30'}`}>
-          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Avance Global</p>
-          <p className={`text-4xl font-black italic ${tot.avance >= objetivo ? 'text-emerald-400' : 'text-orange-400'}`}>{tot.avance.toFixed(2)}%</p>
-          <p className="text-[9px] font-black text-slate-600 mt-2">Objetivo: {objetivo}%</p>
-        </div>
+        <StatCard
+          label="Avance Global"
+          value={`${tot.avance.toFixed(2)}%`}
+          sub={`Objetivo: ${objetivo}%`}
+          color={tot.avance >= objetivo ? 'emerald' : 'orange'}
+        />
         <div className="bg-[#111827]/60 border border-white/5 rounded-2xl p-5 space-y-2">
           <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">HUs Finalizados</span><span className="text-sm font-black text-slate-300">{tot.huFinalizadas.toLocaleString()}</span></div>
           <div className="flex justify-between"><span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">HUs en Despacho</span><span className="text-sm font-black text-slate-300">{tot.huEnDespacho.toLocaleString()}</span></div>
@@ -178,7 +170,7 @@ const CutOff = ({ data }) => {
           </tfoot>
         </table>
       </div>
-    </div>
+    </PageWrapper>
   );
 };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import ProgressBar from '../ui/ProgressBar';
 
 const HUTable = ({ tableData, objetivo = 99 }) => {
   const filas = (tableData || []).map(({ cpt, totCPT }) => ({
@@ -27,7 +28,6 @@ const HUTable = ({ tableData, objetivo = 99 }) => {
         </thead>
         <tbody>
           {filas.map((row, idx) => {
-            const bueno = row.avance >= objetivo;
             return (
               <tr key={idx} className="border-b border-white/5 text-[11px] hover:bg-white/5 transition-colors">
                 <td className="px-4 py-3 font-black text-blue-400 italic">{row.intervalo}</td>
@@ -36,14 +36,7 @@ const HUTable = ({ tableData, objetivo = 99 }) => {
                 <td className="py-3 text-right font-black text-slate-300">{row.huCerrado.toLocaleString()}</td>
                 <td className="py-3 text-right font-black text-orange-400 pr-3">{row.pendiente > 0 ? row.pendiente.toLocaleString() : '-'}</td>
                 <td className="py-3 pl-4 w-36 md:w-44">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-[2px] bg-slate-800 rounded-full overflow-hidden">
-                      <div className={`h-full ${bueno ? 'bg-[#00f2ad]' : 'bg-[#ff6b00]'}`} style={{ width: `${Math.min(row.avance, 100)}%` }} />
-                    </div>
-                    <span className={`w-12 text-right font-black text-xs ${bueno ? 'text-[#00f2ad]' : 'text-[#ff6b00]'}`}>
-                      {row.avance.toFixed(2)}%
-                    </span>
-                  </div>
+                  <ProgressBar value={row.avance} threshold={objetivo} />
                 </td>
                 <td className="px-4 py-3 text-center font-bold text-slate-500 hidden md:table-cell">{row.usuarios > 0 ? row.usuarios : '-'}</td>
               </tr>

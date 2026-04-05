@@ -26,9 +26,9 @@ const TargetCards = ({ targets }) => {
   if (!targets) return null;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <TargetCardItem time="14hs" percentage={targets["14HS"].percentage} units={targets["14HS"].units} colorClass="bg-blue-500" statusColor="border-blue-500 text-blue-500" />
+      <TargetCardItem time="12hs" percentage={targets["12HS"].percentage} units={targets["12HS"].units} colorClass="bg-blue-500" statusColor="border-blue-500 text-blue-500" />
       <TargetCardItem time="16hs" percentage={targets["16HS"].percentage} units={targets["16HS"].units} colorClass="bg-[#00f2ad]" statusColor="border-[#00f2ad] text-[#00f2ad]" />
-      <TargetCardItem time="18hs" percentage={targets["18HS"].percentage} units={targets["18HS"].units} colorClass="bg-[#ff6b00]" statusColor="border-[#ff6b00] text-[#ff6b00]" />
+      <TargetCardItem time="19hs" percentage={targets["19HS"].percentage} units={targets["19HS"].units} colorClass="bg-[#ff6b00]" statusColor="border-[#ff6b00] text-[#ff6b00]" />
     </div>
   );
 };
