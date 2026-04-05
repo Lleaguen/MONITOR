@@ -22,7 +22,7 @@ const NavItem = ({ icon, text, active, onClick, expanded }) => (
   </div>
 );
 
-const Sidebar = ({ activeTab, setActiveTab, onNewDispatch }) => {
+const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
 
@@ -75,12 +75,14 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch }) => {
             </div>
           ))}
         </nav>
-        <div className="p-4">
-          <button onClick={() => { onNewDispatch(); setMobileOpen(false); }}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest active:scale-95">
-            <Plus size={14} strokeWidth={3} /> Cargar Datos
-          </button>
-        </div>
+        {!isViewer && (
+          <div className="p-4">
+            <button onClick={() => { onNewDispatch(); setMobileOpen(false); }}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest active:scale-95">
+              <Plus size={14} strokeWidth={3} /> Cargar Datos
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Desktop sidebar — colapsado con íconos, se expande al hover */}
@@ -114,18 +116,20 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch }) => {
         </nav>
 
         {/* Cargar Datos */}
-        <div className="p-2 mb-2">
-          <button
-            onClick={() => { onNewDispatch(); }}
-            title={!expanded ? 'Cargar Datos' : undefined}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest active:scale-95 overflow-hidden transition-all"
-          >
-            <Plus size={14} strokeWidth={3} className="shrink-0" />
-            <span className={`whitespace-nowrap transition-all duration-200 ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>
-              Cargar Datos
-            </span>
-          </button>
-        </div>
+        {!isViewer && (
+          <div className="p-2 mb-2">
+            <button
+              onClick={() => { onNewDispatch(); }}
+              title={!expanded ? 'Cargar Datos' : undefined}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest active:scale-95 overflow-hidden transition-all"
+            >
+              <Plus size={14} strokeWidth={3} className="shrink-0" />
+              <span className={`whitespace-nowrap transition-all duration-200 ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>
+                Cargar Datos
+              </span>
+            </button>
+          </div>
+        )}
       </aside>
     </>
   );

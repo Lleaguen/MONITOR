@@ -3,7 +3,7 @@ import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { UploadCloud, CheckCircle2 } from 'lucide-react';
 
-const FileUploader = ({ onAllDataLoaded, onCancel }) => {
+const FileUploader = ({ onAllDataLoaded, onCancel, serverError }) => {
   const [files, setFiles] = useState({ csv: null, excel: null });
 
   const handleCsv = (e) => {
@@ -40,6 +40,13 @@ const FileUploader = ({ onAllDataLoaded, onCancel }) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#080c14] text-white p-4 font-sans">
+      {serverError && (
+        <div className="w-full max-w-lg mb-4 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-center">
+          <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400">
+            Servidor no disponible — los datos no se sincronizarán
+          </p>
+        </div>
+      )}
       <div className="w-full max-w-lg p-6 sm:p-10 border-2 border-dashed border-slate-800 rounded-3xl bg-[#111827]/30 flex flex-col items-center gap-6 hover:border-blue-500/50 transition-all group">
 
         <div className="p-4 bg-blue-600/10 rounded-full text-blue-500 group-hover:scale-110 transition-transform">
