@@ -72,7 +72,17 @@ import {
   Area
 } from 'recharts';
 
-/* ===================== BASE ===================== */
+/* ===================== HELPERS ===================== */
+
+const normalizeData = (arr = []) => {
+  return arr.map(d => ({
+    hora: d.hora || d.HORA || "",
+    chasis: Number(d.chasis ?? d.CHASIS ?? 0),
+    camioneta: Number(d.camioneta ?? d.CAMIONETA ?? 0),
+    semi: Number(d.semi ?? d.SEMI ?? 0),
+    plan: Number(d.plan ?? d.PLAN ?? 0),
+  }));
+};
 
 const PillLabel = ({ x, y, value, color }) => {
   if (!value || value === 0) return null;
@@ -90,24 +100,24 @@ const PillLabel = ({ x, y, value, color }) => {
 };
 
 const CustomDot = ({ cx, cy, stroke }) => (
-  <circle cx={cx} cy={cy} r={3} fill={stroke} stroke="none" />
+  <circle cx={cx} cy={cy} r={3} fill={stroke} />
 );
 
-/* ===================== GRAFICO ORIGINAL ===================== */
+/* ===================== GRAFICO 1 ===================== */
 
 const VehiculosTipoChart = ({ data }) => {
-  const filtered = (data || []).filter(d => d.chasis > 0 || d.camioneta > 0 || d.semi > 0);
+  const filtered = data.filter(d => d.chasis || d.camioneta || d.semi);
 
   return (
-    <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
-      <h3 className="text-white font-black mb-4">Arribo por Tipo de Vehículo</h3>
+    <div className="bg-[#111827]/20 p-4 rounded-2xl border border-white/5">
+      <h3 className="text-white font-bold mb-4">Arribo por Tipo de Vehículo</h3>
 
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer>
           <ComposedChart data={filtered}>
             <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
-            <XAxis dataKey="hora" tick={{ fill: '#475569', fontSize: 9 }} />
-            <YAxis tick={{ fill: '#334155', fontSize: 9 }} />
+            <XAxis dataKey="hora" />
+            <YAxis />
             <Tooltip />
 
             <Line dataKey="chasis" stroke="#34d399" dot={<CustomDot stroke="#34d399" />}>
@@ -129,21 +139,21 @@ const VehiculosTipoChart = ({ data }) => {
   );
 };
 
-/* ===================== TOTAL VS PLAN ===================== */
+/* ===================== GRAFICO 2 ===================== */
 
 const VehiculosTotalChart = ({ data }) => {
 
-  const formatted = (data || []).map(d => ({
+  const formatted = data.map(d => ({
     ...d,
-    real: (d.chasis || 0) + (d.camioneta || 0) + (d.semi || 0)
+    real: d.chasis + d.camioneta + d.semi
   }));
 
   return (
-    <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
-      <h3 className="text-white font-black mb-4">Total vs Plan</h3>
+    <div className="bg-[#111827]/20 p-4 rounded-2xl border border-white/5">
+      <h3 className="text-white font-bold mb-4">Total vs Plan</h3>
 
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer>
           <ComposedChart data={formatted}>
 
             <defs>
@@ -154,15 +164,15 @@ const VehiculosTotalChart = ({ data }) => {
             </defs>
 
             <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
-            <XAxis dataKey="hora" tick={{ fill: '#475569', fontSize: 9 }} />
-            <YAxis tick={{ fill: '#334155', fontSize: 9 }} />
+            <XAxis dataKey="hora" />
+            <YAxis />
             <Tooltip />
 
-            <Area dataKey="real" fill="url(#area)" stroke="none" />
+            <Area dataKey="real" fill="url(#area)" />
 
-            <Line dataKey="plan" stroke="#a78bfa" strokeDasharray="5 5" dot={<CustomDot stroke="#a78bfa" />} />
+            <Line dataKey="plan" stroke="#a78bfa" strokeDasharray="5 5" />
 
-            <Line dataKey="real" stroke="#22c55e" dot={<CustomDot stroke="#22c55e" />}>
+            <Line dataKey="real" stroke="#22c55e">
               <LabelList content={(p) => (
                 <PillLabel {...p} color={p.value >= (p.payload.plan || 0) ? "#22c55e" : "#ef4444"} />
               )} />
@@ -191,13 +201,7 @@ const DataModal = ({ open, onClose, onSave }) => {
   const add = () => setRows([...rows, { hora: '', chasis: '', camioneta: '', semi: '', plan: '' }]);
 
   const save = () => {
-    const formatted = rows.map(r => ({
-      hora: r.hora,
-      chasis: +r.chasis || 0,
-      camioneta: +r.camioneta || 0,
-      semi: +r.semi || 0,
-      plan: +r.plan || 0
-    }));
+    const formatted = normalizeData(rows);
     onSave(formatted);
     onClose();
   };
@@ -206,27 +210,23 @@ const DataModal = ({ open, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
       <div className="bg-[#0f172a] p-6 rounded-xl w-full max-w-3xl">
 
-        <h2 className="text-white mb-4 font-bold">Cargar datos</h2>
+        <h2 className="text-white mb-4">Cargar datos</h2>
 
         <div className="space-y-2 max-h-80 overflow-auto">
           {rows.map((r, i) => (
             <div key={i} className="flex gap-2">
-              <input placeholder="Hora" onChange={e => update(i, 'hora', e.target.value)} className="bg-black text-white p-1 w-20"/>
-              <input placeholder="Chasis" type="number" onChange={e => update(i, 'chasis', e.target.value)} className="bg-black text-white p-1 w-20"/>
-              <input placeholder="Camioneta" type="number" onChange={e => update(i, 'camioneta', e.target.value)} className="bg-black text-white p-1 w-24"/>
-              <input placeholder="Semi" type="number" onChange={e => update(i, 'semi', e.target.value)} className="bg-black text-white p-1 w-20"/>
-              <input placeholder="Plan" type="number" onChange={e => update(i, 'plan', e.target.value)} className="bg-black text-white p-1 w-20"/>
+              <input placeholder="Hora" onChange={e => update(i, 'hora', e.target.value)} />
+              <input placeholder="Chasis" type="number" onChange={e => update(i, 'chasis', e.target.value)} />
+              <input placeholder="Camioneta" type="number" onChange={e => update(i, 'camioneta', e.target.value)} />
+              <input placeholder="Semi" type="number" onChange={e => update(i, 'semi', e.target.value)} />
+              <input placeholder="Plan" type="number" onChange={e => update(i, 'plan', e.target.value)} />
             </div>
           ))}
         </div>
 
-        <div className="flex justify-between mt-4">
-          <button onClick={add} className="text-blue-400 text-xs">+ fila</button>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="text-gray-400 text-xs">Cancelar</button>
-            <button onClick={save} className="bg-green-500 px-3 py-1 text-xs rounded">Guardar</button>
-          </div>
-        </div>
+        <button onClick={add}>+ fila</button>
+        <button onClick={save}>Guardar</button>
+        <button onClick={onClose}>Cerrar</button>
 
       </div>
     </div>
@@ -235,26 +235,31 @@ const DataModal = ({ open, onClose, onSave }) => {
 
 /* ===================== MAIN ===================== */
 
-const VehiculosChart = ({ vehiculosChartData = [] }) => {
+const VehiculosChart = ({ vehiculosChartData }) => {
 
   const [modal, setModal] = useState(false);
   const [customData, setCustomData] = useState(null);
   const [index, setIndex] = useState(0);
 
-  // 🔥 CLAVE: usa props o datos del modal
-  const data = customData || vehiculosChartData;
+  // ✅ DATA FINAL SIEMPRE VALIDA
+  const data = normalizeData(
+    customData ||
+    vehiculosChartData ||
+    [
+      { hora: "00:00", chasis: 5, camioneta: 3, semi: 2, plan: 10 },
+      { hora: "01:00", chasis: 2, camioneta: 4, semi: 1, plan: 8 }
+    ]
+  );
 
   return (
     <div>
 
-      <button onClick={() => setModal(true)} className="mb-4 bg-blue-500 px-4 py-2 text-white rounded">
-        Cargar Datos
-      </button>
+      <button onClick={() => setModal(true)}>Cargar Datos</button>
 
       {index === 0 && <VehiculosTipoChart data={data} />}
       {index === 1 && <VehiculosTotalChart data={data} />}
 
-      <div className="flex justify-between mt-2">
+      <div>
         <button onClick={() => setIndex((index - 1 + 2) % 2)}>◀</button>
         <button onClick={() => setIndex((index + 1) % 2)}>▶</button>
       </div>
@@ -269,6 +274,4 @@ const VehiculosChart = ({ vehiculosChartData = [] }) => {
   );
 };
 
-console.log("DATA QUE LLEGA:", vehiculosChartData);
-console.log("DATA USADA:", data);
 export default VehiculosChart;
