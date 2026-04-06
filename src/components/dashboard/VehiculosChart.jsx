@@ -226,7 +226,17 @@ const VehiculosTotalChart = ({ data }) => {
             />
           </Line>
 
-             <LabelList
+
+<Line
+  type="monotoneX"
+  dataKey="real"
+  name="Real"
+  stroke="#22c55e"
+  strokeWidth={2.5}
+  dot={<CustomDot stroke="#22c55e" />}
+  activeDot={{ r: 5, fill: '#22c55e', stroke: '#080c14', strokeWidth: 2 }}
+>
+  <LabelList
     content={(props) => {
       if (!props || !props.payload) return null;
 
