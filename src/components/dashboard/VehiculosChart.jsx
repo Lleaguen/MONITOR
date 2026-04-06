@@ -161,7 +161,7 @@ const VehiculosTotalChart = ({ data }) => {
 
         <div className="flex flex-wrap gap-4 text-[9px] font-black tracking-widest">
           <span className="flex items-center gap-2">
-            <div className="w-3 h-[2px] bg-emerald-400 rounded-full" /> REAL OK
+            <div className="w-3 h-[2px] bg-emerald-400 rounded-full" /> REAL
           </span>
           <span className="flex items-center gap-2">
             <div className="w-3 h-[2px] bg-violet-400 rounded-full" /> PLAN
@@ -207,24 +207,27 @@ const VehiculosTotalChart = ({ data }) => {
               }}
             />
 
-            <Area dataKey="real" fill="url(#area)" />
+        <Area dataKey="real" fill="url(#area)" />
 
-           <Line
-            type="monotoneX"
-            dataKey="plan"
-            name="Plan"
-            stroke="#a78bfa"
-            strokeWidth={2.5}
-            strokeDasharray="5 5"
-            dot={<CustomDot stroke="#a78bfa" />}
-            activeDot={{ r: 5, fill: '#a78bfa', stroke: '#080c14', strokeWidth: 2 }}
-          >
-            <LabelList
-              content={(props) => (
-                <PillLabel {...props} color="#a78bfa" />
-              )}
-            />
-          </Line>
+<Line
+  type="monotoneX"
+  dataKey="plan"
+  name="Plan"
+  stroke="#a78bfa"
+  strokeWidth={2.5}
+  strokeDasharray="5 5"
+  dot={<CustomDot stroke="#a78bfa" />}
+  activeDot={{ r: 5, fill: '#a78bfa', stroke: '#080c14', strokeWidth: 2 }}
+>
+  <LabelList
+    content={(props) => {
+      const value = Number(props?.value || 0);
+      if (!value) return null;
+
+      return <PillLabel {...props} color="#a78bfa" />;
+    }}
+  />
+</Line>
 
 
 <Line
@@ -232,18 +235,19 @@ const VehiculosTotalChart = ({ data }) => {
   dataKey="real"
   name="Real"
   stroke="#22c55e"
-  strokeWidth={2.5}
+  strokeWidth={3}
   dot={<CustomDot stroke="#22c55e" />}
   activeDot={{ r: 5, fill: '#22c55e', stroke: '#080c14', strokeWidth: 2 }}
+  isAnimationActive={false}
 >
   <LabelList
     content={(props) => {
-      if (!props || !props.payload) return null;
+      if (!props) return null;
 
       const value = Number(props.value || 0);
-      if (!value) return null;
+      const plan = Number(props.payload?.plan || 0);
 
-      const plan = Number(props.payload.plan || 0);
+      if (!value) return null;
 
       return (
         <PillLabel
