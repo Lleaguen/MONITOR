@@ -183,9 +183,22 @@ const VehiculosTotalChart = ({ data }) => {
             <Line dataKey="plan" stroke="#a78bfa" strokeDasharray="5 5" />
 
             <Line dataKey="real" stroke="#22c55e">
-              <LabelList content={(p) => (
+              /*<LabelList content={(p) => (
                 <PillLabel {...p} color={p.value >= (p.payload.plan || 0) ? "#22c55e" : "#ef4444"} />
-              )} />
+              )} />*/
+              <LabelList content={(p) => {
+  if (!p || !p.payload) return null;
+
+  const plan = Number(p.payload.plan) || 0;
+  const value = Number(p.value) || 0;
+
+  return (
+    <PillLabel
+      {...p}
+      color={value >= plan ? "#22c55e" : "#ef4444"}
+    />
+  );
+}} />
             </Line>
 
           </ComposedChart>
