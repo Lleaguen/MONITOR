@@ -209,28 +209,41 @@ const VehiculosTotalChart = ({ data }) => {
 
             <Area dataKey="real" fill="url(#area)" />
 
-            <Line
-              type="monotoneX"
-              dataKey="plan"
-              name="Plan"
-              stroke="#a78bfa"
-              strokeWidth={2.5}
-              strokeDasharray="5 5"
-              dot={false}
+           <Line
+            type="monotoneX"
+            dataKey="plan"
+            name="Plan"
+            stroke="#a78bfa"
+            strokeWidth={2.5}
+            strokeDasharray="5 5"
+            dot={<CustomDot stroke="#a78bfa" />}
+            activeDot={{ r: 5, fill: '#a78bfa', stroke: '#080c14', strokeWidth: 2 }}
+          >
+            <LabelList
+              content={(props) => (
+                <PillLabel {...props} color="#a78bfa" />
+              )}
             />
+          </Line>
 
-            <Line
-              type="monotoneX"
-              dataKey="real"
-              name="Real"
-              stroke="#22c55e"
-              strokeWidth={2.5}
-              dot={<CustomDot stroke="#22c55e" />}
-              activeDot={{ r: 5, fill: '#22c55e', stroke: '#080c14', strokeWidth: 2 }}
-            >
-              <LabelList content={<TotalLabel />} />
-            </Line>
+             <LabelList
+    content={(props) => {
+      if (!props || !props.payload) return null;
 
+      const value = Number(props.value || 0);
+      if (!value) return null;
+
+      const plan = Number(props.payload.plan || 0);
+
+      return (
+        <PillLabel
+          {...props}
+          color={value >= plan ? "#22c55e" : "#ef4444"}
+        />
+      );
+    }}
+  />
+</Line>
           </ComposedChart>
         </ResponsiveContainer>
       </div>
