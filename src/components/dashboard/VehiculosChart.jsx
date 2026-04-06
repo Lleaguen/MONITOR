@@ -11,19 +11,61 @@ import {
   Area
 } from 'recharts';
 
-/* ===================== HELPERS ===================== */
+/* ===================== LABELS ===================== */
 
-const HOURS = Array.from({ length: 12 }, (_, i) => {
-  const h = i + 10;
-  return `${h.toString().padStart(2, "0")}:00`;
-}); // 10:00 → 21:00
+const PillLabel = ({ x, y, value, color }) => {
+  if (!value || value === 0) return null;
+  const w = value > 9 ? 22 : 18;
+  const h = 14;
+
+  return (
+    <g>
+      <rect x={x - w / 2} y={y - h - 6} width={w} height={h} rx={4} fill={color} opacity={0.9} />
+      <text
+        x={x}
+        y={y - h / 2 - 6}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fill="white"
+        fontSize={8}
+        fontWeight="900"
+      >
+        {value}
+      </text>
+    </g>
+  );
+};
+
+const ChasisLabel = (props) => <PillLabel {...props} color="#34d399" />;
+const CamionetaLabel = (props) => <PillLabel {...props} color="#ffab00" />;
+const SemiLabel = (props) => <PillLabel {...props} color="#60a5fa" />;
+
+const TotalLabel = (props) => {
+  if (!props || !props.payload) return null;
+
+  const value = Number(props.value || 0);
+  const plan = Number(props.payload.plan || 0);
+
+  return (
+    <PillLabel
+      {...props}
+      color={value >= plan ? "#22c55e" : "#ef4444"}
+    />
+  );
+};
+
+const CustomDot = ({ cx, cy, stroke }) => (
+  <circle cx={cx} cy={cy} r={3} fill={stroke} stroke="none" />
+);
+
+/* ===================== HELPERS ===================== */
 
 const normalizeData = (arr = []) => {
   return arr.map(d => ({
-    hora: d.hora || d.HORA || "",
-    chasis: Number(d.chasis ?? d.CHASIS ?? 0),
-    camioneta: Number(d.camioneta ?? d.CAMIONETA ?? 0),
-    semi: Number(d.semi ?? d.SEMI ?? 0),
+    hora: d.hora,
+    chasis: Number(d.chasis || 0),
+    camioneta: Number(d.camioneta || 0),
+    semi: Number(d.semi || 0),
   }));
 };
 
@@ -33,10 +75,7 @@ const mergeData = (base = [], planData = []) => {
   );
 
   return base.map(d => {
-    const real =
-      (Number(d.chasis) || 0) +
-      (Number(d.camioneta) || 0) +
-      (Number(d.semi) || 0);
+    const real = d.chasis + d.camioneta + d.semi;
 
     return {
       hora: d.hora,
@@ -46,45 +85,69 @@ const mergeData = (base = [], planData = []) => {
   });
 };
 
-const PillLabel = ({ x, y, value, color }) => {
-  if (!value || value === 0) return null;
+/* ===================== GRAFICO 1 ===================== */
+
+const VehiculosTipoChart = ({ data }) => {
+
+  const filtered = data.filter(d =>
+    d.chasis > 0 || d.camioneta > 0 || d.semi > 0
+  );
 
   return (
-    <g>
-      <rect x={x - 10} y={y - 18} width={22} height={14} rx={4} fill={color} />
-      <text x={x} y={y - 10} textAnchor="middle" fill="white" fontSize={8}>
-        {value}
-      </text>
-    </g>
+    <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
+
+      <div className="flex justify-between mb-4">
+        <h3 className="text-white font-bold">Arribo por Tipo</h3>
+
+        <div className="flex gap-4 text-[10px] font-bold">
+          <span className="flex items-center gap-1">
+            <div className="w-3 h-[2px] bg-emerald-400" /> CHASIS
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-3 h-[2px] bg-[#ffab00]" /> CAMIONETA
+          </span>
+          <span className="flex items-center gap-1">
+            <div className="w-3 h-[2px] bg-blue-400" /> SEMI
+          </span>
+        </div>
+      </div>
+
+      <div className="h-64">
+        <ResponsiveContainer>
+          <ComposedChart data={filtered}>
+            <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
+            <XAxis dataKey="hora" />
+            <YAxis />
+            <Tooltip />
+
+            <Line dataKey="chasis" stroke="#34d399" dot={<CustomDot stroke="#34d399" />}>
+              <LabelList content={<ChasisLabel />} />
+            </Line>
+
+            <Line dataKey="camioneta" stroke="#ffab00" dot={<CustomDot stroke="#ffab00" />}>
+              <LabelList content={<CamionetaLabel />} />
+            </Line>
+
+            <Line dataKey="semi" stroke="#60a5fa" dot={<CustomDot stroke="#60a5fa" />}>
+              <LabelList content={<SemiLabel />} />
+            </Line>
+
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 };
 
-/* ===================== GRAFICOS ===================== */
-
-const VehiculosTipoChart = ({ data }) => (
-  <div className="bg-[#111827]/20 p-4 rounded-2xl border border-white/5">
-    <h3 className="text-white font-bold mb-4">Arribo por Tipo</h3>
-    <div className="h-64">
-      <ResponsiveContainer>
-        <ComposedChart data={data}>
-          <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
-          <XAxis dataKey="hora" />
-          <YAxis />
-          <Tooltip />
-          <Line dataKey="chasis" stroke="#34d399" />
-          <Line dataKey="camioneta" stroke="#ffab00" />
-          <Line dataKey="semi" stroke="#60a5fa" />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  </div>
-);
+/* ===================== GRAFICO 2 ===================== */
 
 const VehiculosTotalChart = ({ data }) => {
+
   const filtered = data.filter(d => d.real > 0 || d.plan > 0);
 
   return (
     <div className="bg-[#111827]/20 p-4 rounded-2xl border border-white/5">
+
       <h3 className="text-white font-bold mb-4">Total vs Plan</h3>
 
       <div className="h-64">
@@ -107,19 +170,7 @@ const VehiculosTotalChart = ({ data }) => {
             <Line dataKey="plan" stroke="#a78bfa" strokeDasharray="5 5" />
 
             <Line dataKey="real" stroke="#22c55e">
-              <LabelList content={(p) => {
-                if (!p || !p.payload) return null;
-
-                const plan = Number(p.payload.plan || 0);
-                const value = Number(p.value || 0);
-
-                return (
-                  <PillLabel
-                    {...p}
-                    color={value >= plan ? "#22c55e" : "#ef4444"}
-                  />
-                );
-              }} />
+              <LabelList content={<TotalLabel />} />
             </Line>
 
           </ComposedChart>
@@ -130,6 +181,11 @@ const VehiculosTotalChart = ({ data }) => {
 };
 
 /* ===================== MODAL ===================== */
+
+const HOURS = Array.from({ length: 12 }, (_, i) => {
+  const h = i + 10;
+  return `${h.toString().padStart(2, "0")}:00`;
+});
 
 const DataModal = ({ open, onClose, onSave }) => {
 
@@ -159,11 +215,10 @@ const DataModal = ({ open, onClose, onSave }) => {
         <div className="space-y-2 max-h-80 overflow-auto">
           {rows.map((r, i) => (
             <div key={i} className="flex justify-between items-center text-white">
-              <span className="w-20">{r.hora}</span>
+              <span>{r.hora}</span>
               <input
-                className="bg-[#020617] px-2 py-1 rounded w-32"
                 type="number"
-                placeholder="Total"
+                className="bg-[#020617] px-2 py-1 rounded w-32"
                 onChange={e => update(i, e.target.value)}
               />
             </div>
@@ -173,13 +228,13 @@ const DataModal = ({ open, onClose, onSave }) => {
         <div className="flex justify-end gap-2 mt-6">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-red-500/90 hover:bg-red-500 text-white text-sm font-medium transition"
+            className="px-4 py-2 rounded-lg bg-red-500 text-white"
           >
             Cancelar
           </button>
           <button
             onClick={save}
-            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition"
+            className="px-4 py-2 rounded-lg bg-indigo-600 text-white"
           >
             Guardar
           </button>
@@ -208,7 +263,7 @@ const VehiculosChart = ({ vehiculosChartData }) => {
 
         <button
           onClick={() => setModal(true)}
-          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-indigo-500/20"
+          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold"
         >
           Cargar Plan
         </button>
@@ -217,9 +272,9 @@ const VehiculosChart = ({ vehiculosChartData }) => {
 
           <button
             onClick={() => setIndex((index - 1 + 2) % 2)}
-            className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#020617] border border-white/10 hover:border-indigo-500 hover:text-indigo-400 text-white transition-all"
+            className="w-9 h-9 rounded-lg bg-[#020617] text-white"
           >
-            ◀
+            <
           </button>
 
           <span className="text-xs text-gray-400">
@@ -228,9 +283,9 @@ const VehiculosChart = ({ vehiculosChartData }) => {
 
           <button
             onClick={() => setIndex((index + 1) % 2)}
-            className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#020617] border border-white/10 hover:border-indigo-500 hover:text-indigo-400 text-white transition-all"
+            className="w-9 h-9 rounded-lg bg-[#020617] text-white"
           >
-            ▶
+            >
           </button>
 
         </div>
