@@ -15,7 +15,7 @@ import {
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const h = 10 + Math.floor(i / 2);
-  const m = i % 2 === 0 ? "00" : "30";
+  const m = i % 2 === 0 ? "00" : "00";
   return `${h.toString().padStart(2, "0")}:${m}`;
 }).filter(h => h <= "21:30");
 
