@@ -13,11 +13,10 @@ import {
 
 /* ===================== HELPERS ===================== */
 
-const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const h = 10 + Math.floor(i / 2);
-  const m = i % 2 === 0 ? "00" : "00";
-  return `${h.toString().padStart(2, "0")}:${m}`;
-}).filter(h => h <= "21:30");
+const HOURS = Array.from({ length: 12 }, (_, i) => {
+  const h = i + 10;
+  return `${h.toString().padStart(2, "0")}:00`;
+}); // 10:00 → 21:00
 
 const normalizeData = (arr = []) => {
   return arr.map(d => ({
