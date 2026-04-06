@@ -10,6 +10,7 @@ import {
   LabelList,
   Area
 } from 'recharts';
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /* ===================== LABELS ===================== */
 
@@ -270,23 +271,23 @@ const VehiculosChart = ({ vehiculosChartData }) => {
 
         <div className="flex items-center gap-3">
 
-          <button
+         <button
             onClick={() => setIndex((index - 1 + 2) % 2)}
-            className="w-9 h-9 rounded-lg bg-[#020617] text-white"
+            className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#020617] text-white hover:bg-indigo-600 transition"
           >
-            <
+            <ChevronLeft size={18} />
           </button>
 
           <span className="text-xs text-gray-400">
             {index === 0 ? "Tipos" : "Total vs Plan"}
           </span>
 
-          <button
-            onClick={() => setIndex((index + 1) % 2)}
-            className="w-9 h-9 rounded-lg bg-[#020617] text-white"
-          >
-            >
-          </button>
+         <button
+        onClick={() => setIndex((index + 1) % 2)}
+        className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#020617] text-white hover:bg-indigo-600 transition"
+      >
+        <ChevronRight size={18} />
+      </button>
 
         </div>
 
