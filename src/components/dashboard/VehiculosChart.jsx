@@ -269,4 +269,6 @@ const VehiculosChart = ({ vehiculosChartData = [] }) => {
   );
 };
 
+console.log("DATA QUE LLEGA:", vehiculosChartData);
+console.log("DATA USADA:", data);
 export default VehiculosChart;
