@@ -164,9 +164,6 @@ const VehiculosTotalChart = ({ data }) => {
             <div className="w-3 h-[2px] bg-emerald-400 rounded-full" /> REAL OK
           </span>
           <span className="flex items-center gap-2">
-            <div className="w-3 h-[2px] bg-red-400 rounded-full" /> REAL &lt; PLAN
-          </span>
-          <span className="flex items-center gap-2">
             <div className="w-3 h-[2px] bg-violet-400 rounded-full" /> PLAN
           </span>
         </div>
