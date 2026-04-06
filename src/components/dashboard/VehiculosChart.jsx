@@ -59,6 +59,10 @@ const VehiculosChart = ({ vehiculosChartData }) => {
 
 export default VehiculosChart;
 */
+
+
+
+/*
 import React, { useState } from 'react';
 import {
   ComposedChart,
@@ -72,7 +76,6 @@ import {
   Area
 } from 'recharts';
 
-/* ===================== HELPERS ===================== */
 
 const normalizeData = (arr = []) => {
   return arr.map(d => ({
@@ -103,7 +106,6 @@ const CustomDot = ({ cx, cy, stroke }) => (
   <circle cx={cx} cy={cy} r={3} fill={stroke} />
 );
 
-/* ===================== GRAFICO 1 ===================== */
 
 const VehiculosTipoChart = ({ data }) => {
   const filtered = data.filter(d => d.chasis || d.camioneta || d.semi);
@@ -139,15 +141,10 @@ const VehiculosTipoChart = ({ data }) => {
   );
 };
 
-/* ===================== GRAFICO 2 ===================== */
 
 const VehiculosTotalChart = ({ data }) => {
 
-/*  const formatted = data.map(d => ({
-    ...d,
-    real: d.chasis + d.camioneta + d.semi
-  }));
-*/
+
   const formatted = data
   .map(d => ({
     ...d,
@@ -212,7 +209,6 @@ const VehiculosTotalChart = ({ data }) => {
   );
 };
 
-/* ===================== MODAL ===================== */
 
 const DataModal = ({ open, onClose, onSave }) => {
   const [rows, setRows] = useState([]);
@@ -260,7 +256,6 @@ const DataModal = ({ open, onClose, onSave }) => {
   );
 };
 
-/* ===================== MAIN ===================== */
 
 const VehiculosChart = ({ vehiculosChartData }) => {
 
@@ -295,6 +290,246 @@ const VehiculosChart = ({ vehiculosChartData }) => {
         open={modal}
         onClose={() => setModal(false)}
         onSave={setCustomData}
+      />
+
+    </div>
+  );
+};
+
+export default VehiculosChart;
+*/
+
+import React, { useState } from 'react';
+import {
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  LabelList,
+  Area
+} from 'recharts';
+
+/* ===================== HELPERS ===================== */
+
+const normalizeData = (arr = []) => {
+  return arr.map(d => ({
+    hora: d.hora || d.HORA || "",
+    chasis: Number(d.chasis ?? d.CHASIS ?? 0),
+    camioneta: Number(d.camioneta ?? d.CAMIONETA ?? 0),
+    semi: Number(d.semi ?? d.SEMI ?? 0),
+    plan: Number(d.plan ?? d.PLAN ?? 0),
+  }));
+};
+
+// 🔥 MERGE REAL + PLAN
+const mergeData = (base = [], planData = []) => {
+  const planMap = Object.fromEntries(
+    planData.map(d => [d.hora, Number(d.plan) || 0])
+  );
+
+  return base.map(d => {
+    const real =
+      (Number(d.chasis) || 0) +
+      (Number(d.camioneta) || 0) +
+      (Number(d.semi) || 0);
+
+    return {
+      hora: d.hora,
+      real,
+      plan: planMap[d.hora] || 0
+    };
+  });
+};
+
+const PillLabel = ({ x, y, value, color }) => {
+  if (!value || value === 0) return null;
+  const w = value > 9 ? 22 : 18;
+  const h = 14;
+
+  return (
+    <g>
+      <rect x={x - w / 2} y={y - h - 6} width={w} height={h} rx={4} fill={color} opacity={0.9} />
+      <text x={x} y={y - h / 2 - 6} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={8} fontWeight="900">
+        {value}
+      </text>
+    </g>
+  );
+};
+
+const CustomDot = ({ cx, cy, stroke }) => (
+  <circle cx={cx} cy={cy} r={3} fill={stroke} />
+);
+
+/* ===================== GRAFICO 1 ===================== */
+
+const VehiculosTipoChart = ({ data }) => {
+  const filtered = data.filter(d => d.chasis || d.camioneta || d.semi);
+
+  return (
+    <div className="bg-[#111827]/20 p-4 rounded-2xl border border-white/5">
+      <h3 className="text-white font-bold mb-4">Arribo por Tipo de Vehículo</h3>
+
+      <div className="h-64">
+        <ResponsiveContainer>
+          <ComposedChart data={filtered}>
+            <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
+            <XAxis dataKey="hora" />
+            <YAxis />
+            <Tooltip />
+
+            <Line dataKey="chasis" stroke="#34d399" dot={<CustomDot stroke="#34d399" />}>
+              <LabelList content={(p) => <PillLabel {...p} color="#34d399" />} />
+            </Line>
+
+            <Line dataKey="camioneta" stroke="#ffab00" dot={<CustomDot stroke="#ffab00" />}>
+              <LabelList content={(p) => <PillLabel {...p} color="#ffab00" />} />
+            </Line>
+
+            <Line dataKey="semi" stroke="#60a5fa" dot={<CustomDot stroke="#60a5fa" />}>
+              <LabelList content={(p) => <PillLabel {...p} color="#60a5fa" />} />
+            </Line>
+
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+/* ===================== GRAFICO 2 ===================== */
+
+const VehiculosTotalChart = ({ data }) => {
+
+  const formatted = data.filter(d => d.real > 0 || d.plan > 0);
+
+  return (
+    <div className="bg-[#111827]/20 p-4 rounded-2xl border border-white/5">
+      <h3 className="text-white font-bold mb-4">Total vs Plan</h3>
+
+      <div className="h-64">
+        <ResponsiveContainer>
+          <ComposedChart data={formatted}>
+
+            <defs>
+              <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#22c55e" stopOpacity={0.3}/>
+                <stop offset="100%" stopColor="#22c55e" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+
+            <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
+            <XAxis dataKey="hora" />
+            <YAxis />
+            <Tooltip />
+
+            <Area dataKey="real" fill="url(#area)" stroke="#22c55e" />
+
+            <Line dataKey="plan" stroke="#a78bfa" strokeDasharray="5 5" />
+
+            <Line dataKey="real" stroke="#22c55e">
+              <LabelList content={(p) => {
+                const plan = Number(p?.payload?.plan ?? 0);
+                const value = Number(p?.value ?? 0);
+
+                if (!p || !p.payload) return null;
+
+                return (
+                  <PillLabel
+                    {...p}
+                    color={value >= plan ? "#22c55e" : "#ef4444"}
+                  />
+                );
+              }} />
+            </Line>
+
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+/* ===================== MODAL ===================== */
+
+const DataModal = ({ open, onClose, onSave }) => {
+  const [rows, setRows] = useState([]);
+
+  if (!open) return null;
+
+  const update = (i, field, val) => {
+    const copy = [...rows];
+    copy[i][field] = val;
+    setRows(copy);
+  };
+
+  const add = () => setRows([...rows, { hora: '', plan: '' }]);
+
+  const save = () => {
+    const formatted = normalizeData(rows);
+    onSave(formatted);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50">
+      <div className="bg-[#0f172a] p-6 rounded-xl w-full max-w-3xl">
+
+        <h2 className="text-white mb-4">Cargar PLAN</h2>
+
+        <div className="space-y-2 max-h-80 overflow-auto">
+          {rows.map((r, i) => (
+            <div key={i} className="flex gap-2">
+              <input placeholder="Hora" onChange={e => update(i, 'hora', e.target.value)} />
+              <input placeholder="Plan" type="number" onChange={e => update(i, 'plan', e.target.value)} />
+            </div>
+          ))}
+        </div>
+
+        <button onClick={add}>+ fila</button>
+        <button onClick={save}>Guardar</button>
+        <button onClick={onClose}>Cerrar</button>
+
+      </div>
+    </div>
+  );
+};
+
+/* ===================== MAIN ===================== */
+
+const VehiculosChart = ({ vehiculosChartData }) => {
+
+  const [modal, setModal] = useState(false);
+  const [customData, setCustomData] = useState([]);
+  const [index, setIndex] = useState(0);
+
+  const baseData = normalizeData(vehiculosChartData || []);
+
+  const merged = mergeData(baseData, normalizeData(customData));
+
+  return (
+    <div>
+
+      <button onClick={() => setModal(true)}>Cargar Plan</button>
+
+      {index === 0 && <VehiculosTipoChart data={baseData} />}
+
+      {index === 1 && <VehiculosTotalChart data={merged} />}
+
+      <div>
+        <button onClick={() => setIndex((index - 1 + 2) % 2)}>◀</button>
+        <button onClick={() => setIndex((index + 1) % 2)}>▶</button>
+      </div>
+
+      <DataModal
+        open={modal}
+        onClose={() => setModal(false)}
+        onSave={(data) => {
+          setCustomData(data);
+          setIndex(1); // 👈 te lleva al gráfico correcto
+        }}
       />
 
     </div>
