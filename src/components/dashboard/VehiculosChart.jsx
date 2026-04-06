@@ -184,18 +184,24 @@ const VehiculosTotalChart = ({ data }) => {
 
             <Line dataKey="real" stroke="#22c55e">
               
-              <LabelList content={(p) => {
-  if (!p || !p.payload) return null;
+             <LabelList content={(p) => {
 
-  const plan = Number(p.payload.plan) || 0;
-  const value = Number(p.value) || 0;
+  try {
+    const plan = Number(p?.payload?.plan ?? 0);
+    const value = Number(p?.value ?? 0);
 
-  return (
-    <PillLabel
-      {...p}
-      color={value >= plan ? "#22c55e" : "#ef4444"}
-    />
-  );
+    if (!p || !p.payload) return null;
+
+    return (
+      <PillLabel
+        {...p}
+        color={value >= plan ? "#22c55e" : "#ef4444"}
+      />
+    );
+  } catch {
+    return null;
+  }
+
 }} />
             </Line>
 
