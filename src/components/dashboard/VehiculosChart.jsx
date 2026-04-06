@@ -59,7 +59,6 @@ const VehiculosChart = ({ vehiculosChartData }) => {
 
 export default VehiculosChart;
 */
-
 import React, { useState } from 'react';
 import {
   ComposedChart,
@@ -79,6 +78,7 @@ const PillLabel = ({ x, y, value, color }) => {
   if (!value || value === 0) return null;
   const w = value > 9 ? 22 : 18;
   const h = 14;
+
   return (
     <g>
       <rect x={x - w / 2} y={y - h - 6} width={w} height={h} rx={4} fill={color} opacity={0.9} />
@@ -93,7 +93,7 @@ const CustomDot = ({ cx, cy, stroke }) => (
   <circle cx={cx} cy={cy} r={3} fill={stroke} stroke="none" />
 );
 
-/* ===================== GRAFICO 1 (TU ORIGINAL) ===================== */
+/* ===================== GRAFICO ORIGINAL ===================== */
 
 const VehiculosTipoChart = ({ data }) => {
   const filtered = (data || []).filter(d => d.chasis > 0 || d.camioneta > 0 || d.semi > 0);
@@ -129,16 +129,22 @@ const VehiculosTipoChart = ({ data }) => {
   );
 };
 
-/* ===================== GRAFICO 2 (TOTAL VS PLAN) ===================== */
+/* ===================== TOTAL VS PLAN ===================== */
 
 const VehiculosTotalChart = ({ data }) => {
+
+  const formatted = (data || []).map(d => ({
+    ...d,
+    real: (d.chasis || 0) + (d.camioneta || 0) + (d.semi || 0)
+  }));
+
   return (
     <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
       <h3 className="text-white font-black mb-4">Total vs Plan</h3>
 
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data}>
+          <ComposedChart data={formatted}>
 
             <defs>
               <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
@@ -155,6 +161,7 @@ const VehiculosTotalChart = ({ data }) => {
             <Area dataKey="real" fill="url(#area)" stroke="none" />
 
             <Line dataKey="plan" stroke="#a78bfa" strokeDasharray="5 5" dot={<CustomDot stroke="#a78bfa" />} />
+
             <Line dataKey="real" stroke="#22c55e" dot={<CustomDot stroke="#22c55e" />}>
               <LabelList content={(p) => (
                 <PillLabel {...p} color={p.value >= (p.payload.plan || 0) ? "#22c55e" : "#ef4444"} />
@@ -171,7 +178,7 @@ const VehiculosTotalChart = ({ data }) => {
 /* ===================== MODAL ===================== */
 
 const DataModal = ({ open, onClose, onSave }) => {
-  const [rows, setRows] = useState([{ hora: '', chasis: '', camioneta: '', semi: '', plan: '' }]);
+  const [rows, setRows] = useState([]);
 
   if (!open) return null;
 
@@ -184,17 +191,13 @@ const DataModal = ({ open, onClose, onSave }) => {
   const add = () => setRows([...rows, { hora: '', chasis: '', camioneta: '', semi: '', plan: '' }]);
 
   const save = () => {
-    const formatted = rows.map(r => {
-      const real = (+r.chasis || 0) + (+r.camioneta || 0) + (+r.semi || 0);
-      return {
-        hora: r.hora,
-        chasis: +r.chasis || 0,
-        camioneta: +r.camioneta || 0,
-        semi: +r.semi || 0,
-        real,
-        plan: +r.plan || 0
-      };
-    });
+    const formatted = rows.map(r => ({
+      hora: r.hora,
+      chasis: +r.chasis || 0,
+      camioneta: +r.camioneta || 0,
+      semi: +r.semi || 0,
+      plan: +r.plan || 0
+    }));
     onSave(formatted);
     onClose();
   };
@@ -230,12 +233,16 @@ const DataModal = ({ open, onClose, onSave }) => {
   );
 };
 
-/* ===================== PRINCIPAL (CARRUSEL) ===================== */
+/* ===================== MAIN ===================== */
 
-const VehiculosChart = () => {
-  const [data, setData] = useState([]);
+const VehiculosChart = ({ vehiculosChartData = [] }) => {
+
   const [modal, setModal] = useState(false);
+  const [customData, setCustomData] = useState(null);
   const [index, setIndex] = useState(0);
+
+  // 🔥 CLAVE: usa props o datos del modal
+  const data = customData || vehiculosChartData;
 
   return (
     <div>
@@ -252,7 +259,11 @@ const VehiculosChart = () => {
         <button onClick={() => setIndex((index + 1) % 2)}>▶</button>
       </div>
 
-      <DataModal open={modal} onClose={() => setModal(false)} onSave={setData} />
+      <DataModal
+        open={modal}
+        onClose={() => setModal(false)}
+        onSave={setCustomData}
+      />
 
     </div>
   );
