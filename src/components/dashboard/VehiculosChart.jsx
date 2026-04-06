@@ -147,13 +147,34 @@ const VehiculosTotalChart = ({ data }) => {
   const filtered = data.filter(d => d.real > 0 || d.plan > 0);
 
   return (
-    <div className="bg-[#111827]/20 p-4 rounded-2xl border border-white/5">
+    <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
 
-      <h3 className="text-white font-bold mb-4">Total vs Plan</h3>
+      <div className="flex flex-wrap justify-between items-end gap-3 mb-6">
+        <div>
+          <h3 className="text-base md:text-lg font-black text-white mb-1 tracking-tight">
+            Total vs Planificado
+          </h3>
+          <p className="text-[11px] text-slate-500 italic">
+            Comparación entre vehículos reales y planificados por hora
+          </p>
+        </div>
 
-      <div className="h-64">
-        <ResponsiveContainer>
-          <ComposedChart data={filtered}>
+        <div className="flex flex-wrap gap-4 text-[9px] font-black tracking-widest">
+          <span className="flex items-center gap-2">
+            <div className="w-3 h-[2px] bg-emerald-400 rounded-full" /> REAL OK
+          </span>
+          <span className="flex items-center gap-2">
+            <div className="w-3 h-[2px] bg-red-400 rounded-full" /> REAL &lt; PLAN
+          </span>
+          <span className="flex items-center gap-2">
+            <div className="w-3 h-[2px] bg-violet-400 rounded-full" /> PLAN
+          </span>
+        </div>
+      </div>
+
+      <div className="h-56 sm:h-64 md:h-72">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={filtered} margin={{ top: 28, right: 8, bottom: 0, left: 0 }}>
 
             <defs>
               <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
@@ -162,15 +183,54 @@ const VehiculosTotalChart = ({ data }) => {
               </linearGradient>
             </defs>
 
-            <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
-            <XAxis dataKey="hora" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
+
+            <XAxis
+              dataKey="hora"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }}
+              dy={8}
+            />
+
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#334155', fontSize: 9 }}
+              width={20}
+            />
+
+            <Tooltip
+              cursor={{ fill: '#1e293b' }}
+              contentStyle={{
+                backgroundColor: '#080c14',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '11px'
+              }}
+            />
 
             <Area dataKey="real" fill="url(#area)" />
-            <Line dataKey="plan" stroke="#a78bfa" strokeDasharray="5 5" />
 
-            <Line dataKey="real" stroke="#22c55e">
+            <Line
+              type="monotoneX"
+              dataKey="plan"
+              name="Plan"
+              stroke="#a78bfa"
+              strokeWidth={2.5}
+              strokeDasharray="5 5"
+              dot={false}
+            />
+
+            <Line
+              type="monotoneX"
+              dataKey="real"
+              name="Real"
+              stroke="#22c55e"
+              strokeWidth={2.5}
+              dot={<CustomDot stroke="#22c55e" />}
+              activeDot={{ r: 5, fill: '#22c55e', stroke: '#080c14', strokeWidth: 2 }}
+            >
               <LabelList content={<TotalLabel />} />
             </Line>
 
