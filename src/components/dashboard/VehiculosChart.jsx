@@ -143,11 +143,21 @@ const VehiculosTipoChart = ({ data }) => {
 
 const VehiculosTotalChart = ({ data }) => {
 
-  const formatted = data.map(d => ({
+/*  const formatted = data.map(d => ({
     ...d,
     real: d.chasis + d.camioneta + d.semi
   }));
-
+*/
+  const formatted = data
+  .map(d => ({
+    ...d,
+    real:
+      (Number(d.chasis) || 0) +
+      (Number(d.camioneta) || 0) +
+      (Number(d.semi) || 0),
+    plan: Number(d.plan) || 0
+  }))
+  .filter(d => d.real > 0 || d.plan > 0);
   return (
     <div className="bg-[#111827]/20 p-4 rounded-2xl border border-white/5">
       <h3 className="text-white font-bold mb-4">Total vs Plan</h3>
