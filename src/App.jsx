@@ -7,13 +7,13 @@ import CutOff from './pages/CutOff';
 import Voluminoso from './pages/Voluminoso';
 import ArribosChasis from './pages/ArribosChasis';
 import SuperBigger from './pages/SuperBigger';
+import VehiculosPlan from './pages/VehiculosPlan';
 import FileUploader from './components/FileUploader';
 import ModeSelector from './components/ModeSelector';
 import { processCombinedData } from './utils/dataProcessor';
 import { pushSnapshot, fetchSnapshot, fetchStatus } from './utils/api';
-import usePolling from './hooks/usePolling';
 
-// ─── Pantallas auxiliares ────────────────────────────────────────────────────
+import usePolling from './hooks/usePolling';
 
 const LoadingScreen = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-[#080c14] text-white font-sans gap-4">
@@ -30,7 +30,7 @@ const ErrorScreen = () => (
   </div>
 );
 
-// ─── App ─────────────────────────────────────────────────────────────────────
+// ─── Pantallas auxiliares ────────────────────────────────────────────────────
 
 function App() {
   // Modo de la app
@@ -63,6 +63,9 @@ function App() {
     productividadHU: 180,
   });
 
+  // Plan de vehículos por tipo y hora (se incluye en el snapshot)
+  const [planVehiculos, setPlanVehiculos] = useState([]);
+
   // ── Tarea 1: fetchStatus al montar ──────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
@@ -92,13 +95,14 @@ function App() {
       config.objetivoHU,
       config.productividadHU
     );
-    setDashboardData(data);
+    const dataWithPlan = { ...data, planVehiculos };
+    setDashboardData(dataWithPlan);
     setAppMode('dashboard-admin');
     setActiveTab('command');
     setSyncState('syncing');
 
     try {
-      const res = await pushSnapshot(data);
+      const res = await pushSnapshot(dataWithPlan);
       setSyncState('success');
       setSyncTime(res.lastUpdate ?? null);
     } catch {
@@ -116,12 +120,32 @@ function App() {
       config.objetivoHU,
       config.productividadHU
     );
-    setDashboardData(data);
+    const dataWithPlan = { ...data, planVehiculos };
+    setDashboardData(dataWithPlan);
     setSyncState('syncing');
-    pushSnapshot(data)
+    pushSnapshot(dataWithPlan)
       .then((res) => { setSyncState('success'); setSyncTime(res.lastUpdate ?? null); })
       .catch(() => setSyncState('error'));
   }, [config.proyectado, config.objetivoHU, config.productividadHU]); // rawFiles y appMode son refs estables
+
+  // ── Actualizar plan y re-pushear snapshot ────────────────────────────────────
+  const handlePlanChange = (nuevoPlan) => {
+    setPlanVehiculos(nuevoPlan);
+    if (appMode !== 'dashboard-admin' || !rawFiles) return;
+    const data = processCombinedData(
+      rawFiles.csv,
+      rawFiles.excel,
+      config.proyectado,
+      config.objetivoHU,
+      config.productividadHU
+    );
+    const dataWithPlan = { ...data, planVehiculos: nuevoPlan };
+    setDashboardData(dataWithPlan);
+    setSyncState('syncing');
+    pushSnapshot(dataWithPlan)
+      .then((res) => { setSyncState('success'); setSyncTime(res.lastUpdate ?? null); })
+      .catch(() => setSyncState('error'));
+  };
 
   // ── Tarea 6: Flujo Viewer ────────────────────────────────────────────────────
   const handleViewDashboard = async () => {
@@ -129,6 +153,7 @@ function App() {
       const data = await fetchSnapshot();
       setDashboardData(data);
       setServerLastUpdate(data?.kpis?.ultimaActualizacion ?? null);
+      if (data?.planVehiculos?.length) setPlanVehiculos(data.planVehiculos);
       setAppMode('dashboard-viewer');
     } catch {
       setAppMode('error');
@@ -142,6 +167,7 @@ function App() {
     (newData) => {
       setDashboardData(newData);
       setServerLastUpdate(newData?.kpis?.ultimaActualizacion ?? null);
+      if (newData?.planVehiculos?.length) setPlanVehiculos(newData.planVehiculos);
     }
   );
 
@@ -177,6 +203,7 @@ function App() {
   const pageTitle =
     activeTab === 'command'     ? 'CENTRO DE MANDO OCASA' :
     activeTab === 'cutoff'      ? 'CONTROL CPT / HU' :
+    activeTab === 'vehiculos'   ? 'VEHÍCULOS — PLAN VS REAL' :
     activeTab === 'voluminoso'  ? 'VOLUMINOSO / PAQUETERÍA' :
     activeTab === 'chasis'      ? 'ARRIBS. DE CHASIS' :
     activeTab === 'superbigger' ? 'SUPER BIGGER' :
@@ -199,9 +226,11 @@ function App() {
         />
         <div className="p-4 md:p-6 lg:p-10 flex-1">
           {activeTab === 'command' ? (
-            <CommandCenter data={dashboardData} />
+            <CommandCenter data={dashboardData} planVehiculos={planVehiculos} onPlanChange={handlePlanChange} isViewer={isViewer} />
           ) : activeTab === 'cutoff' ? (
             <CutOff data={dashboardData} />
+          ) : activeTab === 'vehiculos' ? (
+            <VehiculosPlan data={dashboardData} planVehiculos={planVehiculos} />
           ) : activeTab === 'voluminoso' ? (
             <Voluminoso data={dashboardData} />
           ) : activeTab === 'chasis' ? (

@@ -40,7 +40,7 @@ const HUObjetivoWidget = ({ huStats }) => {
   );
 };
 
-const CommandCenter = ({ data }) => {
+const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
   if (!data) return null;
 
   return (
@@ -63,7 +63,12 @@ const CommandCenter = ({ data }) => {
 
       {/* 3. GRÁFICA DE VEHÍCULOS POR TIPO */}
       <section>
-        <VehiculosChart vehiculosChartData={data.vehiculosChartData} />
+        <VehiculosChart
+          vehiculosChartData={data.vehiculosChartData}
+          planVehiculos={planVehiculos ?? data.planVehiculos}
+          onPlanChange={onPlanChange}
+          isViewer={isViewer}
+        />
       </section>
 
       {/* 3. TABLA HU */}
