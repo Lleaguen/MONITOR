@@ -231,8 +231,8 @@ const PlanModal = ({ open, initialPlan, onClose, onSave }) => {
         {/* Header columnas */}
         <div className="grid grid-cols-4 gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500 px-1">
           <span>Hora</span>
-          <span className="text-center text-emerald-500">Chasis</span>
           <span className="text-center text-[#ffab00]">Camioneta</span>
+          <span className="text-center text-emerald-500">Chasis</span>
           <span className="text-center text-blue-400">Semi</span>
         </div>
 
@@ -241,10 +241,11 @@ const PlanModal = ({ open, initialPlan, onClose, onSave }) => {
           {rows.map((r, i) => (
             <div key={r.hora} className="grid grid-cols-4 gap-2 items-center">
               <span className="text-[10px] font-black text-slate-400">{r.hora}</span>
+               <input type="number" min="0" value={r.camioneta} className={inputCls}
+                onChange={e => update(i, 'camioneta', e.target.value)} />
               <input type="number" min="0" value={r.chasis} className={inputCls}
                 onChange={e => update(i, 'chasis', e.target.value)} />
-              <input type="number" min="0" value={r.camioneta} className={inputCls}
-                onChange={e => update(i, 'camioneta', e.target.value)} />
+
               <input type="number" min="0" value={r.semi} className={inputCls}
                 onChange={e => update(i, 'semi', e.target.value)} />
             </div>
