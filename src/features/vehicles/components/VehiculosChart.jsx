@@ -191,8 +191,8 @@ const PlanModal = ({ open, initialPlan, onClose, onSave }) => {
       const existing = initialPlan?.find(r => r.hora === hora);
       return {
         hora,
-        chasis:    existing?.chasis    ?? '',
         camioneta: existing?.camioneta ?? '',
+        chasis:    existing?.chasis    ?? '',
         semi:      existing?.semi      ?? '',
       };
     })
