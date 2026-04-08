@@ -18,8 +18,8 @@ export const mergePlanConReal = (vehiculosChartData = [], planVehiculos = []) =>
     const p = planMap[d.hora] || { chasis: 0, camioneta: 0, semi: 0 };
     return {
       ...d,
-      planChasis:    Number(p.chasis)    || 0,
       planCamioneta: Number(p.camioneta) || 0,
+      planChasis:    Number(p.chasis)    || 0,
       planSemi:      Number(p.semi)      || 0,
       planTotal:     (Number(p.chasis) || 0) + (Number(p.camioneta) || 0) + (Number(p.semi) || 0),
       realTotal:     (Number(d.chasis) || 0) + (Number(d.camioneta) || 0) + (Number(d.semi) || 0),
