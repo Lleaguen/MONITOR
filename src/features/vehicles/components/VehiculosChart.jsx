@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react';
 import { PLAN_HOURS, emptyPlan, mergePlanConReal } from '../../../core/vehiculosPlan.js';
-
+import { BarChart, Bar, Legend } from 'recharts';
 /* ─── Primitivos de gráfico ─────────────────────────────────────── */
 
 const CustomDot = ({ cx, cy, stroke }) => (
@@ -183,6 +183,111 @@ const VehiculosPlanChart = ({ data }) => {
   );
 };
 
+/* ---- Grafica Comparativa Vehiculos --------*/
+
+const VehiculosComparativoBarras = ({ data }) => {
+
+  const totales = data.reduce((acc, d) => {
+    acc.ciuChasis += d.chasis || 0;
+    acc.ciuCamioneta += d.camioneta || 0;
+    acc.ciuSemi += d.semi || 0;
+
+    acc.meliChasis += d.planChasis || 0;
+    acc.meliCamioneta += d.planCamioneta || 0;
+    acc.meliSemi += d.planSemi || 0;
+
+    return acc;
+  }, {
+    ciuChasis: 0,
+    ciuCamioneta: 0,
+    ciuSemi: 0,
+    meliChasis: 0,
+    meliCamioneta: 0,
+    meliSemi: 0,
+  });
+
+  const chartData = [
+    {
+      tipo: 'Chasis',
+      Meli: totales.meliChasis,
+      Ciu: totales.ciuChasis,
+    },
+    {
+      tipo: 'Camioneta',
+      Meli: totales.meliCamioneta,
+      Ciu: totales.ciuCamioneta,
+    },
+    {
+      tipo: 'Semi',
+      Meli: totales.meliSemi,
+      Ciu: totales.ciuSemi,
+    },
+    {
+      tipo: 'Total',
+      Meli: totales.meliChasis + totales.meliCamioneta + totales.meliSemi,
+      Ciu: totales.ciuChasis + totales.ciuCamioneta + totales.ciuSemi,
+    },
+  ];
+
+  return (
+    <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
+
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h3 className="text-[11px] font-black text-white uppercase tracking-widest">
+            Comparativo General
+          </h3>
+          <p className="text-[10px] text-slate-500">
+            Meli vs Ciu por tipo y total
+          </p>
+        </div>
+
+        <div className="flex gap-4 text-[9px] font-black tracking-widest text-slate-400">
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-[2px] bg-violet-400 inline-block" /> MELI
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-[2px] bg-emerald-400 inline-block" /> CIU
+          </span>
+        </div>
+      </div>
+
+      <div className="h-72">
+        <ResponsiveContainer>
+          <BarChart data={chartData} barGap={10}>
+            <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
+
+            <XAxis
+              dataKey="tipo"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#475569', fontSize: 10, fontWeight: 700 }}
+            />
+
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#334155', fontSize: 9 }}
+              width={25}
+            />
+
+            <Tooltip contentStyle={chartTooltipStyle} />
+
+            <Bar dataKey="Meli" fill="#a78bfa" radius={[6, 6, 0, 0]}>
+              <LabelList content={(p) => <PillLabel {...p} color="#a78bfa" />} />
+            </Bar>
+
+            <Bar dataKey="Ciu" fill="#22c55e" radius={[6, 6, 0, 0]}>
+              <LabelList content={(p) => <PillLabel {...p} color="#22c55e" />} />
+            </Bar>
+
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 /* ─── Modal de carga de plan ─────────────────────────────────────── */
 
 const PlanModal = ({ open, initialPlan, onClose, onSave }) => {
@@ -270,7 +375,7 @@ const PlanModal = ({ open, initialPlan, onClose, onSave }) => {
 
 /* ─── Navegación entre vistas ────────────────────────────────────── */
 
-const VIEWS = ['Tipos', 'Total vs Plan', 'Plan por Tipo'];
+const VIEWS = ['Tipos', 'Total vs Plan', 'Plan por Tipo', 'Comparativo'];
 
 const ViewNav = ({ index, onChange }) => (
   <div className="flex items-center gap-3">
@@ -320,6 +425,7 @@ const VehiculosChart = ({ vehiculosChartData, planVehiculos, onPlanChange, isVie
       {viewIndex === 0 && <VehiculosTipoChart data={mergedData} />}
       {viewIndex === 1 && <VehiculosTotalChart data={mergedData} />}
       {viewIndex === 2 && <VehiculosPlanChart data={mergedData} />}
+      {viewIndex === 3 && <VehiculosComparativoBarras data={mergedData} />}
 
       {/* Modal */}
       <PlanModal
