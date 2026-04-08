@@ -5,7 +5,7 @@ const COLORS = {
   '14HS': { bar: 'bg-blue-500',    border: 'border-blue-500',    text: 'text-blue-400',    glow: 'shadow-blue-500/20' },
   '16HS': { bar: 'bg-[#00f2ad]',   border: 'border-[#00f2ad]',   text: 'text-[#00f2ad]',   glow: 'shadow-[#00f2ad]/20' },
   '18HS': { bar: 'bg-orange-500',  border: 'border-orange-500',  text: 'text-orange-400',  glow: 'shadow-orange-500/20' },
-  '20HS': { bar: 'bg-[#33C8FF]' ,  border: 'border-[#33C8FF]',   text: 'text-[#33C8FF] ',  glow: 'shadow-[#33C8FF]'},
+  '20HS': { bar: 'bg-[#33C8FF]' ,  border: 'border-[#33C8FF]',   text: 'text-[#33C8FF] ',  glow: 'shadow-[#33C8FF]/20'},
 };
 
 const fmt = (n) => Math.round(n).toLocaleString('es-AR');
