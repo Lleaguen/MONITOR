@@ -79,7 +79,7 @@ const TargetCardItem = ({ keyHS, t }) => {
 
 const TargetCards = ({ targets }) => {
   if (!targets) return null;
-  const keys = ['14HS', '16HS', '18HS'];
+  const keys = ['14HS', '16HS', '18HS', '20HS'];
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {keys.map(k => targets[k] && (
