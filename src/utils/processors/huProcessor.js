@@ -7,17 +7,20 @@ dayjs.extend(customParseFormat);
 export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU = 10, zonaCPTOverrides = {}) => {
   const cptData = {};
   const ultimaActividadUsuario = new Map();
+  // Inicializar CPTs conocidos; los nuevos se crean dinámicamente
   CPT_ORDEN.forEach(c => { cptData[c] = { zonas: {}, usuariosSetCPT: new Set() }; });
 
-  csvData.forEach(d => {
-    if (!d['Shipment ID']) return;
-    const zona = String(d['Labeling Zone'] || "").trim();
-    if (!zona) return;
-    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
-    if (!cpt || !cptData[cpt]) return;
+  const getOrCreateCPT = (cpt) => {
+    if (!cptData[cpt]) cptData[cpt] = { zonas: {}, usuariosSetCPT: new Set() };
+    return cptData[cpt];
+  };
 
-    if (!cptData[cpt].zonas[zona]) {
-      cptData[cpt].zonas[zona] = {
+  // Pre-poblar zonas de overrides aunque no tengan piezas en el TMS
+  Object.entries(zonaCPTOverrides).forEach(([zona, cpt]) => {
+    if (!cpt) return;
+    const entry = getOrCreateCPT(cpt);
+    if (!entry.zonas[zona]) {
+      entry.zonas[zona] = {
         etiquetado: 0, huAbierto: 0, huCerrado: 0,
         huFinalizadas: 0,
         huEnDespachoSet: new Set(),
@@ -25,7 +28,27 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
         usuariosSet:     new Set(),
       };
     }
-    const z = cptData[cpt].zonas[zona];
+  });
+
+  csvData.forEach(d => {
+    if (!d['Shipment ID']) return;
+    const zona = String(d['Labeling Zone'] || "").trim();
+    if (!zona) return;
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
+    if (!cpt) return;
+
+    const cptEntry = getOrCreateCPT(cpt);
+
+    if (!cptEntry.zonas[zona]) {
+      cptEntry.zonas[zona] = {
+        etiquetado: 0, huAbierto: 0, huCerrado: 0,
+        huFinalizadas: 0,
+        huEnDespachoSet: new Set(),
+        despachadoSet:   new Set(),
+        usuariosSet:     new Set(),
+      };
+    }
+    const z = cptEntry.zonas[zona];
     const outboundId = String(d['Outbound ID'] || "").trim();
     const dispatchId = String(d['Dispatch ID'] || "").trim();
     const hubStatus  = String(d['Hub Status'] || "").toLowerCase().trim();
@@ -65,7 +88,8 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
   const CINCO_MIN_MS = 5 * 60 * 1000;
   const refMs = ultimaTs > 0 ? ultimaTs : Date.now();
 
-  CPT_ORDEN.forEach(c => { cptData[c].usuariosSetCPT = new Set(); });
+  // Inicializar usuariosSetCPT para todos los CPTs (incluyendo nuevos)
+  Object.keys(cptData).forEach(c => { cptData[c].usuariosSetCPT = new Set(); });
   ultimaActividadUsuario.forEach((info, usr) => {
     if ((refMs - info.ts) > CINCO_MIN_MS) return;
     const { cpt, zona } = info;
@@ -80,7 +104,13 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
       .map(([usr]) => usr)
   );
 
-  const tableData = CPT_ORDEN
+  // Ordenar CPTs: primero los conocidos en orden, luego los nuevos al final
+  const todosLosCPTs = [
+    ...CPT_ORDEN.filter(c => cptData[c]),
+    ...Object.keys(cptData).filter(c => !CPT_ORDEN.includes(c)).sort(),
+  ];
+
+  const tableData = todosLosCPTs
     .filter(cpt => Object.keys(cptData[cpt].zonas).length > 0)
     .map(cpt => {
       const zonas = Object.entries(cptData[cpt].zonas).map(([zona, z]) => {
