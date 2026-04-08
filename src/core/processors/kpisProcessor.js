@@ -82,7 +82,7 @@ export const buildKpis = ({
   const CORTES = [14, 16, 18];
   const bipeoAntes = {};
   CORTES.forEach(h => {
-    bipeoAntes[h] = filasTMS.filter(f => f.h < h).length;
+   bipeoAntes[h] = filasTMS.filter(f => f.h <= h).length;
   });
 
   const targets = {};
