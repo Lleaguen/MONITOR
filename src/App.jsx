@@ -8,6 +8,9 @@ import Voluminoso from './pages/Voluminoso';
 import ArribosChasis from './pages/ArribosChasis';
 import SuperBigger from './pages/SuperBigger';
 import VehiculosPlan from './pages/VehiculosPlan';
+import ArribosCamioneta from './pages/ArribosCamioneta';
+import ArribosSemi from './pages/ArribosSemi';
+import ZonasCPT from './pages/ZonasCPT';
 import FileUploader from './components/FileUploader';
 import ModeSelector from './components/ModeSelector';
 import { processCombinedData } from './utils/dataProcessor';
@@ -61,7 +64,23 @@ function App() {
     proyectado: 239000,
     objetivoHU: 75,
     productividadHU: 180,
+    horaInicioArribos: 9,
+    horaInicioBipeos: 9,
+    horaInicioHU: 10,
   });
+
+  // Overrides de zona → CPT — persisten en localStorage
+  const [zonaCPTOverrides, setZonaCPTOverrides] = useState(() => {
+    try {
+      const saved = localStorage.getItem('zonaCPTOverrides');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  const handleOverridesChange = (newOverrides) => {
+    setZonaCPTOverrides(newOverrides);
+    try { localStorage.setItem('zonaCPTOverrides', JSON.stringify(newOverrides)); } catch {}
+  };
 
   // Plan de vehículos por tipo y hora (se incluye en el snapshot)
   const [planVehiculos, setPlanVehiculos] = useState([]);
@@ -89,11 +108,9 @@ function App() {
   const handleDataLoad = async (csv, excel) => {
     setRawFiles({ csv, excel });
     const data = processCombinedData(
-      csv,
-      excel,
-      config.proyectado,
-      config.objetivoHU,
-      config.productividadHU
+      csv, excel,
+      config.proyectado, config.objetivoHU, config.productividadHU,
+      { horaInicioArribos: config.horaInicioArribos, horaInicioBipeos: config.horaInicioBipeos, horaInicioHU: config.horaInicioHU, zonaCPTOverrides }
     );
     const dataWithPlan = { ...data, planVehiculos };
     setDashboardData(dataWithPlan);
@@ -114,11 +131,9 @@ function App() {
   useEffect(() => {
     if (appMode !== 'dashboard-admin' || !rawFiles) return;
     const data = processCombinedData(
-      rawFiles.csv,
-      rawFiles.excel,
-      config.proyectado,
-      config.objetivoHU,
-      config.productividadHU
+      rawFiles.csv, rawFiles.excel,
+      config.proyectado, config.objetivoHU, config.productividadHU,
+      { horaInicioArribos: config.horaInicioArribos, horaInicioBipeos: config.horaInicioBipeos, horaInicioHU: config.horaInicioHU, zonaCPTOverrides }
     );
     const dataWithPlan = { ...data, planVehiculos };
     setDashboardData(dataWithPlan);
@@ -126,18 +141,16 @@ function App() {
     pushSnapshot(dataWithPlan)
       .then((res) => { setSyncState('success'); setSyncTime(res.lastUpdate ?? null); })
       .catch(() => setSyncState('error'));
-  }, [config.proyectado, config.objetivoHU, config.productividadHU]); // rawFiles y appMode son refs estables
+  }, [config.proyectado, config.objetivoHU, config.productividadHU, config.horaInicioArribos, config.horaInicioBipeos, config.horaInicioHU, zonaCPTOverrides]); // rawFiles y appMode son refs estables
 
   // ── Actualizar plan y re-pushear snapshot ────────────────────────────────────
   const handlePlanChange = (nuevoPlan) => {
     setPlanVehiculos(nuevoPlan);
     if (appMode !== 'dashboard-admin' || !rawFiles) return;
     const data = processCombinedData(
-      rawFiles.csv,
-      rawFiles.excel,
-      config.proyectado,
-      config.objetivoHU,
-      config.productividadHU
+      rawFiles.csv, rawFiles.excel,
+      config.proyectado, config.objetivoHU, config.productividadHU,
+      { horaInicioArribos: config.horaInicioArribos, horaInicioBipeos: config.horaInicioBipeos, horaInicioHU: config.horaInicioHU, zonaCPTOverrides }
     );
     const dataWithPlan = { ...data, planVehiculos: nuevoPlan };
     setDashboardData(dataWithPlan);
@@ -204,9 +217,12 @@ function App() {
     activeTab === 'command'     ? 'CENTRO DE MANDO OCASA' :
     activeTab === 'cutoff'      ? 'CONTROL CPT / HU' :
     activeTab === 'vehiculos'   ? 'VEHÍCULOS — PLAN VS REAL' :
-    activeTab === 'voluminoso'  ? 'VOLUMINOSO / PAQUETERÍA' :
     activeTab === 'chasis'      ? 'ARRIBS. DE CHASIS' :
-    activeTab === 'superbigger' ? 'SUPER BIGGER' :
+    activeTab === 'camioneta'   ? 'ARRIBS. DE CAMIONETA' :
+    activeTab === 'semi'        ? 'ARRIBS. DE SEMI' :
+    activeTab === 'voluminoso'  ? 'VOLUMINOSO / PAQUETERÍA' :
+    activeTab === 'superbigger' ? 'SUPER BIGGER / BIGGER' :
+    activeTab === 'zonas'       ? 'ZONAS CPT' :
     'AJUSTE DE PARÁMETROS';
 
   return (
@@ -231,12 +247,18 @@ function App() {
             <CutOff data={dashboardData} />
           ) : activeTab === 'vehiculos' ? (
             <VehiculosPlan data={dashboardData} planVehiculos={planVehiculos} />
-          ) : activeTab === 'voluminoso' ? (
-            <Voluminoso data={dashboardData} />
           ) : activeTab === 'chasis' ? (
             <ArribosChasis data={dashboardData} />
+          ) : activeTab === 'camioneta' ? (
+            <ArribosCamioneta data={dashboardData} />
+          ) : activeTab === 'semi' ? (
+            <ArribosSemi data={dashboardData} />
+          ) : activeTab === 'voluminoso' ? (
+            <Voluminoso data={dashboardData} />
           ) : activeTab === 'superbigger' ? (
             <SuperBigger data={dashboardData} />
+          ) : activeTab === 'zonas' ? (
+            <ZonasCPT overrides={zonaCPTOverrides} onOverridesChange={handleOverridesChange} />
           ) : (
             <Parameters config={config} setConfig={setConfig} />
           )}

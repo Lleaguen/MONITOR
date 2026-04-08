@@ -10,13 +10,21 @@ export const processCombinedData = (
   excelRaw,
   proyectadoManual  = 239000,
   objetivoHU        = 75,
-  productividadHU   = 180
+  productividadHU   = 180,
+  config            = {}
 ) => {
+  const {
+    horaInicioArribos   = 9,   // desde qué hora contar arribos del ED
+    horaInicioBipeos    = 9,   // desde qué hora contar bipeos del TMS
+    horaInicioHU        = 10,  // desde qué hora contar bipeos de HU (dispatch)
+    zonaCPTOverrides    = {},  // { ZONA: 'CPT' } — overrides manuales
+  } = config;
+
   // 1. Easy Docking
   const easyDockingClean = parseEasyDocking(excelRaw);
 
   // 2. TMS — loop principal
-  const { ultimaTs, totalPiezasSistema, bipeoPorHora, filasTMS } = buildTMSData(csvData);
+  const { ultimaTs, totalPiezasSistema, bipeoPorHora, filasTMS } = buildTMSData(csvData, horaInicioBipeos);
 
   // 3. Matching patentes
   const patentesTMS = buildPatentesTMS(csvData);
@@ -35,18 +43,21 @@ export const processCombinedData = (
   const { kpis, matrix, targets } = buildKpis({
     easyDockingClean, totalPiezasSistema, filasTMS,
     ultimaTs, proyectadoManual, conteoEspera, desviosDoca, mapPatenteTipo,
+    horaInicioArribos,
   });
 
   // 7. Chart data
-  const { chartData, vehiculosChartData } = buildChartData(easyDockingClean, bipeoPorHora);
+  const { chartData, vehiculosChartData } = buildChartData(easyDockingClean, bipeoPorHora, horaInicioArribos);
 
   // 8. HU / CutOff
-  const { tableData, totalesHU, huStats } = buildHUData(csvData, ultimaTs, objetivoHU, productividadHU);
+  const { tableData, totalesHU, huStats } = buildHUData(csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU, zonaCPTOverrides);
 
   // 9. Voluminoso + Super Bigger + Arrivals Chasis
-  const volData = buildVolData(csvData);
-  const { superBiggerList, superBiggerChartData } = buildSuperBigger(csvData);
-  const arrivalChasis = buildArrivalChasis(easyDockingClean, matchEDaTMS);
+  const volData = buildVolData(csvData, zonaCPTOverrides);
+  const { superBiggerList, biggerList, superBiggerChartData, biggerChartData } = buildSuperBigger(csvData);
+  const arrivalChasis    = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'chasis');
+  const arrivalCamioneta = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'camioneta');
+  const arrivalSemi      = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'semi');
 
   return {
     kpis,
@@ -58,8 +69,12 @@ export const processCombinedData = (
     totalesHU,
     volData,
     arrivalChasis,
+    arrivalCamioneta,
+    arrivalSemi,
     superBiggerList,
+    biggerList,
     superBiggerChartData,
+    biggerChartData,
     huStats,
   };
 };

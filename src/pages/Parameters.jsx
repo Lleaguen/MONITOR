@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Card } from '../components/ui/Card';
+import { useState } from 'react';
+import { Card } from '../components/ui/Card.jsx';
 import { Save, AlertCircle } from 'lucide-react';
 
-const NumericField = ({ label, value, onChange, onApply, color = "blue-400" }) => (
+const NumericField = ({ label, value, onChange, onApply, color = "blue-400", min, max }) => (
   <div>
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">
       {label}
@@ -11,6 +11,8 @@ const NumericField = ({ label, value, onChange, onApply, color = "blue-400" }) =
       <input
         type="number"
         value={value}
+        min={min}
+        max={max}
         onChange={e => onChange(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && onApply()}
         className={`w-full bg-[#080c14] border border-white/20 rounded-xl px-4 py-3 text-2xl md:text-3xl font-black text-${color} focus:border-blue-500 outline-none transition-all font-mono`}
@@ -26,15 +28,21 @@ const NumericField = ({ label, value, onChange, onApply, color = "blue-400" }) =
 );
 
 const Parameters = ({ config, setConfig }) => {
-  const [local, setLocal] = useState({
-    proyectado:      config.proyectado,
-    objetivoHU:      config.objetivoHU,
-    productividadHU: config.productividadHU,
-  });
+  const [local, setLocal] = useState({ ...config });
 
-  const apply = (key) => {
-    setConfig({ ...config, [key]: Number(local[key]) });
-  };
+  const apply = (key) => setConfig({ ...config, [key]: Number(local[key]) });
+
+  const field = (key, label, color, min, max) => (
+    <NumericField
+      label={label}
+      value={local[key]}
+      onChange={v => setLocal(l => ({ ...l, [key]: v }))}
+      onApply={() => apply(key)}
+      color={color}
+      min={min}
+      max={max}
+    />
+  );
 
   return (
     <div className="max-w-3xl animate-in slide-in-from-bottom-4 duration-500">
@@ -45,32 +53,22 @@ const Parameters = ({ config, setConfig }) => {
       <div className="space-y-6">
         <Card title="Metas Globales de Descarga">
           <div className="space-y-6 p-2">
-            <NumericField
-              label="Proyectado de Entrada (Piezas Totales)"
-              value={local.proyectado}
-              onChange={v => setLocal(l => ({ ...l, proyectado: v }))}
-              onApply={() => apply('proyectado')}
-              color="blue-400"
-            />
+            {field('proyectado', 'Proyectado de Entrada (Piezas Totales)', 'blue-400')}
+          </div>
+        </Card>
+
+        <Card title="Filtros de Hora — Datos de Entrada">
+          <div className="space-y-6 p-2">
+            {field('horaInicioArribos', 'Desde qué hora contar Arribos (Easy Docking)', 'violet-400', 0, 23)}
+            {field('horaInicioBipeos',  'Desde qué hora contar Bipeos (TMS)', 'cyan-400', 0, 23)}
           </div>
         </Card>
 
         <Card title="Parámetros de Armado HU">
           <div className="space-y-6 p-2">
-            <NumericField
-              label="Objetivo de Avance HU (%)"
-              value={local.objetivoHU}
-              onChange={v => setLocal(l => ({ ...l, objetivoHU: v }))}
-              onApply={() => apply('objetivoHU')}
-              color="yellow-400"
-            />
-            <NumericField
-              label="Productividad por Usuario (piezas/hora)"
-              value={local.productividadHU}
-              onChange={v => setLocal(l => ({ ...l, productividadHU: v }))}
-              onApply={() => apply('productividadHU')}
-              color="emerald-400"
-            />
+            {field('objetivoHU',      'Objetivo de Avance HU (%)', 'yellow-400', 0, 100)}
+            {field('productividadHU', 'Productividad por Usuario (piezas/hora)', 'emerald-400', 1)}
+            {field('horaInicioHU',    'Desde qué hora contar Bipeos de HU (Dispatch)', 'orange-400', 0, 23)}
           </div>
         </Card>
 

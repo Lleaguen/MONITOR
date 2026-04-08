@@ -8,7 +8,7 @@ dayjs.extend(customParseFormat);
 const HORAS_RANGO = Array.from({ length: 15 }, (_, i) => i + 9); // 9 a 23
 
 // Loop principal sobre TMS — extrae ultimaTs, totalPiezas, bipeo por hora, filasTMS
-export const buildTMSData = (csvData) => {
+export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
   let ultimaTs = 0;
   let totalPiezasSistema = 0;
   const bipeoPorHora = new Array(24).fill(0);
@@ -22,7 +22,7 @@ export const buildTMSData = (csvData) => {
     const tsMs = f.valueOf();
     const h = f.hour();
     if (tsMs > ultimaTs) ultimaTs = tsMs;
-    if (!d['Shipment ID'] || h < 9) return;
+    if (!d['Shipment ID'] || h < horaInicioBipeos) return;
     totalPiezasSistema++;
     if (h <= 23) bipeoPorHora[h]++;
     filasTMS.push({
@@ -40,7 +40,7 @@ export const buildTMSData = (csvData) => {
 export const buildKpis = ({
   easyDockingClean, totalPiezasSistema, filasTMS,
   ultimaTs, proyectadoManual, conteoEspera, desviosDoca,
-  mapPatenteTipo,
+  mapPatenteTipo, horaInicioArribos = 9,
 }) => {
   const ultimaReferencia = ultimaTs > 0 ? dayjs(ultimaTs) : dayjs();
   const inicioHoraActualMs = ultimaReferencia.startOf('hour').valueOf();
@@ -48,22 +48,18 @@ export const buildKpis = ({
 
   // Piezas por tipo en la hora actual
   const piezasPorTipoEnHora = { chasis: 0, camioneta: 0, semi: 0, otro: 0 };
-  let bip12 = 0, bip16 = 0, bip19 = 0;
 
   filasTMS.forEach(({ tsMs, patente, h, doca }) => {
-    if (h < 12) bip12++;
-    if (h < 16) bip16++;
-    if (h < 19) bip19++;
     if (tsMs >= inicioHoraActualMs && tsMs <= ultimaTs) {
       const tipo = mapPatenteTipo.get(patente) || getTipoPorDoca(doca);
       piezasPorTipoEnHora[tipo]++;
     }
   });
 
-  // Arribado desde ED (solo desde las 9hs)
+  // Arribado desde ED (filtrado por horaInicioArribos)
   const arribadoExcel = easyDockingClean.reduce((acc, curr) => {
     const hora = parsearHoraED(curr['Fecha y hora']);
-    if (hora !== null && hora < 9) return acc;
+    if (hora !== null && hora < horaInicioArribos) return acc;
     return acc + (parseFloat(curr['CANT PAQUETES']) || 0);
   }, 0);
 
@@ -83,12 +79,29 @@ export const buildKpis = ({
     semi:      { real: Math.round((piezasPorTipoEnHora.semi      / minutosTranscurridos) * 60), planificado: Math.round(objXHoraGlobal * piezasPorTipoEnHora.semi      / totalTipo) },
   };
 
-  // Targets
-  const targets = {
-    "12HS": { percentage: Math.min(Math.round((bip12 / proyectadoManual) * 100), 100), units: bip12 },
-    "16HS": { percentage: Math.min(Math.round((bip16 / proyectadoManual) * 100), 100), units: bip16 },
-    "19HS": { percentage: Math.min(Math.round((bip19 / proyectadoManual) * 100), 100), units: bip19 },
-  };
+  // Targets — cortes a las 14hs, 16hs y 18hs
+  const CORTES = [14, 16, 18];
+  const bipeoAntes = {};
+  CORTES.forEach(h => {
+    bipeoAntes[h] = filasTMS.filter(f => f.h < h).length;
+  });
+
+  const targets = {};
+  CORTES.forEach(h => {
+    const antes = bipeoAntes[h];
+    const despues = proyectadoManual - antes;
+    targets[`${h}HS`] = {
+      hora: h,
+      proyectado: proyectadoManual,
+      antesDelCorte: antes,
+      despuesDelCorte: Math.max(despues, 0),
+      pctAntes:   Math.min(Math.round((antes / proyectadoManual) * 10000) / 100, 100),
+      pctDespues: Math.min(Math.round((Math.max(despues, 0) / proyectadoManual) * 10000) / 100, 100),
+      // compatibilidad con código existente
+      percentage: Math.min(Math.round((antes / proyectadoManual) * 100), 100),
+      units: antes,
+    };
+  });
 
   const kpis = {
     proyectado: proyectadoManual.toLocaleString(),
@@ -108,13 +121,13 @@ export const buildKpis = ({
 };
 
 // Chart data (arribo vs bipeo por hora + vehículos por tipo)
-export const buildChartData = (easyDockingClean, bipeoPorHora) => {
+export const buildChartData = (easyDockingClean, bipeoPorHora, horaInicioArribos = 9) => {
   const arriboPorHora = new Array(24).fill(0);
   const vehiculosPorHoraTipo = {};
 
   easyDockingClean.forEach(doc => {
     const hora = parsearHoraED(doc['Fecha y hora']);
-    if (hora === null || hora < 9 || hora > 23) return;
+    if (hora === null || hora < horaInicioArribos || hora > 23) return;
     arriboPorHora[hora] += parseFloat(doc['CANT PAQUETES']) || 0;
     const tipo = getTipoVehiculo(doc['TIPO DE VEHICULO']);
     if (!vehiculosPorHoraTipo[hora]) vehiculosPorHoraTipo[hora] = { chasis: 0, camioneta: 0, semi: 0 };

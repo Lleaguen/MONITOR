@@ -4,7 +4,7 @@ import { getCPTdeZona, CPT_ORDEN } from './zonaCPT.js';
 
 dayjs.extend(customParseFormat);
 
-export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU) => {
+export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU = 10, zonaCPTOverrides = {}) => {
   const cptData = {};
   const ultimaActividadUsuario = new Map();
   CPT_ORDEN.forEach(c => { cptData[c] = { zonas: {}, usuariosSetCPT: new Set() }; });
@@ -13,7 +13,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU) => {
     if (!d['Shipment ID']) return;
     const zona = String(d['Labeling Zone'] || "").trim();
     if (!zona) return;
-    const cpt = getCPTdeZona(zona);
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
     if (!cpt || !cptData[cpt]) return;
 
     if (!cptData[cpt].zonas[zona]) {
@@ -31,13 +31,21 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU) => {
     const hubStatus  = String(d['Hub Status'] || "").toLowerCase().trim();
 
     z.etiquetado++;
-    if (d['Outbound Included Date'] && d['Outbound Date Closed']) z.huCerrado++;
-    else if (d['Outbound Included Date'])                          z.huAbierto++;
+
+    // Filtrar HU abierto/cerrado por horaInicioHU
+    if (d['Outbound Included Date']) {
+      const oh = dayjs(d['Outbound Included Date'], "DD/MM/YYYY HH:mm:ss");
+      if (oh.isValid() && oh.hour() >= horaInicioHU) {
+        if (d['Outbound Date Closed']) z.huCerrado++;
+        else                           z.huAbierto++;
+      }
+    }
+
     if (hubStatus === 'outbound_finished') z.huFinalizadas++;
     if (d['Outbound Position'] && outboundId) z.huEnDespachoSet.add(outboundId);
     if (d['Dispatch Included Date'] && dispatchId) {
       const dh = dayjs(d['Dispatch Included Date'], "DD/MM/YYYY HH:mm:ss");
-      if (dh.isValid() && dh.hour() >= 10) z.despachadoSet.add(dispatchId);
+      if (dh.isValid() && dh.hour() >= horaInicioHU) z.despachadoSet.add(dispatchId);
     }
 
     const rawUsr = String(d['Outbound Added By'] || "").trim();
