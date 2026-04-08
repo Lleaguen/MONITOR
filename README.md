@@ -19,38 +19,40 @@ npm start
 
 Al abrir la app, se consulta automáticamente el servidor para saber si hay datos disponibles:
 
-- **Si hay datos en el servidor** → aparece el selector de modo con dos opciones:
+- **Si hay datos en el servidor** → aparece el selector de modo:
   - **Ver Dashboard** — consume el snapshot del servidor (modo Viewer)
   - **Cargar Archivos** — sube nuevos archivos para publicar (modo Admin)
-
-- **Si no hay datos** → va directo a la pantalla de carga de archivos (modo Admin)
+- **Si no hay datos** → va directo a la pantalla de carga de archivos
 
 ### 3. Modo Admin — cargar datos
 
 Se deben subir dos archivos:
 
-- **CSV Inbound (TMS)** — exportado del sistema TMS, contiene una fila por pieza bipeada
+- **CSV Inbound (TMS)** — exportado del sistema TMS, una fila por pieza bipeada
 - **Excel Easy Docking** — reporte de atraque/desatraque de vehículos en guardia
 
-Una vez cargados ambos archivos, el front procesa los datos localmente y los publica automáticamente al servidor. El header muestra el estado de sincronización (punto verde = publicado con éxito).
+Una vez cargados, el front procesa los datos localmente y los publica automáticamente al servidor. El header muestra el estado de sincronización (punto verde = publicado con éxito).
 
 Para actualizar los datos durante el turno, hacer clic en **"Cargar Datos"** en el sidebar.
 
 ### 4. Modo Viewer
 
-os publicados por el Admin. El dashboard se actualiza automáticamente cada 60 segundos si el Admin publica nuevos datos. El botón "Cargar Datos" no está disponible en este modo.
+Consume el snapshot publicado por el Admin. Se actualiza automáticamente cada 60 segundos. El botón "Cargar Datos" no está disponible en este modo.
 
 ### 5. Configurar parámetros
 
-Desde la sección **Parámetros** se pueden ajustar (solo en modo Admin):
+Desde la sección **Parámetros** se pueden ajustar:
 
 | Parámetro | Descripción | Default |
 |---|---|---|
 | Proyectado de Entrada | Total de piezas esperadas en el turno | 239.000 |
 | Objetivo de Avance HU (%) | % mínimo de avance de armado de HU | 75% |
 | Productividad por Usuario | Piezas por usuario por hora en HU | 180 |
+| Hora inicio Arribos (ED) | Desde qué hora contar arribos del Easy Docking | 9 |
+| Hora inicio Bipeos (TMS) | Desde qué hora contar bipeos del TMS | 9 |
+| Hora inicio HU (Dispatch) | Desde qué hora contar bipeos de HU | 10 |
 
-Al cambiar un parámetro, el dashboard se recalcula automáticamente y se re-publica al servidor.
+Al cambiar cualquier parámetro, el dashboard se recalcula y se re-publica al servidor automáticamente.
 
 ---
 
@@ -58,61 +60,53 @@ Al cambiar un parámetro, el dashboard se recalcula automáticamente y se re-pub
 
 ### Centro de Mando
 
-Vista principal del turno. Muestra:
+Vista principal del turno:
 
-- **KPIs superiores**: Proyectado vs Arribado, Bipeado, Velocidad de descarga esperada vs real, Vehículos en espera por tipo (Chasis / Camioneta / Semi) con dársenas activas
-- **Alerta de desvío de descargando ahora y cuántos ya descargaron
-- **Pulso de Descarga**: gráfico de barras con paquetes arribados vs bipeados por hora (desde las 9hs)
-- **Arribo por Tipo de Vehículo**: gráfico de líneas con cantidad de vehículos anunciados por hora, discriminado por Chasis / Camioneta / Semi
-- **Velocidad de Descarga**: velocidad real vs planificada por tipo de vehículo (u/hr)
-- **Tabla HU por CPT**: avance de armado de HU por hora d
-- **Widget de usuarios HU**: objetivo de avance, usuarios necesarios para terminar a tiempo, activos y diferencia
-- **Cortes de turno**: % de avance bipeado a las 12hs, 16hs y 19hs respecto al proyectado
+- **KPIs superiores**: Proyectado vs Arribado, Bipeado, Velocidad real vs esperada, Vehículos en espera por tipo con dársenas activas
+- **Alerta de desvío de doca**: chasis descargando en sector camioneta (docas 43-75)
+- **Pulso de Descarga**: barras de paquetes arribados vs bipeados por hora
+- **Vehículos por Tipo**: líneas de vehículos anunciados por hora (Chasis / Camioneta / Semi) con plan MELI vs real CIU
+- **Velocidad de Descarga**: velocidad real vs planificada por tipo de vehículo
+- **Tabla HU por CPT**: avance de armado de HU por hora de corte
+- **Widget de usuarios HU**: objetivo, usuarios necesarios, activos y diferencia
+- **Cortes de turno**: % de avance bipeado a las 14hs, 16hs y 18hs con tooltip de detalle
 
 ### CutOff / HU
 
-Vista detallada del armado y despacho de HUs por zona (SUB-CA) dentro de cada CPT.
+Tabla expandible de armado y despacho de HUs por zona (SUB-CA) dentro de cada CPT.
 
-Columnas de **Armado**:
-- Piezas Etiquetadas
-- Piezas en HU Abierto
-- Piezas en HU Cerrado
-- Piezas Pendientes de HU
-- % Avance
+Columnas de **Armado**: Piezas Etiquetadas, HU Abierto, HU Cerrado, Pendientes, % Avance
 
-Columnas de **Despacho**:
-- HUs Finalizados (`Hub Status = outbound_finished`)
-- HUs en Despacho (Outbound IDs únicos con posición asignada)
-- HUs Enviados (Dispatch IDs únicos desde las 10hs)
-- Control (OK / PENDIENTE según si hay piezas pendientes)
+Columnas de **Despacho**: HUs Finalizados, HUs en Despacho, HUs Enviados, Control (OK / PENDIENTE)
 
-Resumen global con total de piezas, avance, faltante para el objetivo y totales de despacho.
+### Vehículos Plan
+
+Tres gráficos de barras comparativos (CIU vs MELI) por tipo de vehículo: Chasis, Camioneta y Semi.
+
+### Arribs. Chasis / Camioneta / Semi
+
+Lista de vehículos anunciados en Easy Docking que todavía no descargaron (sin match en TMS).
+
+- Código de color: verde < 500 piezas, naranja 500-699, rojo ≥ 700
+- Ordenable por hora, mayor o menor cantidad de piezas
 
 ### Voluminoso
 
-Clasificación de piezas por zona entre **Paquetería** y **Voluminoso**:
+Clasificación de piezas por zona entre Paquetería y Voluminoso:
 
 - **Paquetería**: todas las dimensiones < 50cm Y peso ≤ 20kg
-- **Voluminoso**: alguna dimensión ≥ 50cm O peso > 20kg (el peso en el TMS está en gramos)
+- **Voluminoso**: alguna dimensión ≥ 50cm O peso > 20kg
 
-Mueotales globales y desglose por CPT → zona con barra de % voluminoso. Incluye filtros para ver solo paquetería, solo voluminoso o todos.
+### Super Bigger / Bigger
 
-### Super Bigger
+- **Super Bigger**: peso > 50kg O alguna dimensión ≥ 200cm
+- **Bigger**: peso ≥ 30kg O alguna dimensión ≥ 150cm (excluye Super Bigger)
 
-Piezas clasificadas como **Super Bigger**: peso > 30kg (30.000g) Y alguna dimensión > 150cm.
+Curva por hora + tabla con Shipment ID, dimensiones y peso.
 
-- Resumen: total, peso máximo, dimensión máxima
-- Curva de Super Bigger bipeados por hora
-- Tabla con Shipment ID, dimensiones (cm), peso (kg) y hora de bipeo
-- Ordenable por mayor peso u hora
+### Zonas CPT
 
-### Arribs. Chasis
-
-Lista de chasis anunciados en Easy Docking que **todavía no descargaron** (no tienen match en el TMS).
-
-- Código de color por cantidad de piezas: verde < 500, naranja 500-699, rojo ≥ 700
-- Ordenable por hora (más reciente primero), mayor o menor cantidad de piezas
-- Resumen por categoría de color
+Editor de asignación Labeling Zone → CPT. Permite agregar nuevas zonas, cambiar el CPT de zonas existentes y buscar por nombre. Los cambios se persisten en `localStorage` y se aplican al reprocesar los datos.
 
 ---
 
@@ -120,33 +114,29 @@ Lista de chasis anunciados en Easy Docking que **todavía no descargaron** (no t
 
 ### Fuentes de datos
 
-| Fuente | Formato | Contenido |
+| Fuente | Formato | Columnas clave |
 |---|---|---|
-`Outbound Included Date`, `Outbound Date Closed`, `Dispatch ID`, `Dispatch Included Date`, `Height`, `Length`, `Width`, `Weight` |
-| Easy Docking | Excel (.xlsx) | Una fila por evento de vehículo. Headers en fila 4. Columnas clave: `PATENTE`, `TIPO DE VEHICULO`, `TIPO DE OPERACION`, `Accion`, `CANT PAQUETES`, `Fecha y hora` |
+| TMS | CSV | `Shipment ID`, `Truck ID`, `Hub Status`, `Inbound Date Included`, `Inbound Dock ID`, `Labeling Zone`, `Outbound ID`, `Outbound Included Date`, `Outbound Date Closed`, `Dispatch ID`, `Dispatch Included Date`, `Height`, `Length`, `Width`, `Weight` |
+| Easy Docking | Excel (.xlsx) | `PATENTE`, `TIPO DE VEHICULO`, `TIPO DE OPERACION`, `Accion`, `CANT PAQUETES`, `Fecha y hora` (headers en fila 4) |
 
 ### Matching de patentes (TMS ↔ Easy Docking)
 
-Para determinar si un vehículo de ED ya está en el TMS se usa:
-
-1. **Normalización**: mayúsculas, solo alfanuméricos
-2. **Búsqueda exacta** O(1) con Set
-3. **Levenshtein fuzzy** sobre patentes únicas del TMS (no sobre todas las filas):
+1. Normalización: mayúsculas, solo alfanuméricos
+2. Búsqueda exacta O(1) con Set
+3. Levenshtein fuzzy sobre patentes únicas del TMS:
    - Mismo largo: umbral ≥ 75% similitud
    - Diferencia de 1 carácter: umbral ≥ 80%
-4. Soporte para **patentes dobles** en ED separadas por `;` (semis)
+4. Soporte para patentes dobles separadas por `;` (semis)
 
-Los semis solo se incluyen si se anunciaron desde las **12:00** (filtro en Easy Docking).
+Los semis solo se incluyen si se anunciaron desde las 12:00.
 
 ### Vehículos en espera
 
-Un vehículo está "en espera" si aparece en ED con `TIPO DE OPERACION = DESCARGA` y `Accion = add`, pero su patente **no matchea** en el TMS.
-
-que matchearon en TMS pero descargaron en sector camioneta (docas 43-75) se **restan** del conteo de chasis en espera.
+Aparece en ED con `TIPO DE OPERACION = DESCARGA` y `Accion = add`, pero su patente no matchea en el TMS. Los chasis que descargaron en sector camioneta (docas 43-75) se restan del conteo de chasis en espera.
 
 ### Dársenas activas
 
-Una dársena es activa si tuvo al menos un bipeo en los **últimos 10 minutos** (relativo al último bipeo del archivo). Se clasifica por sector:
+Bipeo en los últimos 10 minutos (relativo al último bipeo del archivo):
 
 - Docas 20-26: Semi
 - Docas 27-42: Chasis
@@ -154,13 +144,9 @@ Una dársena es activa si tuvo al menos un bipeo en los **últimos 10 minutos** 
 
 ### Velocidad real
 
-Basada en la fórmula del monitor Excel:
-
 ```
 velocidad = piezas_bipeadas_desde_inicio_hora_actual / minutos_transcurridos × 60
 ```
-
-último bipeo del archivo como referencia temporal (no la hora del sistema), para que funcione correctamente con archivos históricos.
 
 ### Descarga x Hora (esperado)
 
@@ -168,19 +154,15 @@ velocidad = piezas_bipeadas_desde_inicio_hora_actual / minutos_transcurridos × 
 descarga_x_hora = (proyectado - bipeado) / horas_restantes_hasta_22:00
 ```
 
-Las horas restantes se calculan desde el último bipeo del archivo hasta las 22:00.
-
 ### Avance de HU
 
 ```
 avance = (piezas_HU_cerrado + piezas_HU_abierto) / piezas_etiquetadas × 100
 ```
 
-Un HU está "abierto" cuando tiene `Outbound Includedte Closed`. Está "cerrado" cuando tiene ambos.
-
 ### Usuarios activos en HU
 
-Un usuario se considera activo si su último bipeo de outbound fue hace **menos de 5 minutos** (relativo al último bipeo del archivo). Cada usuario se asigna solo a la zona donde tuvo su última actividad, evitando duplicados entre zonas.
+Último bipeo de outbound hace menos de 5 minutos (relativo al último bipeo del archivo).
 
 ### Usuarios necesarios para terminar a tiempo
 
@@ -190,59 +172,86 @@ usuarios_necesarios = piezas_pendientes_HU / productividad_por_usuario / horas_h
 
 ---
 
-## Estructura del proyecto
+## Arquitectura del proyecto
+
+El proyecto sigue una arquitectura **monolito modular pragmática**: un solo repo sin micro-frontends, con separación clara de responsabilidades por dominio.
 
 ```
 src/
-  pages/
-    CommandCenter.jsx    — Vista principal del turno
-    CutOff.jsx           — Control CPT / HU detallado
-    Voluminoso.jsx       — Clasificación paquetería vs voluminoso
-    SuperBigger.jsx      — Piezas super bigger
-    ArribosChasis.jsx    — Chasis pendientes de descarga
-    Parameters.jsx       — Configuración de parámetros
-  components/
+  core/                        — Lógica de negocio pura (sin React)
+    api/
+      index.js                 — pushSnapshot, fetchSnapshot, fetchStatus
+    processors/
+      helpers.js               — Levenshtein, parseo de fechas, tipos de vehículo
+      zonaCPT.js               — Mapa Labeling Zone → CPT, CPT_ORDEN
+      easyDockingParser.js     — Parseo del Excel de Easy Docking
+      vehiculosProcessor.js    — Matching patentes, dársenas, vehículos en espera
+      kpisProcessor.js         — KPIs, matrix, targets, chart data
+      huProcessor.js           — Tabla HU por CPT/zona, usuarios activos
+      voluminosoProcessor.js   — Voluminoso, Super Bigger, Bigger, arrivals
+    dataProcessor.js           — Orquestador: coordina todos los processors
+    vehiculosPlan.js           — PLAN_HOURS, emptyPlan(), mergePlanConReal()
+
+  shared/                      — Reutilizable entre features
+    components/
+      Card.jsx                 — Card base con glow
+      StatCard.jsx             — Card de métrica
+      ProgressBar.jsx          — Barra de progreso con color condicional
+      SortButton.jsx           — Botón de ordenamiento
+      PageWrapper.jsx          — Wrapper con animación fade-in
+      index.js                 — Re-exporta todos
+    charts/
+      ChartPrimitives.jsx      — CustomDot, PillLabel, BarLabel (reutilizables en Recharts)
+      index.js
+    constants/
+      design.js                — VEHICLE_COLORS, CHART_COLORS, TOOLTIP_STYLE, BG_APP
+      index.js
+
+  features/                    — Módulos por dominio de negocio
     dashboard/
-      KpiGrid.jsx        — KPIs superiores + desvíos de doca
-      MainChart.jsx      — Gráfico arribo vs bipeo
-      VehiculosChart.jsx — Gráfico vehículos por tipo/hora
-      MatrixPanel.jsx    — Velocidad de descarga por tipo
-      HUTable.jsx        — Tabla HU por CPT
-      TargetCards.jsx    — Cortes de turno (12hs, 16hs, 19hs)
+      components/
+        KpiGrid.jsx            — KPIs superiores + alertas de doca
+        MainChart.jsx          — Gráfico Pulso de Descarga (barras)
+        MatrixPanel.jsx        — Velocidad de descarga por tipo
+        HUTable.jsx            — Tabla HU por CPT
+        TargetCards.jsx        — Cortes de turno (14hs, 16hs, 18hs) con tooltip
+      pages/
+        CommandCenter.jsx      — Vista principal del turno
+    vehicles/
+      components/
+        VehiculosChart.jsx     — 3 vistas: Arribo por tipo, Total vs Plan, Plan por tipo
+      pages/
+        VehiculosPlan.jsx      — Gráficos CIU vs MELI por tipo de vehículo
+        ArribosPage.jsx        — Tabla de arrivals parametrizada (Chasis/Camioneta/Semi)
+    cutoff/
+      pages/
+        CutOff.jsx             — Tabla expandible CPT/zona con control HU
+    inventory/
+      pages/
+        Voluminoso.jsx         — Paquetería vs Voluminoso por zona
+        SuperBigger.jsx        — Super Bigger y Bigger con tabs
+    configuration/
+      pages/
+        Parameters.jsx         — Formulario de parámetros configurables
+        ZonasCPT.jsx           — Editor de asignación Zona → CPT
+
+  app/                         — Orquestación y shell de la aplicación
+    hooks/
+      useAdminSync.js          — Lógica de sync del Admin (carga, recálculo, push)
+      usePolling.js            — Polling periódico para modo Viewer
     layout/
-      Sidebar.jsx        — Navegación lateral colapsable (prop isViewer oculta "Cargar Datos")
-      Header.jsx         — Encabezado con título, última actualización y SyncStatus
-    ui/
-      Card.jsx           — Card base con glow
-      StatCard.jsx       — Card de métrica reutilizable
-      ProgressBar.jse progreso parametrizada
-      SortButton.jsx     — Botón de ordenamiento
-      PageWrapper.jsx    — Wrapper estándar de página
-      SectionHeader.jsx  — Título de sección con acción
-    FileUploader.jsx     — Pantalla de carga de archivos
-    ModeSelector.jsx     — Pantalla de selección Admin / Viewer
-    SyncStatus.jsx       — Indicador de estado de sincronización con el servidor
-  hooks/
-    usePolling.js        — Hook de polling automático para Viewers (cada 60s)
-a automáticamente con cada `git push` a `main` via GitHub Actions
-  - Las variables de entorno se configuran en `.github/workflows/deploy.yml`
+      Sidebar.jsx              — Navegación lateral colapsable (prop isViewer)
+      Header.jsx               — Encabezado con hora y SyncStatus
+      SyncStatus.jsx           — Indicador de estado de sincronización
+    screens/
+      LoadingScreen.jsx        — Pantalla de carga inicial
+      ErrorScreen.jsx          — Pantalla de error
+      FileUploader.jsx         — Carga de archivos CSV + Excel
+      ModeSelector.jsx         — Selección Admin / Viewer
 
-- **Back-end**: Render — `https://monitor-c0bd.onrender.com`
-  - Ver `server/README.md` para detalles del backend
-
----
-
-## Stack tecnológico
-
-- **React 19** — UI
-- **Tailwind CSS 3** — Estilos
-- **Recharts** — Gráficos
-- **PapaParse** — Parseo de CSV
-- **SheetJS (xlsx)** — Parseo de Excel
-- **Day.js** — Manejo de fechas
-- **Lucide React** — Íconos
-ivos, stats
-      voluminosoProcessor.js — Voluminoso, super bigger, arrivals chasis
+  App.jsx                      — Orquestador principal (modos, estado global, routing)
+  index.js                     — Entry point React
+  index.css                    — Estilos globales
 ```
 
 ---
@@ -261,13 +270,20 @@ Crear un archivo `.env` en la raíz del proyecto para configurarlas localmente.
 ## Deploy
 
 - **Front-end**: GitHub Pages — `https://lleaguen.github.io/MONITOR/`
-  - El deploy se generones HTTP: pushSnapshot, fetchSnapshot, fetchStatus
-    dataProcessor.js     — Orquestador principal de procesamiento
-    processors/
-      helpers.js         — Funciones puras compartidas (Levenshtein, parseo, tipos)
-      zonaCPT.js         — Mapa zona → CPT y orden de CPTs
-      easyDockingParser.js — Parseo del Excel de Easy Docking
-      vehiculosProcessor.js — Matching, espera, dársenas, desvíos
-      kpisProcessor.js   — KPIs, matrix, targets, chart data
-      huProcessor.js     — Tabla HU, usuarios act  utils/
-    api.js               — Funci
+  - Deploy automático con cada `git push` a `main` via GitHub Actions
+  - Variables de entorno configuradas en `.github/workflows/deploy.yml`
+
+- **Back-end**: Render — `https://monitor-c0bd.onrender.com`
+  - Ver `server/README.md` para detalles
+
+---
+
+## Stack tecnológico
+
+- **React 19** — UI
+- **Tailwind CSS 3** — Estilos
+- **Recharts** — Gráficos
+- **PapaParse** — Parseo de CSV
+- **SheetJS (xlsx)** — Parseo de Excel
+- **Day.js** — Manejo de fechas
+- **Lucide React** — Íconos

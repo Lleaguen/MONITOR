@@ -27,8 +27,6 @@ El servidor corre en `http://localhost:3001` por defecto.
 
 ### 3. Variables de entorno
 
-Crear un archivo `.env` dentro de `server/` si se necesita configuración personalizada:
-
 | Variable | Descripción | Default |
 |---|---|---|
 | `PORT` | Puerto en el que corre el servidor | `3001` |
@@ -60,7 +58,7 @@ Admin (front)                Backend              Viewer (front)
      |                          |--- dashboardData ----->|
 ```
 
-> **Importante**: el snapshot se guarda en memoria. Si el servidor se reinicia, los datos se pierden y el Admin debe volver a subir los archivos.
+> El snapshot se guarda en memoria. Si el servidor se reinicia, los datos se pierden y el Admin debe volver a subir los archivos.
 
 ---
 
@@ -87,7 +85,7 @@ Guarda el snapshot procesado en memoria.
 }
 ```
 
-**Límite de payload**: 50mb.
+Límite de payload: 50mb.
 
 ---
 
@@ -140,17 +138,17 @@ Elimina el snapshot de memoria.
 
 ```
 server/
-  server.js              — Entry point, configuración de Express y middlewares
+  server.js              — Entry point: Express, CORS, middlewares, listen
   routes/
-    upload.js            — Ruta POST /snapshot
-    data.js              — Rutas GET /data, GET /status, DELETE /data
+    upload.js            — POST /snapshot
+    data.js              — GET /data, GET /status, DELETE /data
   controllers/
-    uploadController.js  — Lógica de guardado del snapshot
-    dataController.js    — Lógica de lectura y eliminación del snapshot
+    uploadController.js  — Valida y guarda el snapshot en memoria
+    dataController.js    — Lee, verifica y elimina el snapshot
   store/
-    snapshot.js          — Store in-memory (variables de módulo compartidas)
+    snapshot.js          — Store in-memory compartido entre requests
   middlewares/
-    logger.js            — Logger de requests (método + path + timestamp)
+    logger.js            — Log de requests (método + path + timestamp)
 ```
 
 ---
@@ -160,21 +158,18 @@ server/
 El snapshot se guarda en variables de módulo en `store/snapshot.js`. Al ser CommonJS, el módulo se cachea y las variables son compartidas entre todos los requests mientras el proceso esté vivo.
 
 ```js
-// Las 5 funciones exportadas
-getSnapshot()   // Devuelve el snapshot actual o null
-getLastUpdate() // Devuelve el ISO string del último guardado o null
-hasData()       // Boolean — true si hay snapshot guardado
-setSnapshot(data) // Guarda el snapshot y actualiza lastUpdate
-clearSnapshot() // Limpia el snapshot y lastUpdate
+getSnapshot()       // Devuelve el snapshot actual o null
+getLastUpdate()     // Devuelve el ISO string del último guardado o null
+hasData()           // Boolean — true si hay snapshot guardado
+setSnapshot(data)   // Guarda el snapshot y actualiza lastUpdate
+clearSnapshot()     // Limpia el snapshot y lastUpdate
 ```
 
-Si se necesita persistencia entre reinicios, reemplazar `store/snapshot.js` con una implementación que use un archivo JSON o una base de datos (ej: Redis, SQLite).
+Para agregar persistencia entre reinicios, reemplazar `store/snapshot.js` con una implementación que use un archivo JSON o una base de datos (Redis, SQLite, etc.).
 
 ---
 
 ## Deploy en Render
-
-El servidor está deployado en [Render](https://render.com) como Web Service.
 
 | Campo | Valor |
 |---|---|
@@ -183,7 +178,7 @@ El servidor está deployado en [Render](https://render.com) como Web Service.
 | Start Command | `npm start` |
 | URL | `https://monitor-c0bd.onrender.com` |
 
-> El plan gratuito de Render suspende el servidor tras 15 minutos de inactividad. El primer request después de la suspensión puede tardar ~30 segundos en responder (cold start).
+> El plan gratuito de Render suspende el servidor tras 15 minutos de inactividad. El primer request después de la suspensión puede tardar ~30 segundos (cold start).
 
 ---
 

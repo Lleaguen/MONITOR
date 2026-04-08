@@ -1,65 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from './components/layout/Sidebar';
-import Header from './components/layout/Header';
-import CommandCenter from './pages/CommandCenter';
-import Parameters from './pages/Parameters';
-import CutOff from './pages/CutOff';
-import Voluminoso from './pages/Voluminoso';
-import ArribosChasis from './pages/ArribosChasis';
-import SuperBigger from './pages/SuperBigger';
-import VehiculosPlan from './pages/VehiculosPlan';
-import ArribosCamioneta from './pages/ArribosCamioneta';
-import ArribosSemi from './pages/ArribosSemi';
-import ZonasCPT from './pages/ZonasCPT';
-import FileUploader from './components/FileUploader';
-import ModeSelector from './components/ModeSelector';
-import { processCombinedData } from './utils/dataProcessor';
-import { pushSnapshot, fetchSnapshot, fetchStatus } from './utils/api';
-
-import usePolling from './hooks/usePolling';
-
-const LoadingScreen = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-[#080c14] text-white font-sans gap-4">
-    <span className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Verificando servidor...</p>
-  </div>
-);
-
-const ErrorScreen = () => (
-  <div className="flex flex-col items-center justify-center min-h-screen bg-[#080c14] text-white font-sans gap-4 p-4">
-    <span className="w-3 h-3 rounded-full bg-red-500" />
-    <p className="text-[11px] font-black uppercase tracking-widest text-red-400">No se pudieron cargar los datos del servidor</p>
-    <p className="text-[10px] text-slate-600 font-medium">Intentá recargar la página o contactá al administrador.</p>
-  </div>
-);
-
-// ─── Pantallas auxiliares ────────────────────────────────────────────────────
+import Sidebar from './app/layout/Sidebar';
+import Header from './app/layout/Header';
+import CommandCenter from './features/dashboard/pages/CommandCenter';
+import Parameters from './features/configuration/pages/Parameters';
+import CutOff from './features/cutoff/pages/CutOff';
+import Voluminoso from './features/inventory/pages/Voluminoso';
+import SuperBigger from './features/inventory/pages/SuperBigger';
+import VehiculosPlan from './features/vehicles/pages/VehiculosPlan';
+import ArribosPage from './features/vehicles/pages/ArribosPage';
+import ZonasCPT from './features/configuration/pages/ZonasCPT';
+import FileUploader from './app/screens/FileUploader';
+import ModeSelector from './app/screens/ModeSelector';
+import LoadingScreen from './app/screens/LoadingScreen';
+import ErrorScreen from './app/screens/ErrorScreen';
+import { fetchSnapshot, fetchStatus } from './core/api/index';
+import usePolling from './app/hooks/usePolling';
+import { useAdminSync } from './app/hooks/useAdminSync';
 
 function App() {
-  // Modo de la app
   const [appMode, setAppMode] = useState('loading');
   // 'loading' | 'mode-selector' | 'file-uploader' | 'dashboard-admin' | 'dashboard-viewer' | 'error'
 
-  // Datos del dashboard (reemplaza el useMemo anterior)
   const [dashboardData, setDashboardData] = useState(null);
-
-  // Archivos crudos guardados para reprocesar cuando cambian los parámetros
-  const [rawFiles, setRawFiles] = useState(null); // { csv, excel }
-
-  // Estado de sincronización (solo Admin)
+  const [rawFiles, setRawFiles] = useState(null);
   const [syncState, setSyncState] = useState('idle');
   const [syncTime, setSyncTime] = useState(null);
-
-  // Último update del servidor (Viewer)
   const [serverLastUpdate, setServerLastUpdate] = useState(null);
-
-  // Error de red al montar
   const [serverError, setServerError] = useState(false);
-
-  // Navegación interna del dashboard
   const [activeTab, setActiveTab] = useState('command');
 
-  // Parámetros configurables
   const [config, setConfig] = useState({
     proyectado: 239000,
     objetivoHU: 75,
@@ -69,7 +38,6 @@ function App() {
     horaInicioHU: 10,
   });
 
-  // Overrides de zona → CPT — persisten en localStorage
   const [zonaCPTOverrides, setZonaCPTOverrides] = useState(() => {
     try {
       const saved = localStorage.getItem('zonaCPTOverrides');
@@ -82,10 +50,30 @@ function App() {
     try { localStorage.setItem('zonaCPTOverrides', JSON.stringify(newOverrides)); } catch {}
   };
 
-  // Plan de vehículos por tipo y hora (se incluye en el snapshot)
   const [planVehiculos, setPlanVehiculos] = useState([]);
 
-  // ── Tarea 1: fetchStatus al montar ──────────────────────────────────────────
+  // ── Admin sync hook ──────────────────────────────────────────────────────────
+  const { handleDataLoad, handlePlanChange: _handlePlanChange } = useAdminSync({
+    rawFiles,
+    config,
+    zonaCPTOverrides,
+    planVehiculos,
+    appMode,
+    setDashboardData,
+    setSyncState,
+    setSyncTime,
+    setRawFiles,
+    setAppMode,
+    setActiveTab,
+  });
+
+  // handlePlanChange también actualiza planVehiculos local
+  const handlePlanChange = (nuevoPlan) => {
+    setPlanVehiculos(nuevoPlan);
+    _handlePlanChange(nuevoPlan);
+  };
+
+  // ── fetchStatus al montar ────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
       try {
@@ -104,63 +92,7 @@ function App() {
     init();
   }, []);
 
-  // ── Tarea 4: Flujo Admin ─────────────────────────────────────────────────────
-  const handleDataLoad = async (csv, excel) => {
-    setRawFiles({ csv, excel });
-    const data = processCombinedData(
-      csv, excel,
-      config.proyectado, config.objetivoHU, config.productividadHU,
-      { horaInicioArribos: config.horaInicioArribos, horaInicioBipeos: config.horaInicioBipeos, horaInicioHU: config.horaInicioHU, zonaCPTOverrides }
-    );
-    const dataWithPlan = { ...data, planVehiculos };
-    setDashboardData(dataWithPlan);
-    setAppMode('dashboard-admin');
-    setActiveTab('command');
-    setSyncState('syncing');
-
-    try {
-      const res = await pushSnapshot(dataWithPlan);
-      setSyncState('success');
-      setSyncTime(res.lastUpdate ?? null);
-    } catch {
-      setSyncState('error');
-    }
-  };
-
-  // ── Recalcular cuando cambian los parámetros (solo modo Admin con archivos) ──
-  useEffect(() => {
-    if (appMode !== 'dashboard-admin' || !rawFiles) return;
-    const data = processCombinedData(
-      rawFiles.csv, rawFiles.excel,
-      config.proyectado, config.objetivoHU, config.productividadHU,
-      { horaInicioArribos: config.horaInicioArribos, horaInicioBipeos: config.horaInicioBipeos, horaInicioHU: config.horaInicioHU, zonaCPTOverrides }
-    );
-    const dataWithPlan = { ...data, planVehiculos };
-    setDashboardData(dataWithPlan);
-    setSyncState('syncing');
-    pushSnapshot(dataWithPlan)
-      .then((res) => { setSyncState('success'); setSyncTime(res.lastUpdate ?? null); })
-      .catch(() => setSyncState('error'));
-  }, [config.proyectado, config.objetivoHU, config.productividadHU, config.horaInicioArribos, config.horaInicioBipeos, config.horaInicioHU, zonaCPTOverrides]); // rawFiles y appMode son refs estables
-
-  // ── Actualizar plan y re-pushear snapshot ────────────────────────────────────
-  const handlePlanChange = (nuevoPlan) => {
-    setPlanVehiculos(nuevoPlan);
-    if (appMode !== 'dashboard-admin' || !rawFiles) return;
-    const data = processCombinedData(
-      rawFiles.csv, rawFiles.excel,
-      config.proyectado, config.objetivoHU, config.productividadHU,
-      { horaInicioArribos: config.horaInicioArribos, horaInicioBipeos: config.horaInicioBipeos, horaInicioHU: config.horaInicioHU, zonaCPTOverrides }
-    );
-    const dataWithPlan = { ...data, planVehiculos: nuevoPlan };
-    setDashboardData(dataWithPlan);
-    setSyncState('syncing');
-    pushSnapshot(dataWithPlan)
-      .then((res) => { setSyncState('success'); setSyncTime(res.lastUpdate ?? null); })
-      .catch(() => setSyncState('error'));
-  };
-
-  // ── Tarea 6: Flujo Viewer ────────────────────────────────────────────────────
+  // ── Flujo Viewer ─────────────────────────────────────────────────────────────
   const handleViewDashboard = async () => {
     try {
       const data = await fetchSnapshot();
@@ -173,7 +105,7 @@ function App() {
     }
   };
 
-  // ── Tarea 6: Polling ─────────────────────────────────────────────────────────
+  // ── Polling ──────────────────────────────────────────────────────────────────
   usePolling(
     appMode === 'dashboard-viewer',
     serverLastUpdate,
@@ -184,8 +116,7 @@ function App() {
     }
   );
 
-  // ── Tarea 10: Renderizado condicional por modo ───────────────────────────────
-
+  // ── Renderizado condicional ──────────────────────────────────────────────────
   if (appMode === 'loading') return <LoadingScreen />;
 
   if (appMode === 'mode-selector') {
@@ -248,11 +179,11 @@ function App() {
           ) : activeTab === 'vehiculos' ? (
             <VehiculosPlan data={dashboardData} planVehiculos={planVehiculos} />
           ) : activeTab === 'chasis' ? (
-            <ArribosChasis data={dashboardData} />
+            <ArribosPage data={dashboardData} dataKey="arrivalChasis" label="Chasis" />
           ) : activeTab === 'camioneta' ? (
-            <ArribosCamioneta data={dashboardData} />
+            <ArribosPage data={dashboardData} dataKey="arrivalCamioneta" label="Camioneta" />
           ) : activeTab === 'semi' ? (
-            <ArribosSemi data={dashboardData} />
+            <ArribosPage data={dashboardData} dataKey="arrivalSemi" label="Semi" />
           ) : activeTab === 'voluminoso' ? (
             <Voluminoso data={dashboardData} />
           ) : activeTab === 'superbigger' ? (
