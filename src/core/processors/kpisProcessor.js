@@ -79,7 +79,7 @@ export const buildKpis = ({
   };
 
   // Targets — cortes a las 14hs, 16hs y 18hs
-  const CORTES = [14, 16, 18];
+  const CORTES = [14, 16, 18, 20];
   const bipeoAntes = {};
   CORTES.forEach(h => {
    bipeoAntes[h] = filasTMS.filter(f => f.h <= h).length;
