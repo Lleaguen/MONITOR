@@ -16,7 +16,7 @@ const InfoTooltip = ({ t, color }) => (
       <div className="space-y-1.5">
         {[
           ['Proy',                    fmt(t.proyectado)],
-          [`< ${t.hora}:00`,          fmt(t.antesDelCorte)],
+          [`=< ${t.hora}:00`,          fmt(t.antesDelCorte)],
           [`Pz post ${t.hora}hs`,     fmt(t.despuesDelCorte)],
           [`% Post ${t.hora}hs`,      pct(t.pctDespues)],
         ].map(([label, value]) => (
