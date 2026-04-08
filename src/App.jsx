@@ -148,9 +148,7 @@ function App() {
     activeTab === 'command'     ? 'CENTRO DE MANDO OCASA' :
     activeTab === 'cutoff'      ? 'CONTROL CPT / HU' :
     activeTab === 'vehiculos'   ? 'VEHÍCULOS — PLAN VS REAL' :
-    activeTab === 'chasis'      ? 'ARRIBS. DE CHASIS' :
-    activeTab === 'camioneta'   ? 'ARRIBS. DE CAMIONETA' :
-    activeTab === 'semi'        ? 'ARRIBS. DE SEMI' :
+    activeTab === 'arribs'      ? 'ARRIBS. DE VEHÍCULOS' :
     activeTab === 'voluminoso'  ? 'VOLUMINOSO / PAQUETERÍA' :
     activeTab === 'superbigger' ? 'SUPER BIGGER / BIGGER' :
     activeTab === 'zonas'       ? 'ZONAS CPT' :
@@ -178,12 +176,8 @@ function App() {
             <CutOff data={dashboardData} />
           ) : activeTab === 'vehiculos' ? (
             <VehiculosPlan data={dashboardData} planVehiculos={planVehiculos} />
-          ) : activeTab === 'chasis' ? (
-            <ArribosPage data={dashboardData} dataKey="arrivalChasis" label="Chasis" />
-          ) : activeTab === 'camioneta' ? (
-            <ArribosPage data={dashboardData} dataKey="arrivalCamioneta" label="Camioneta" />
-          ) : activeTab === 'semi' ? (
-            <ArribosPage data={dashboardData} dataKey="arrivalSemi" label="Semi" />
+          ) : activeTab === 'arribs' ? (
+            <ArribosPage data={dashboardData} />
           ) : activeTab === 'voluminoso' ? (
             <Voluminoso data={dashboardData} />
           ) : activeTab === 'superbigger' ? (
