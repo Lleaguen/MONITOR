@@ -5,6 +5,7 @@ import SortButton from '../../../shared/components/SortButton.jsx';
 import PageWrapper from '../../../shared/components/PageWrapper.jsx';
 import { parseCSVFile } from '../utils/csvParser.js';
 
+
 const SORT_OPTIONS = [
   { key: 'peso', label: 'Mayor Peso' },
   { key: 'hora', label: 'Hora' },
@@ -12,9 +13,8 @@ const SORT_OPTIONS = [
 
 const PiezasTable = ({ list, orden, color }) => {
   const sorted = [...list].sort((a, b) =>
-    orden === 'peso' ? b.weight - a.weight : (a.hora || '').localeCompare(b.hora || '')
+    orden === 'peso' ? b.weight - a.weight : a.hora.localeCompare(b.hora)
   );
-
   return (
     <div className="bg-[#111827]/10 rounded-2xl border border-white/5 overflow-x-auto">
       <table className="w-full min-w-[600px] text-left">
@@ -23,47 +23,29 @@ const PiezasTable = ({ list, orden, color }) => {
             <th className="px-4 py-3">#</th>
             <th className="py-3">Shipment ID</th>
             <th className="py-3 text-right">Peso (kg)</th>
-            <th className="py-3 text-right">Alto</th>
-            <th className="py-3 text-right">Largo</th>
-            <th className="py-3 text-right">Ancho</th>
-            <th className="py-3 text-center px-4">Hora</th>
+            <th className="py-3 text-right">Alto (cm)</th>
+            <th className="py-3 text-right">Largo (cm)</th>
+            <th className="py-3 text-right">Ancho (cm)</th>
+            <th className="py-3 text-center px-4">Hora Bipeo</th>
           </tr>
         </thead>
-
         <tbody>
-          {sorted.map((row, idx) => {
-            const hasDiff =
-              row.excelWeight !== undefined &&
-              (
-                row.weight !== row.excelWeight ||
-                row.height !== row.excelHeight ||
-                row.length !== row.excelLength ||
-                row.width !== row.excelWidth
-              );
-
-            return (
-              <tr
-                key={idx}
-                className={`border-b border-white/[0.03] text-[10px] transition-colors ${
-                  hasDiff ? 'bg-red-500/10' : 'hover:bg-white/[0.02]'
-                }`}
-              >
-                <td className="px-4 py-3 font-bold text-slate-600">{idx + 1}</td>
-                <td className="py-3 font-black text-slate-300 font-mono text-[9px]">{row.shipmentId}</td>
-                <td className={`py-3 text-right font-black text-${color}`}>{row.weight}</td>
-                <td className="py-3 text-right text-slate-300">{row.height}</td>
-                <td className="py-3 text-right text-slate-300">{row.length}</td>
-                <td className="py-3 text-right text-slate-300">{row.width}</td>
-                <td className="py-3 text-center text-slate-400 px-4">{row.hora || '-'}</td>
-              </tr>
-            );
-          })}
+          {sorted.map((row, idx) => (
+            <tr key={idx} className="border-b border-white/[0.03] text-[10px] hover:bg-white/[0.02] transition-colors">
+              <td className="px-4 py-3 font-bold text-slate-600">{idx + 1}</td>
+              <td className="py-3 font-black text-slate-300 font-mono text-[9px]">{row.shipmentId}</td>
+              <td className={`py-3 text-right font-black text-${color}`}>{row.weight.toLocaleString()}</td>
+              <td className="py-3 text-right font-black text-slate-300">{row.height.toLocaleString()}</td>
+              <td className="py-3 text-right font-black text-slate-300">{row.length.toLocaleString()}</td>
+              <td className="py-3 text-right font-black text-slate-300">{row.width.toLocaleString()}</td>
+              <td className="py-3 text-center font-black text-slate-400 px-4">{row.hora}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
-
       {sorted.length === 0 && (
         <div className="text-center py-10 text-slate-600 font-black text-[11px] uppercase tracking-widest">
-          Sin datos
+          Sin piezas en esta categoría
         </div>
       )}
     </div>
@@ -71,141 +53,82 @@ const PiezasTable = ({ list, orden, color }) => {
 };
 
 const SuperBigger = ({ data }) => {
-  const superList  = data?.superBiggerList || [];
-  const biggerList = data?.biggerList || [];
+  const superList  = data?.superBiggerList      || [];
+  const biggerList = data?.biggerList           || [];
   const superChart = data?.superBiggerChartData || [];
-  const biggerChart = data?.biggerChartData || [];
-
+  const biggerChart = data?.biggerChartData     || [];
   const [orden, setOrden] = useState('peso');
   const [tab, setTab] = useState('super');
-  const [excelData, setExcelData] = useState([]);
 
-  // 📁 Cargar CSV
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const list  = tab === 'super' ? superList  : biggerList;
+  const chart = tab === 'super' ? superChart : biggerChart;
 
-    try {
-      const parsed = await parseCSVFile(file);
-      setExcelData(parsed);
-    } catch (err) {
-      console.error("Error CSV:", err);
-    }
-  };
-
-  // 🔗 Comparación
-  const allLocal = [...superList, ...biggerList];
-
-  const comparisonList = excelData
-    .map(excelItem => {
-      const match = allLocal.find(
-        local => String(local.shipmentId) === String(excelItem.shipmentId)
-      );
-
-      if (!match) return null;
-
-      return {
-        ...match,
-        excelWeight: excelItem.weight,
-        excelHeight: excelItem.height,
-        excelLength: excelItem.length,
-        excelWidth: excelItem.width,
-      };
-    })
-    .filter(Boolean);
-
-  // 📊 Data según tab
-  const list =
-    tab === 'super'
-      ? superList
-      : tab === 'bigger'
-      ? biggerList
-      : comparisonList;
-
-  const chart =
-    tab === 'super'
-      ? superChart
-      : tab === 'bigger'
-      ? biggerChart
-      : [];
-
-  const pesoMax = list.length ? Math.max(...list.map(r => r.weight)) : 0;
-  const dimMax  = list.length ? Math.max(...list.map(r => Math.max(r.height, r.length, r.width))) : 0;
-
-  const lineColor =
-    tab === 'super' ? '#ef4444' :
-    tab === 'bigger' ? '#f97316' :
-    '#3b82f6';
-
-  const statColor =
-    tab === 'super' ? 'red' :
-    tab === 'bigger' ? 'orange' :
-    'blue';
+  const pesoMax = list.length > 0 ? Math.max(...list.map(r => r.weight)) : 0;
+  const dimMax  = list.length > 0 ? Math.max(...list.map(r => Math.max(r.height, r.length, r.width))) : 0;
+  const lineColor = tab === 'super' ? '#ef4444' : '#f97316';
+  const statColor = tab === 'super' ? 'red' : 'orange';
 
   return (
     <PageWrapper>
-
-      {/* 📁 Upload CSV */}
-      <input
-        type="file"
-        accept=".csv"
-        onChange={handleFileUpload}
-        className="mb-4 text-xs text-slate-400"
-      />
-
       {/* Tabs */}
       <div className="flex gap-2">
-        <button onClick={() => setTab('super')} className={`px-4 py-2 rounded-xl text-[10px] font-black ${tab === 'super' ? 'bg-red-600 text-white' : 'bg-white/5 text-slate-400'}`}>
-          Super
+        <button onClick={() => setTab('super')}
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'super' ? 'bg-red-600 text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>
+          Super Bigger
         </button>
-
-        <button onClick={() => setTab('bigger')} className={`px-4 py-2 rounded-xl text-[10px] font-black ${tab === 'bigger' ? 'bg-orange-600 text-white' : 'bg-white/5 text-slate-400'}`}>
+        <button onClick={() => setTab('bigger')}
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${tab === 'bigger' ? 'bg-orange-600 text-white' : 'bg-white/5 text-slate-400 hover:text-white'}`}>
           Bigger
         </button>
-
-        <button onClick={() => setTab('compare')} className={`px-4 py-2 rounded-xl text-[10px] font-black ${tab === 'compare' ? 'bg-blue-600 text-white' : 'bg-white/5 text-slate-400'}`}>
-          Comparación
-        </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-        <StatCard label="Total" value={list.length} color={statColor} />
-        <StatCard label="Peso Máximo" value={`${pesoMax} kg`} />
-        <StatCard label="Dimensión Máxima" value={`${dimMax} cm`} />
+      {/* Criterios */}
+      <div className="px-4 py-2 rounded-xl bg-white/[0.02] border border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-500">
+        {tab === 'super'
+          ? 'Criterio: peso > 50 kg  O  alguna dimensión ≥ 200 cm'
+          : 'Criterio: peso ≥ 30 kg  O  alguna dimensión ≥ 150 cm  (excluye Super Bigger)'}
       </div>
 
-      {/* Chart */}
-      {tab !== 'compare' && (
-        <div className="bg-[#111827]/20 p-4 mt-4 rounded-2xl">
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={chart}>
-              <CartesianGrid stroke="#1e293b" />
-              <XAxis dataKey="hora" />
-              <YAxis />
-              <Tooltip />
-              <Line dataKey="cantidad" stroke={lineColor} />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard label={`Total ${tab === 'super' ? 'Super Bigger' : 'Bigger'}`} value={list.length.toLocaleString()} color={statColor} />
+        <StatCard label="Peso Máximo"      value={`${pesoMax.toLocaleString()} kg`} />
+        <StatCard label="Dimensión Máxima" value={`${dimMax.toLocaleString()} cm`} />
+      </div>
+
+      <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
+        <h3 className="text-base font-black text-white mb-1 tracking-tight">
+          {tab === 'super' ? 'Super Bigger' : 'Bigger'} por Hora
+        </h3>
+        <p className="text-[11px] text-slate-500 italic mb-6">Cantidad de piezas bipeadas por hora</p>
+        <div className="h-48 sm:h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chart} margin={{ top: 10, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
+              <XAxis dataKey="hora" axisLine={false} tickLine={false}
+                tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }} dy={8} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={24} />
+              <Tooltip cursor={{ stroke: '#1e293b' }}
+                contentStyle={{ backgroundColor: '#080c14', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
+              <Line type="monotone" dataKey="cantidad" name={tab === 'super' ? 'Super Bigger' : 'Bigger'}
+                stroke={lineColor} strokeWidth={2.5}
+                dot={{ fill: lineColor, r: 3 }}
+                activeDot={{ r: 5, fill: lineColor, stroke: '#080c14', strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
-      )}
+      </div>
 
-      {/* Sort */}
-      <div className="flex gap-2 mt-4">
+      <div className="flex flex-wrap gap-2 items-center">
+        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mr-2">Ordenar por:</span>
         {SORT_OPTIONS.map(({ key, label }) => (
-          <SortButton key={key} active={orden === key} onClick={() => setOrden(key)}>
+          <SortButton key={key} active={orden === key} onClick={() => setOrden(key)}
+            activeColor={tab === 'super' ? 'bg-red-600' : 'bg-orange-600'}>
             {label}
           </SortButton>
         ))}
       </div>
 
-      {/* Tabla */}
-      <PiezasTable
-        list={list}
-        orden={orden}
-        color={tab === 'super' ? 'red-400' : tab === 'bigger' ? 'orange-400' : 'blue-400'}
-      />
-
+      <PiezasTable list={list} orden={orden} color={tab === 'super' ? 'red-400' : 'orange-400'} />
     </PageWrapper>
   );
 };
