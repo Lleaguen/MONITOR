@@ -4,7 +4,7 @@ import { normalizarPatente, getTipoPorDoca, parsearHoraED, getTipoVehiculo } fro
 
 dayjs.extend(customParseFormat);
 
-const HORAS_RANGO = Array.from({ length: 11 }, (_, i) => i + 9); // 9 a 23
+const HORAS_RANGO = Array.from({ length: 7 }, (_, i) => i + 9); // 9 a 23
 
 // Loop principal sobre TMS — extrae ultimaTs, totalPiezas, bipeo por hora, filasTMS
 export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
@@ -23,7 +23,7 @@ export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
     if (tsMs > ultimaTs) ultimaTs = tsMs;
     if (!d['Shipment ID'] || h < horaInicioBipeos) return;
     totalPiezasSistema++;
-    if (h <= 20) bipeoPorHora[h]++;
+    if (h <= 18) bipeoPorHora[h]++;
     filasTMS.push({
       tsMs,
       patente: normalizarPatente(d['Truck ID']),
@@ -63,7 +63,7 @@ export const buildKpis = ({
   }, 0);
 
   const horasRestantes = Math.max(
-    ultimaReferencia.clone().set('hour', 20).set('minute', 0).diff(ultimaReferencia, 'hour', true), 0.5
+    ultimaReferencia.clone().set('hour', 18).set('minute', 0).diff(ultimaReferencia, 'hour', true), 0.5
   );
   const objXHoraGlobal = Math.round((proyectadoManual - totalPiezasSistema) / horasRestantes);
   const velocidadReal = Math.round(
