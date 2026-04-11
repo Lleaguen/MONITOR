@@ -30,7 +30,7 @@ const StatCard = ({ label, value, sub, color = 'default', className = '' }) => (
   <div className={`rounded-2xl border p-5 ${COLORS[color]} ${className}`}>
     <p className={`text-[9px] font-black uppercase tracking-widest mb-2 ${LABEL_COLORS[color]}`}>{label}</p>
     <p className="text-3xl font-black text-white italic">{value}</p>
-    {sub && <p className="text-[9px] text-slate-500 mt-1">{sub}</p>}
+    {sub && <p className="text-[20px] text-slate-500 mt-1">{sub}</p>}
   </div>
 );
 
