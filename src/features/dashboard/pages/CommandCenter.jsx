@@ -46,7 +46,7 @@ const CierreHUModal = ({ tableData, data }) => {
   const [open, setOpen] = useState(false);
 
   if (!tableData || !tableData.length) return null;
-
+/*
   // 🔥 Resumen global
   const resumen = tableData.reduce(
     (acc, row) => {
@@ -57,7 +57,7 @@ const CierreHUModal = ({ tableData, data }) => {
       return acc;
     },
     { etiquetado: 0, abierto: 0, cerrado: 0, pendiente: 0 }
-  );
+  );*/
 
   const avance =
     resumen.etiquetado > 0
