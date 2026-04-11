@@ -42,7 +42,7 @@ const HUObjetivoWidget = ({ huStats }) => {
 };
 
 
-const CierreHUModal = ({ tableData }) => {
+const CierreHUModal = ({ tableData, data }) => {
   const [open, setOpen] = useState(false);
 
   if (!tableData || !tableData.length) return null;
