@@ -4,7 +4,7 @@ import { getCPTdeZona, CPT_ORDEN } from './zonaCPT.js';
 
 dayjs.extend(customParseFormat);
 
-export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU = 10, zonaCPTOverrides = {}) => {
+export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU = 14, zonaCPTOverrides = {}) => {
   /*
    * ─── FILTROS APLICADOS (para coincidir con el monitor Excel) ───────────────
    *
@@ -52,7 +52,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     const zonaUpper = zonaRaw.toUpperCase();
     // Excluir zonas Meli Air (terminan en _A o _B), FBA1_R y CK390
     if (/_[AB]$/.test(zonaUpper)) return;
-    if (zonaUpper === 'FBA1_R') return;
+   /* if (zonaUpper === 'FBA1_R') return;*/
     if (zonaUpper === 'CK390') return;
     // Normalizar: quitar guiones bajos al final (PCK390_ → PCK390)
     const zona = zonaUpper.replace(/_+$/, "");
@@ -136,7 +136,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
       const zonas = Object.entries(cptData[cpt].zonas).map(([zona, z]) => {
         const pendiente = z.etiquetado - z.huAbierto - z.huCerrado;
         const avance = z.etiquetado > 0
-          ? Math.round(((z.huCerrado + z.huAbierto) / z.etiquetado) * 10000) / 100
+          ? Math.round(((z.huCerrado + z.huAbierto) / z.etiquetado) * 100)/* / 100*/
           : 0;
         return {
           zona, etiquetado: z.etiquetado, huAbierto: z.huAbierto, huCerrado: z.huCerrado,
