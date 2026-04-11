@@ -37,6 +37,7 @@ export const getTipoVehiculo = (tipoRaw) => {
   if (t.includes("SEMI")) return 'semi';
   if (t.includes("CHASIS")) return 'chasis';
   if (t.includes("CAMIONETA") || t.includes("MELI")) return 'camioneta';
+  console.log(t)
   return 'otro';
 };
 
