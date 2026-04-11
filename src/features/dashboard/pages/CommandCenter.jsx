@@ -77,7 +77,7 @@ const CierreHUModal = ({ tableData }) => {
       {/* MODAL */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-6 w-full max-w-4xl animate-in fade-in zoom-in-95">
+          <div className="bg-[#0f172a] border border-white/10 h-full rounded-2xl p-6 w-full max-w-4xl animate-in fade-in zoom-in-95">
 
             {/* HEADER */}
             <div className="flex justify-between items-center mb-6">
