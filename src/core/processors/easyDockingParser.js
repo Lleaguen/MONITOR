@@ -19,11 +19,11 @@ export const parseEasyDocking = (excelRaw) => {
       const accion = String(item['Accion'] || "").toLowerCase() === "add";
       if (!tipoOp || !accion) return false;
 
-      // Semi: solo desde las 12:00
+     /* // Semi: solo desde las 12:00
       if (getTipoVehiculo(item['TIPO DE VEHICULO']) === 'semi') {
         const hora = parsearHoraED(item['Fecha y hora']);
         if (hora !== null && hora < 12) return false;
-      }
+      }*/
       return true;
     });
 };
