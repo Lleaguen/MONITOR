@@ -120,7 +120,6 @@ const CierreInhubModal = ({ data }) => {
   );
 };
 
-export default CierreInhubModal;
 
 const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
   if (!data) return null;
