@@ -96,7 +96,7 @@ const CierreHUModal = ({ tableData }) => {
               Cierre HU (Resumen Completo)
             </h2>
 
-            {/* KPIs */}
+        /*    
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <Card label="Etiquetado" value={resumen.etiquetado} color="text-indigo-400" />
               <Card label="HU Abierto" value={resumen.abierto} color="text-yellow-400" />
@@ -105,7 +105,7 @@ const CierreHUModal = ({ tableData }) => {
               <Card label="% Avance" value={`${avance}%`} color="text-cyan-400" />
             </div>
 
-            {/* TABLA COMPACTA (SIN SCROLL) */}
+            
             <div className="grid grid-cols-6 text-[11px] font-bold text-slate-400 uppercase border-b border-white/10 pb-2">
               <span>CPT</span>
               <span>Etiq</span>
@@ -131,13 +131,14 @@ const CierreHUModal = ({ tableData }) => {
                     <span>{row.etiquetado}</span>
                     <span>{row.huAbierto}</span>
                     <span className="text-emerald-400">{row.huCerrado}</span>
-                    <span className="text-orange-400">{row.pendiente}</span>
+                  <span className="text-orange-400">{row.pendiente}</span>
                     <span className="text-cyan-400">{avanceRow}%</span>
                   </div>
                 );
               })}
             </div>
-
+*/
+             <HUTable tableData={data.tableData} objetivo={data.huStats?.objetivoHU} />
             {/* ACTION */}
             <div className="flex justify-end mt-6">
               <button
