@@ -607,6 +607,15 @@ const VehiculosChart = ({ vehiculosChartData, planVehiculos, onPlanChange, isVie
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
             {plan.some(r => r.chasis || r.camioneta || r.semi) ? 'Plan cargado' : 'Sin plan'}
           </span>
+      <button onClick={() => setResumen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/20 text-violet-400 text-[10px] font-black uppercase tracking-widest transition-all">
+              <span className="hidden sm:inline">Resumen General</span>
+              <span className="sm:hidden">Resumen</span>
+            </button>
+            <button onClick={() => setTorta(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-600/20 hover:bg-orange-600/30 border border-orange-500/20 text-orange-400 text-[10px] font-black uppercase tracking-widest transition-all">
+              Distribución
+            </button>
         )}
         <ViewNav index={viewIndex} onChange={setViewIndex} />
       </div>
