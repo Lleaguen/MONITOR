@@ -22,6 +22,18 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
    */
   const cptData = {};
   const ultimaActividadUsuario = new Map();
+
+  const hoy = dayjs();
+
+csvData.forEach(d => {
+  // ✅ FILTRO POR FECHA DE HOY
+  const fecha = d['Outbound Included Date'] || d['Dispatch Included Date'] || d['Outbound Date Closed'];
+  if (!fecha) return;
+
+  const fechaParseada = dayjs(fecha, "DD/MM/YYYY HH:mm:ss");
+  if (!fechaParseada.isValid() || !fechaParseada.isSame(hoy, 'day')) return;
+
+  
   CPT_ORDEN.forEach(c => { cptData[c] = { zonas: {}, usuariosSetCPT: new Set() }; });
 
   const getOrCreateCPT = (cpt) => {
