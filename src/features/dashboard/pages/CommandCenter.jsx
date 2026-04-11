@@ -42,6 +42,134 @@ const HUObjetivoWidget = ({ huStats }) => {
 };
 
 
+const CierreHUModal = ({ tableData }) => {
+  const [open, setOpen] = useState(false);
+
+  if (!tableData || !tableData.length) return null;
+
+  // 🔥 Resumen global
+  const resumen = tableData.reduce(
+    (acc, row) => {
+      acc.etiquetado += row.etiquetado || 0;
+      acc.abierto += row.huAbierto || 0;
+      acc.cerrado += row.huCerrado || 0;
+      acc.pendiente += row.pendiente || 0;
+      return acc;
+    },
+    { etiquetado: 0, abierto: 0, cerrado: 0, pendiente: 0 }
+  );
+
+  const avance =
+    resumen.etiquetado > 0
+      ? ((resumen.cerrado / resumen.etiquetado) * 100).toFixed(2)
+      : 0;
+
+  return (
+    <>
+      {/* BOTÓN */}
+      <button
+        onClick={() => setOpen(true)}
+        className="text-[10px] font-black text-white bg-fuchsia-600 hover:bg-fuchsia-500 px-4 py-2 rounded uppercase tracking-widest transition-all"
+      >
+        Cierre HU
+      </button>
+
+      {/* MODAL */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-6 w-full max-w-4xl animate-in fade-in zoom-in-95">
+
+            {/* HEADER */}
+            <div className="flex justify-between items-center mb-6">
+              <div className="text-xl font-black text-white tracking-tight">
+                OCASA <span className="text-fuchsia-400">↗</span>
+              </div>
+              <button
+                onClick={() => setOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <h2 className="text-lg font-black text-white mb-6">
+              Cierre HU (Resumen Completo)
+            </h2>
+
+            {/* KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              <Card label="Etiquetado" value={resumen.etiquetado} color="text-indigo-400" />
+              <Card label="HU Abierto" value={resumen.abierto} color="text-yellow-400" />
+              <Card label="HU Cerrado" value={resumen.cerrado} color="text-emerald-400" />
+              <Card label="Pendiente" value={resumen.pendiente} color="text-red-400" />
+              <Card label="% Avance" value={`${avance}%`} color="text-cyan-400" />
+            </div>
+
+            {/* TABLA COMPACTA (SIN SCROLL) */}
+            <div className="grid grid-cols-6 text-[11px] font-bold text-slate-400 uppercase border-b border-white/10 pb-2">
+              <span>CPT</span>
+              <span>Etiq</span>
+              <span>Abierto</span>
+              <span>Cerrado</span>
+              <span>Pend</span>
+              <span>%</span>
+            </div>
+
+            <div className="max-h-[300px] overflow-y-auto mt-2 pr-1">
+              {tableData.map((row, i) => {
+                const avanceRow =
+                  row.etiquetado > 0
+                    ? ((row.huCerrado / row.etiquetado) * 100).toFixed(1)
+                    : 0;
+
+                return (
+                  <div
+                    key={i}
+                    className="grid grid-cols-6 text-xs py-2 border-b border-white/5"
+                  >
+                    <span className="text-blue-400 font-black">{row.cpt}</span>
+                    <span>{row.etiquetado}</span>
+                    <span>{row.huAbierto}</span>
+                    <span className="text-emerald-400">{row.huCerrado}</span>
+                    <span className="text-orange-400">{row.pendiente}</span>
+                    <span className="text-cyan-400">{avanceRow}%</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ACTION */}
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => {
+                  console.log("Cierre HU:", resumen);
+                  setOpen(false);
+                }}
+                className="text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 px-5 py-2 rounded-lg"
+              >
+                Confirmar Cierre
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+// 🔥 mini card reutilizable
+const Card = ({ label, value, color }) => (
+  <div className="bg-white/5 rounded-xl p-3 text-center">
+    <div className="text-[10px] text-slate-400 uppercase font-bold">{label}</div>
+    <div className={`text-lg font-black ${color}`}>{value}</div>
+  </div>
+);
+
+
+
+
+
 const CierreInhubModal = ({ data }) => {
   const [open, setOpen] = useState(false);
 
@@ -167,6 +295,7 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
               bipeado: data.kpis?.bipeado,
             }}
           />
+           <CierreHUModal tableData={data.tableData} />
           <button className="text-[10px] font-black text-slate-500 hover:text-white border border-white/10 px-4 py-2 rounded uppercase tracking-widest transition-all">
             Exportar CSV
           </button>
