@@ -78,16 +78,22 @@ export const buildKpis = ({
     semi:      { real: Math.round((piezasPorTipoEnHora.semi      / minutosTranscurridos) * 60), planificado: Math.round(objXHoraGlobal * piezasPorTipoEnHora.semi      / totalTipo) },
   };
 
-  // Targets — cortes a las 14hs, 16hs y 18hs
+  // ── Cortes de turno ───────────────────────────────────────────────────────
+  // Usa ARRIBOS del Easy Docking (no bipeos del TMS) filtrados desde horaInicioArribos.
+  // Para cambiar las horas de corte, modificar el array CORTES:
   const CORTES = [14, 16, 18, 20];
-  const bipeoAntes = {};
+  const arriboAntes = {};
   CORTES.forEach(h => {
-   bipeoAntes[h] = filasTMS.filter(f => f.h <= h).length;
+    arriboAntes[h] = easyDockingClean.reduce((acc, curr) => {
+      const hora = parsearHoraED(curr['Fecha y hora']);
+      if (hora === null || hora < horaInicioArribos || hora > h) return acc;
+      return acc + (parseFloat(curr['CANT PAQUETES']) || 0);
+    }, 0);
   });
 
   const targets = {};
   CORTES.forEach(h => {
-    const antes = bipeoAntes[h];
+    const antes = Math.round(arriboAntes[h]);
     const despues = proyectadoManual - antes;
     targets[`${h}HS`] = {
       hora: h,
@@ -96,11 +102,21 @@ export const buildKpis = ({
       despuesDelCorte: Math.max(despues, 0),
       pctAntes:   Math.min(Math.round((antes / proyectadoManual) * 10000) / 100, 100),
       pctDespues: Math.min(Math.round((Math.max(despues, 0) / proyectadoManual) * 10000) / 100, 100),
-      // compatibilidad con código existente
       percentage: Math.min(Math.round((antes / proyectadoManual) * 100), 100),
       units: antes,
     };
   });
+
+  // Piezas totales recibidas por tipo de vehículo (desde Easy Docking)
+  const piezasPorTipo = { chasis: 0, camioneta: 0, semi: 0, otro: 0 };
+  easyDockingClean.forEach(doc => {
+    const hora = parsearHoraED(doc['Fecha y hora']);
+    if (hora === null || hora < horaInicioArribos) return;
+    const tipo = getTipoVehiculo(doc['TIPO DE VEHICULO']);
+    const piezas = parseFloat(doc['CANT PAQUETES']) || 0;
+    piezasPorTipo[tipo] = (piezasPorTipo[tipo] || 0) + piezas;
+  });
+  console.log('[TORTA DEBUG] piezasPorTipo:', piezasPorTipo);
 
   const kpis = {
     proyectado: proyectadoManual.toLocaleString(),
@@ -116,7 +132,7 @@ export const buildKpis = ({
     desviosDoca,
   };
 
-  return { kpis, matrix, targets, ultimaReferencia };
+  return { kpis, matrix, targets, ultimaReferencia, piezasPorTipo };
 };
 
 // Chart data (arribo vs bipeo por hora + vehículos por tipo)

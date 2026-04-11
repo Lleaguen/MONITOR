@@ -65,6 +65,7 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
       <section>
         <VehiculosChart
           vehiculosChartData={data.vehiculosChartData}
+          piezasPorTipo={data.piezasPorTipo}
           planVehiculos={planVehiculos ?? data.planVehiculos}
           onPlanChange={onPlanChange}
           isViewer={isViewer}

@@ -4,13 +4,14 @@ export const CustomDot = ({ cx, cy, stroke }) => (
 
 export const PillLabel = ({ x, y, value, color }) => {
   if (!value || value === 0) return null;
-  const w = value > 9 ? 22 : 18;
-  const h = 14;
+  const text = String(value);
+  const w = text.length * 7 + 10;
+  const h = 16;
   return (
     <g>
-      <rect x={x - w / 2} y={y - h - 6} width={w} height={h} rx={4} fill={color} opacity={0.9} />
-      <text x={x} y={y - h / 2 - 6} textAnchor="middle" dominantBaseline="middle"
-        fill="white" fontSize={8} fontWeight="900">{value}</text>
+      <rect x={x - w / 2} y={y - h / 2} width={w} height={h} rx={4} fill={color} opacity={0.95} />
+      <text x={x} y={y} textAnchor="middle" dominantBaseline="middle"
+        fill="white" fontSize={10} fontWeight="900">{text}</text>
     </g>
   );
 };

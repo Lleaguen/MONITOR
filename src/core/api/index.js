@@ -24,3 +24,21 @@ export const fetchStatus = async () => {
   if (!res.ok) throw new Error(`Error al verificar estado: ${res.status}`);
   return res.json();
 };
+
+// Guarda el plan de vehículos en el servidor (persiste entre actualizaciones)
+export const pushPlan = async (planVehiculos) => {
+  const res = await fetch(`${BASE_URL}/plan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ planVehiculos }),
+  });
+  if (!res.ok) throw new Error(`Error al guardar plan: ${res.status}`);
+  return res.json();
+};
+
+// Obtiene el plan guardado en el servidor
+export const fetchPlan = async () => {
+  const res = await fetch(`${BASE_URL}/plan`);
+  if (!res.ok) throw new Error(`Error al obtener plan: ${res.status}`);
+  return res.json();
+};

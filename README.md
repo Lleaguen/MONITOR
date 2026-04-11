@@ -65,11 +65,14 @@ Vista principal del turno:
 - **KPIs superiores**: Proyectado vs Arribado, Bipeado, Velocidad real vs esperada, Vehículos en espera por tipo con dársenas activas
 - **Alerta de desvío de doca**: chasis descargando en sector camioneta (docas 43-75)
 - **Pulso de Descarga**: barras de paquetes arribados vs bipeados por hora
-- **Vehículos por Tipo**: líneas de vehículos anunciados por hora (Chasis / Camioneta / Semi) con plan MELI vs real CIU
+- **Vehículos por Tipo**: líneas de vehículos anunciados por hora (Chasis / Camioneta / Semi) con plan MELI vs real CIU. Incluye botones:
+  - **Cargar Plan**: ingresa el plan de vehículos por hora y tipo (persiste en el servidor)
+  - **Resumen General**: modal con comparativo Meli vs Ciu por tipo
+  - **Distribución**: modal con torta de distribución de vehículos y piezas recibidas por tipo
 - **Velocidad de Descarga**: velocidad real vs planificada por tipo de vehículo
 - **Tabla HU por CPT**: avance de armado de HU por hora de corte
 - **Widget de usuarios HU**: objetivo, usuarios necesarios, activos y diferencia
-- **Cortes de turno**: % de avance bipeado a las 14hs, 16hs y 18hs con tooltip de detalle
+- **Cortes de turno**: % de piezas **arribadas** a las 14hs, 16hs, 18hs y 20hs con tooltip de detalle
 
 ### CutOff / HU
 
@@ -79,9 +82,20 @@ Columnas de **Armado**: Piezas Etiquetadas, HU Abierto, HU Cerrado, Pendientes, 
 
 Columnas de **Despacho**: HUs Finalizados, HUs en Despacho, HUs Enviados, Control (OK / PENDIENTE)
 
+**Lógica de conteo HU** (para coincidir con el monitor Excel):
+- Solo cuenta piezas con `Labeling Zone` en mayúsculas (excluye zonas en minúscula del CSV)
+- Excluye zonas Meli Air (terminan en `_A` o `_B`)
+- Excluye `FBA1_R`
+- Excluye piezas con `Hub Status`: `cancelled`, `in_hub_reject`, `blocked`
+- **HU Cerrado**: piezas con `Outbound Date Closed` no vacío
+- **HU Abierto**: piezas con `Outbound Included Date` pero sin `Outbound Date Closed`
+- Normaliza zonas a mayúsculas y elimina guiones bajos al final (`PCK390_` → `PCK390`)
+
 ### Vehículos Plan
 
-Tres gráficos de barras comparativos (CIU vs MELI) por tipo de vehículo: Chasis, Camioneta y Semi.
+Tres gráficos por tipo de vehículo (Chasis, Camioneta, Semi), cada uno con:
+- **Barras por hora**: CIU (real) vs MELI (plan)
+- **Curva por hora**: líneas reales (no acumuladas) con labels en la curva
 
 ### Arribs. Chasis / Camioneta / Semi
 
@@ -116,7 +130,7 @@ Editor de asignación Labeling Zone → CPT. Permite agregar nuevas zonas, cambi
 
 | Fuente | Formato | Columnas clave |
 |---|---|---|
-| TMS | CSV | `Shipment ID`, `Truck ID`, `Hub Status`, `Inbound Date Included`, `Inbound Dock ID`, `Labeling Zone`, `Outbound ID`, `Outbound Included Date`, `Outbound Date Closed`, `Dispatch ID`, `Dispatch Included Date`, `Height`, `Length`, `Width`, `Weight` |
+| TMS | CSV | `Shipment ID`, `Truck ID`, `Hub Status`, `Inbound Date Included`, `Inbound Dock ID`, `Labeling Zone`, `Outbound ID`, `Outbound Included Date`, `Outbound Date Closed`, `Dispatch ID`, `Dispatch Included Date`, `Height`, `Length`, `Width`, `Weight`, `Process Type` |
 | Easy Docking | Excel (.xlsx) | `PATENTE`, `TIPO DE VEHICULO`, `TIPO DE OPERACION`, `Accion`, `CANT PAQUETES`, `Fecha y hora` (headers en fila 4) |
 
 ### Matching de patentes (TMS ↔ Easy Docking)
@@ -160,6 +174,14 @@ descarga_x_hora = (proyectado - bipeado) / horas_restantes_hasta_22:00
 avance = (piezas_HU_cerrado + piezas_HU_abierto) / piezas_etiquetadas × 100
 ```
 
+### Cortes de turno (14hs, 16hs, 18hs, 20hs)
+
+Usan **piezas arribadas** del Easy Docking (no bipeadas del TMS), filtradas desde `horaInicioArribos`.
+
+```
+piezas_antes_del_corte = sum(CANT_PAQUETES donde hora >= horaInicioArribos Y hora <= hora_corte)
+```
+
 ### Usuarios activos en HU
 
 Último bipeo de outbound hace menos de 5 minutos (relativo al último bipeo del archivo).
@@ -170,24 +192,26 @@ avance = (piezas_HU_cerrado + piezas_HU_abierto) / piezas_etiquetadas × 100
 usuarios_necesarios = piezas_pendientes_HU / productividad_por_usuario / horas_hasta_22:00
 ```
 
+### Plan de vehículos (persistencia)
+
+El plan se guarda en el servidor via `POST /plan` **independientemente del snapshot**. Cuando cualquier Admin sube nuevos archivos, el servidor inyecta automáticamente el plan guardado en el nuevo snapshot si este no trae uno. Esto evita que actualizaciones de datos borren el plan cargado.
+
 ---
 
 ## Arquitectura del proyecto
-
-El proyecto sigue una arquitectura **monolito modular pragmática**: un solo repo sin micro-frontends, con separación clara de responsabilidades por dominio.
 
 ```
 src/
   core/                        — Lógica de negocio pura (sin React)
     api/
-      index.js                 — pushSnapshot, fetchSnapshot, fetchStatus
+      index.js                 — pushSnapshot, fetchSnapshot, fetchStatus, pushPlan, fetchPlan
     processors/
       helpers.js               — Levenshtein, parseo de fechas, tipos de vehículo
       zonaCPT.js               — Mapa Labeling Zone → CPT, CPT_ORDEN
       easyDockingParser.js     — Parseo del Excel de Easy Docking
       vehiculosProcessor.js    — Matching patentes, dársenas, vehículos en espera
-      kpisProcessor.js         — KPIs, matrix, targets, chart data
-      huProcessor.js           — Tabla HU por CPT/zona, usuarios activos
+      kpisProcessor.js         — KPIs, matrix, targets (con arribos), chart data, piezasPorTipo
+      huProcessor.js           — Tabla HU por CPT/zona, usuarios activos, filtros de zona
       voluminosoProcessor.js   — Voluminoso, Super Bigger, Bigger, arrivals
     dataProcessor.js           — Orquestador: coordina todos los processors
     vehiculosPlan.js           — PLAN_HOURS, emptyPlan(), mergePlanConReal()
@@ -201,7 +225,7 @@ src/
       PageWrapper.jsx          — Wrapper con animación fade-in
       index.js                 — Re-exporta todos
     charts/
-      ChartPrimitives.jsx      — CustomDot, PillLabel, BarLabel (reutilizables en Recharts)
+      ChartPrimitives.jsx      — CustomDot, PillLabel (con offset), BarLabel
       index.js
     constants/
       design.js                — VEHICLE_COLORS, CHART_COLORS, TOOLTIP_STYLE, BG_APP
@@ -214,15 +238,16 @@ src/
         MainChart.jsx          — Gráfico Pulso de Descarga (barras)
         MatrixPanel.jsx        — Velocidad de descarga por tipo
         HUTable.jsx            — Tabla HU por CPT
-        TargetCards.jsx        — Cortes de turno (14hs, 16hs, 18hs) con tooltip
+        TargetCards.jsx        — Cortes de turno con tooltip (usa arribos)
       pages/
         CommandCenter.jsx      — Vista principal del turno
     vehicles/
       components/
-        VehiculosChart.jsx     — 3 vistas: Arribo por tipo, Total vs Plan, Plan por tipo
+        VehiculosChart.jsx     — Vistas: Arribo por tipo, Total vs Plan, Plan por tipo
+                                  + modales: Resumen General, Distribución (torta)
       pages/
-        VehiculosPlan.jsx      — Gráficos CIU vs MELI por tipo de vehículo
-        ArribosPage.jsx        — Tabla de arrivals parametrizada (Chasis/Camioneta/Semi)
+        VehiculosPlan.jsx      — Gráficos CIU vs MELI por tipo (barras + curva real)
+        ArribosPage.jsx        — Tabla de arrivals parametrizada
     cutoff/
       pages/
         CutOff.jsx             — Tabla expandible CPT/zona con control HU
@@ -237,10 +262,10 @@ src/
 
   app/                         — Orquestación y shell de la aplicación
     hooks/
-      useAdminSync.js          — Lógica de sync del Admin (carga, recálculo, push)
+      useAdminSync.js          — Lógica de sync del Admin (carga, recálculo, push, plan)
       usePolling.js            — Polling periódico para modo Viewer
     layout/
-      Sidebar.jsx              — Navegación lateral colapsable (prop isViewer)
+      Sidebar.jsx              — Navegación lateral colapsable
       Header.jsx               — Encabezado con hora y SyncStatus
       SyncStatus.jsx           — Indicador de estado de sincronización
     screens/

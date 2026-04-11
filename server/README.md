@@ -49,6 +49,7 @@ El backend no procesa ningún archivo. Toda la lógica de procesamiento vive en 
 Admin (front)                Backend              Viewer (front)
      |                          |                       |
      |-- POST /snapshot ------->|                       |
+     |-- POST /plan ----------->|  (plan separado)      |
      |                          |-- guarda en memoria   |
      |                          |                       |
      |                          |<-- GET /status -------|
@@ -60,13 +61,17 @@ Admin (front)                Backend              Viewer (front)
 
 > El snapshot se guarda en memoria. Si el servidor se reinicia, los datos se pierden y el Admin debe volver a subir los archivos.
 
+### Plan de vehículos (persistencia entre actualizaciones)
+
+El plan de vehículos se guarda **por separado** del snapshot via `POST /plan`. Esto garantiza que cuando cualquier Admin suba nuevos archivos, el plan no se pierda. El servidor inyecta automáticamente el plan guardado en el nuevo snapshot si este no trae uno.
+
 ---
 
 ## API
 
 ### `POST /snapshot`
 
-Guarda el snapshot procesado en memoria.
+Guarda el snapshot procesado en memoria. Si el snapshot no trae `planVehiculos` (o viene vacío), el servidor inyecta automáticamente el plan guardado via `POST /plan`.
 
 **Body**: objeto JSON con el `dashboardData` completo (debe contener la propiedad `kpis`).
 
@@ -134,6 +139,42 @@ Elimina el snapshot de memoria.
 
 ---
 
+### `POST /plan`
+
+Guarda el plan de vehículos en memoria, **independientemente del snapshot**. También actualiza el snapshot actual si existe.
+
+**Body**:
+```json
+{
+  "planVehiculos": [
+    { "hora": "09:00", "chasis": 5, "camioneta": 3, "semi": 1 },
+    ...
+  ]
+}
+```
+
+**Respuesta exitosa** `200`:
+```json
+{ "status": "ok" }
+```
+
+---
+
+### `GET /plan`
+
+Devuelve el plan guardado en memoria.
+
+**Respuesta** `200`:
+```json
+{
+  "planVehiculos": [...]
+}
+```
+
+Devuelve array vacío si no hay plan guardado.
+
+---
+
 ## Estructura del proyecto
 
 ```
@@ -141,12 +182,12 @@ server/
   server.js              — Entry point: Express, CORS, middlewares, listen
   routes/
     upload.js            — POST /snapshot
-    data.js              — GET /data, GET /status, DELETE /data
+    data.js              — GET /data, GET /status, DELETE /data, POST /plan, GET /plan
   controllers/
-    uploadController.js  — Valida y guarda el snapshot en memoria
-    dataController.js    — Lee, verifica y elimina el snapshot
+    uploadController.js  — Valida y guarda el snapshot; inyecta plan si falta
+    dataController.js    — Lee, verifica, elimina snapshot; guarda/lee plan
   store/
-    snapshot.js          — Store in-memory compartido entre requests
+    snapshot.js          — Store in-memory: snapshot + plan (separados)
   middlewares/
     logger.js            — Log de requests (método + path + timestamp)
 ```
@@ -155,14 +196,19 @@ server/
 
 ## Store in-memory
 
-El snapshot se guarda en variables de módulo en `store/snapshot.js`. Al ser CommonJS, el módulo se cachea y las variables son compartidas entre todos los requests mientras el proceso esté vivo.
+El snapshot y el plan se guardan en variables de módulo en `store/snapshot.js`.
 
 ```js
+// Snapshot
 getSnapshot()       // Devuelve el snapshot actual o null
 getLastUpdate()     // Devuelve el ISO string del último guardado o null
 hasData()           // Boolean — true si hay snapshot guardado
 setSnapshot(data)   // Guarda el snapshot y actualiza lastUpdate
 clearSnapshot()     // Limpia el snapshot y lastUpdate
+
+// Plan (independiente del snapshot)
+getPlan()           // Devuelve el plan guardado o null
+setPlan(plan)       // Guarda el plan de vehículos
 ```
 
 Para agregar persistencia entre reinicios, reemplazar `store/snapshot.js` con una implementación que use un archivo JSON o una base de datos (Redis, SQLite, etc.).

@@ -3,6 +3,7 @@ import {
   Tooltip, ResponsiveContainer, CartesianGrid, LabelList,
 } from 'recharts';
 import { mergePlanConReal } from '../../../core/vehiculosPlan.js';
+import { PillLabel, CustomDot } from '../../../shared/charts/ChartPrimitives.jsx';
 
 const tooltipStyle = {
   backgroundColor: '#080c14',
@@ -25,18 +26,6 @@ const BarLabel = ({ x, y, width, value, fill }) => {
 
 const TipoChart = ({ title, subtitle, dataKey, planKey, color, data }) => {
   const filtered = data.filter(d => d[dataKey] > 0 || d[planKey] > 0);
-
-  // Calcular acumulados para la curva
-  const withCumulative = filtered.reduce((acc, d, i) => {
-    const prevCiu  = i > 0 ? acc[i - 1].acumCiu  : 0;
-    const prevMeli = i > 0 ? acc[i - 1].acumMeli : 0;
-    acc.push({
-      ...d,
-      acumCiu:  prevCiu  + (d[dataKey] || 0),
-      acumMeli: prevMeli + (d[planKey]  || 0),
-    });
-    return acc;
-  }, []);
 
   return (
     <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
@@ -79,25 +68,29 @@ const TipoChart = ({ title, subtitle, dataKey, planKey, color, data }) => {
           </div>
         </div>
 
-        {/* Curva acumulada */}
+        {/* Curva real por hora */}
         <div>
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">Acumulado</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-2">Curva por hora</p>
           <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={withCumulative} margin={{ top: 16, right: 4, bottom: 0, left: 0 }}>
+              <ComposedChart data={filtered} margin={{ top: 24, right: 8, bottom: 0, left: 0 }}>
                 <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="3 3" />
                 <XAxis dataKey="hora" axisLine={false} tickLine={false}
                   tick={{ fill: '#475569', fontSize: 9, fontWeight: 'bold' }} dy={8} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={20} />
                 <Tooltip cursor={{ stroke: '#1e293b' }} contentStyle={tooltipStyle} />
-                <Line type="monotone" dataKey="acumMeli" name="Meli acum."
+                <Line type="monotoneX" dataKey={planKey} name="Meli"
                   stroke="#a78bfa" strokeWidth={2} strokeDasharray="5 4"
-                  dot={{ r: 2, fill: '#a78bfa', stroke: 'none' }}
-                  activeDot={{ r: 4, fill: '#a78bfa', stroke: '#080c14', strokeWidth: 2 }} />
-                <Line type="monotone" dataKey="acumCiu" name="Ciu acum."
+                  dot={<CustomDot stroke="#a78bfa" />}
+                  activeDot={{ r: 4, fill: '#a78bfa', stroke: '#080c14', strokeWidth: 2 }}>
+                  <LabelList content={(p) => <PillLabel {...p} color="#a78bfa" offset={-1} />} />
+                </Line>
+                <Line type="monotoneX" dataKey={dataKey} name="Ciu"
                   stroke={color} strokeWidth={2.5}
-                  dot={{ r: 2, fill: color, stroke: 'none' }}
-                  activeDot={{ r: 4, fill: color, stroke: '#080c14', strokeWidth: 2 }} />
+                  dot={<CustomDot stroke={color} />}
+                  activeDot={{ r: 4, fill: color, stroke: '#080c14', strokeWidth: 2 }}>
+                  <LabelList content={(p) => <PillLabel {...p} color={color} offset={1} />} />
+                </Line>
               </ComposedChart>
             </ResponsiveContainer>
           </div>

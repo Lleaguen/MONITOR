@@ -5,9 +5,23 @@ import { getCPTdeZona, CPT_ORDEN } from './zonaCPT.js';
 dayjs.extend(customParseFormat);
 
 export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU = 10, zonaCPTOverrides = {}) => {
+  /*
+   * ─── FILTROS APLICADOS (para coincidir con el monitor Excel) ───────────────
+   *
+   * 1. Solo piezas con Shipment ID válido
+   * 2. Solo zonas en MAYÚSCULAS (excluye zonas en minúscula del CSV)
+   * 3. Excluye zonas Meli Air: terminan en _A o _B (ej: SNQ1_A, STW1_A)
+   * 4. Excluye FBA1_R
+   * 5. Excluye piezas con Hub Status: cancelled, in_hub_reject, blocked
+   * 6. Solo zonas mapeadas a un CPT (via zonaCPT.js o zonaCPTOverrides)
+   * 7. Normaliza zonas: elimina guiones bajos al final (PCK390_ → PCK390)
+   *
+   * Para agregar una nueva exclusión, agregar un `if (...) return;` antes de z.etiquetado++
+   * Para cambiar qué cuenta como HU Cerrado/Abierto, modificar el bloque de Hub Status abajo
+   * ─────────────────────────────────────────────────────────────────────────────
+   */
   const cptData = {};
   const ultimaActividadUsuario = new Map();
-  // Inicializar CPTs conocidos; los nuevos se crean dinámicamente
   CPT_ORDEN.forEach(c => { cptData[c] = { zonas: {}, usuariosSetCPT: new Set() }; });
 
   const getOrCreateCPT = (cpt) => {
@@ -15,7 +29,6 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     return cptData[cpt];
   };
 
-  // Pre-poblar zonas de overrides aunque no tengan piezas en el TMS
   Object.entries(zonaCPTOverrides).forEach(([zona, cpt]) => {
     if (!cpt) return;
     const entry = getOrCreateCPT(cpt);
@@ -32,13 +45,22 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
 
   csvData.forEach(d => {
     if (!d['Shipment ID']) return;
-    const zona = String(d['Labeling Zone'] || "").trim();
-    if (!zona) return;
+    const zonaRaw = String(d['Labeling Zone'] || "").trim();
+    if (!zonaRaw) return;
+    // Excluir zonas en minúscula (el Excel no las reconoce)
+    if (zonaRaw !== zonaRaw.toUpperCase()) return;
+    const zonaUpper = zonaRaw.toUpperCase();
+    // Excluir zonas Meli Air (terminan en _A o _B), FBA1_R y CK390
+    if (/_[AB]$/.test(zonaUpper)) return;
+    if (zonaUpper === 'FBA1_R') return;
+    if (zonaUpper === 'CK390') return;
+    // Normalizar: quitar guiones bajos al final (PCK390_ → PCK390)
+    const zona = zonaUpper.replace(/_+$/, "");
+
     const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
     if (!cpt) return;
 
     const cptEntry = getOrCreateCPT(cpt);
-
     if (!cptEntry.zonas[zona]) {
       cptEntry.zonas[zona] = {
         etiquetado: 0, huAbierto: 0, huCerrado: 0,
@@ -53,16 +75,17 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     const dispatchId = String(d['Dispatch ID'] || "").trim();
     const hubStatus  = String(d['Hub Status'] || "").toLowerCase().trim();
 
+    // Excluir piezas canceladas, rechazadas o bloqueadas
+    if (['cancelled', 'in_hub_reject', 'blocked'].includes(hubStatus)) return;
+
     z.etiquetado++;
 
-    // Filtrar HU abierto/cerrado por horaInicioHU
-    if (d['Outbound Included Date']) {
-      const oh = dayjs(d['Outbound Included Date'], "DD/MM/YYYY HH:mm:ss");
-      if (oh.isValid() && oh.hour() >= horaInicioHU) {
-        if (d['Outbound Date Closed']) z.huCerrado++;
-        else                           z.huAbierto++;
-      }
-    }
+    // ── Clasificación HU ──────────────────────────────────────────────────────
+    // HU Cerrado = tiene Outbound Date Closed (HU completamente armado)
+    // HU Abierto = tiene Outbound Included Date pero sin fecha de cierre (en proceso)
+    // Para cambiar la lógica de clasificación, modificar estas dos líneas:
+    if (d['Outbound Date Closed'] || hubStatus === 'dispatched') z.huCerrado++;
+    else if (d['Outbound Included Date']) z.huAbierto++;
 
     if (hubStatus === 'outbound_finished') z.huFinalizadas++;
     if (d['Outbound Position'] && outboundId) z.huEnDespachoSet.add(outboundId);
@@ -84,11 +107,9 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     }
   });
 
-  // Usuarios activos (últimos 5 min relativo a ultimaTs)
   const CINCO_MIN_MS = 5 * 60 * 1000;
   const refMs = ultimaTs > 0 ? ultimaTs : Date.now();
 
-  // Inicializar usuariosSetCPT para todos los CPTs (incluyendo nuevos)
   Object.keys(cptData).forEach(c => { cptData[c].usuariosSetCPT = new Set(); });
   ultimaActividadUsuario.forEach((info, usr) => {
     if ((refMs - info.ts) > CINCO_MIN_MS) return;
@@ -104,7 +125,6 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
       .map(([usr]) => usr)
   );
 
-  // Ordenar CPTs: primero los conocidos en orden, luego los nuevos al final
   const todosLosCPTs = [
     ...CPT_ORDEN.filter(c => cptData[c]),
     ...Object.keys(cptData).filter(c => !CPT_ORDEN.includes(c)).sort(),
@@ -155,7 +175,6 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     ? Math.round(((totalesHU.huCerrado + totalesHU.huAbierto) / totalesHU.etiquetado) * 10000) / 100
     : 0;
 
-  // Usuarios necesarios
   const horasHasta22 = Math.max(
     dayjs().set('hour', 22).set('minute', 0).set('second', 0).diff(dayjs(), 'hour', true), 0.1
   );

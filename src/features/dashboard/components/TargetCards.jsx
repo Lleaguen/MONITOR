@@ -63,7 +63,7 @@ const TargetCardItem = ({ keyHS, t }) => {
           {pct(t.pctAntes)}
         </h4>
         <div className="text-right">
-          <p className="text-[9px] font-bold text-slate-600 uppercase">Bipeado</p>
+          <p className="text-[9px] font-bold text-slate-600 uppercase">Arribado</p>
           <p className="text-xs font-black text-slate-400 font-mono tracking-tighter">
             {fmt(t.antesDelCorte)} pzas
           </p>

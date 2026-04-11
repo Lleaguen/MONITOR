@@ -5,6 +5,31 @@ import { buildTMSData, buildKpis, buildChartData }             from './processor
 import { buildHUData }                                         from './processors/huProcessor.js';
 import { buildVolData, buildSuperBigger, buildArrivalChasis }  from './processors/voluminosoProcessor.js';
 
+/**
+ * processCombinedData — Orquestador principal de procesamiento de datos.
+ *
+ * Recibe los datos crudos del CSV (TMS) y Excel (Easy Docking) y coordina
+ * todos los processors para generar el objeto dashboardData completo.
+ *
+ * @param {Array}  csvData          - Filas del CSV del TMS (una por pieza)
+ * @param {Array}  excelRaw         - Filas del Excel de Easy Docking
+ * @param {number} proyectadoManual - Total de piezas esperadas en el turno
+ * @param {number} objetivoHU       - % objetivo de avance de HU (0-100)
+ * @param {number} productividadHU  - Piezas por usuario por hora en HU
+ * @param {Object} config           - Configuración adicional:
+ *   @param {number} config.horaInicioArribos  - Desde qué hora contar arribos del ED (default: 9)
+ *   @param {number} config.horaInicioBipeos   - Desde qué hora contar bipeos del TMS (default: 9)
+ *   @param {number} config.horaInicioHU       - Desde qué hora contar bipeos de HU (default: 10)
+ *   @param {Object} config.zonaCPTOverrides   - Overrides manuales { ZONA: 'CPT' }
+ *
+ * @returns {Object} dashboardData con todas las métricas del turno
+ *
+ * Para agregar un nuevo processor:
+ * 1. Crear el archivo en src/core/processors/
+ * 2. Importarlo acá
+ * 3. Llamarlo en el orden correcto (respetando dependencias)
+ * 4. Agregar el resultado al objeto de retorno
+ */
 export const processCombinedData = (
   csvData,
   excelRaw,
@@ -40,7 +65,7 @@ export const processCombinedData = (
   const mapPatenteTipo = buildMapPatenteTipo(easyDockingClean, matchEDaTMS);
 
   // 6. KPIs, matrix, targets
-  const { kpis, matrix, targets } = buildKpis({
+  const { kpis, matrix, targets, piezasPorTipo } = buildKpis({
     easyDockingClean, totalPiezasSistema, filasTMS,
     ultimaTs, proyectadoManual, conteoEspera, desviosDoca, mapPatenteTipo,
     horaInicioArribos,
@@ -65,6 +90,7 @@ export const processCombinedData = (
     chartData,
     vehiculosChartData,
     targets,
+    piezasPorTipo,
     tableData,
     totalesHU,
     volData,
