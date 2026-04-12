@@ -585,7 +585,7 @@ const VehiculosChart = ({ vehiculosChartData, planVehiculos, onPlanChange, isVie
     <div className="space-y-4">
 
       {/* Barra de controles */}
-      <div className="flex justify-between items-center bg-[#0f172a] px-4 py-3 rounded-xl border border-white/10">
+      <div className="flex flex-wrap justify-between items-center gap-2 bg-[#0f172a] px-4 py-3 rounded-xl border border-white/10">
         {!isViewer ? (
           <div className="flex flex-wrap items-center gap-2">
             <button onClick={() => setModal(true)}
@@ -604,20 +604,20 @@ const VehiculosChart = ({ vehiculosChartData, planVehiculos, onPlanChange, isVie
             </button>
           </div>
         ) : (
-          <>
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
-            {plan.some(r => r.chasis || r.camioneta || r.semi) ? 'Plan cargado' : 'Sin plan'}
-          </span>
-        <button onClick={() => setResumen(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/20 text-violet-400 text-[10px] font-black uppercase tracking-widest transition-all">
-                <span className="hidden sm:inline">Resumen General</span>
-                <span className="sm:hidden">Resumen</span>
-              </button>
-              <button onClick={() => setTorta(true)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-600/20 hover:bg-orange-600/30 border border-orange-500/20 text-orange-400 text-[10px] font-black uppercase tracking-widest transition-all">
-                Distribución
-              </button>
-            </>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+              {plan.some(r => r.chasis || r.camioneta || r.semi) ? 'Plan cargado' : 'Sin plan'}
+            </span>
+            <button onClick={() => setResumen(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/20 text-violet-400 text-[10px] font-black uppercase tracking-widest transition-all">
+              <span className="hidden sm:inline">Resumen General</span>
+              <span className="sm:hidden">Resumen</span>
+            </button>
+            <button onClick={() => setTorta(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-600/20 hover:bg-orange-600/30 border border-orange-500/20 text-orange-400 text-[10px] font-black uppercase tracking-widest transition-all">
+              Distribución
+            </button>
+          </div>
         )}
         <ViewNav index={viewIndex} onChange={setViewIndex} />
       </div>
