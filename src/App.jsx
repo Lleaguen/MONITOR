@@ -162,7 +162,7 @@ function App() {
         onNewDispatch={() => setAppMode('file-uploader')}
         isViewer={isViewer}
       />
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto md:ml-[60px]">
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden md:ml-[60px]">
         <Header
           title={pageTitle}
           lastUpdate={dashboardData?.kpis?.ultimaActualizacion}
