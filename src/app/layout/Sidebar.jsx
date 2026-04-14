@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Settings, ClipboardList, Package, Truck, Maximize2, BarChart2, Map, Plus, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Settings, ClipboardList, Package, Truck, Maximize2, BarChart2, Map, Gauge, Plus, Menu, X } from 'lucide-react';
 
 const NavItem = ({ icon, text, active, onClick, expanded }) => (
   <div
@@ -65,10 +65,12 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
             { tab: 'cutoff',     icon: <ClipboardList size={18}/>,   text: 'CutOff' },
             { tab: 'vehiculos',  icon: <BarChart2 size={18}/>,       text: 'Vehículos Plan' },
             { tab: 'arribs',     icon: <Truck size={18}/>,           text: 'Arribs. Vehículos' },
+            { tab: 'darsenas',   icon: <Gauge size={18}/>,           text: 'Vel. Dársenas' },
             { tab: 'voluminoso', icon: <Package size={18}/>,         text: 'Voluminoso' },
             { tab: 'superbigger',icon: <Maximize2 size={18}/>,       text: 'Super Bigger' },
             { tab: 'zonas',      icon: <Map size={18}/>,             text: 'Zonas CPT' },
             { tab: 'params',     icon: <Settings size={18}/>,        text: 'Parámetros' },
+            // { tab: 'velocidad',  icon: <Gauge size={18}/>, text: 'Velo. Descarga' },
           ].map(({ tab, icon, text }) => (
             <div key={tab} onClick={() => handleNav(tab)}
               className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition-all ${activeTab === tab ? 'bg-blue-600/10 text-blue-400 border border-blue-500/10' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}>
@@ -113,6 +115,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
           <NavItem icon={<ClipboardList size={18}/>}  text="CutOff"              active={activeTab === 'cutoff'}      onClick={() => handleNav('cutoff')}      expanded={expanded} />
           <NavItem icon={<BarChart2 size={18}/>}      text="Vehículos Plan"      active={activeTab === 'vehiculos'}   onClick={() => handleNav('vehiculos')}   expanded={expanded} />
           <NavItem icon={<Truck size={18}/>}          text="Arribs. Vehículos"   active={activeTab === 'arribs'}      onClick={() => handleNav('arribs')}      expanded={expanded} />
+          <NavItem icon={<Gauge size={18}/>}       text="Velo. Darsenas"          active={activeTab === 'velocidad'}      onClick={() => handleNav('velocidad')}      expanded={expanded} />
           <NavItem icon={<Package size={18}/>}        text="Voluminoso"          active={activeTab === 'voluminoso'}  onClick={() => handleNav('voluminoso')}  expanded={expanded} />
           <NavItem icon={<Maximize2 size={18}/>}      text="Super Bigger"        active={activeTab === 'superbigger'} onClick={() => handleNav('superbigger')} expanded={expanded} />
           <NavItem icon={<Map size={18}/>}            text="Zonas CPT"           active={activeTab === 'zonas'}       onClick={() => handleNav('zonas')}       expanded={expanded} />

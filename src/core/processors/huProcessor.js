@@ -178,9 +178,10 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
   const horasHasta22 = Math.max(
     dayjs().set('hour', 22).set('minute', 0).set('second', 0).diff(dayjs(), 'hour', true), 0.1
   );
-  const pendientesHUGlobal = totalesHU.pendiente || 0;
+  // Incluye pendientes + HU abiertas (en proceso) + 25% de margen para asegurar llegar a tiempo
+  const trabajoRestante = (totalesHU.pendiente || 0) + (totalesHU.huAbierto || 0);
   const usuariosNecesarios = productividadHU > 0
-    ? Math.ceil(pendientesHUGlobal / productividadHU / horasHasta22)
+    ? Math.ceil((trabajoRestante / productividadHU / horasHasta22) * 1.25)
     : 0;
 
   return {
@@ -192,7 +193,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
       usuariosNecesarios,
       usuariosActivos: totalesHU.usuarios,
       diferenciaUsuarios: totalesHU.usuarios - usuariosNecesarios,
-      pendientes: pendientesHUGlobal,
+      pendientes: trabajoRestante,
     },
   };
 };

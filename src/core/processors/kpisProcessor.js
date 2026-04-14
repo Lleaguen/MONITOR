@@ -4,7 +4,7 @@ import { normalizarPatente, getTipoPorDoca, parsearHoraED, getTipoVehiculo } fro
 
 dayjs.extend(customParseFormat);
 
-const HORAS_RANGO = Array.from({ length: 7 }, (_, i) => i + 9); // 9 a 23
+const HORAS_RANGO = Array.from({ length: 15 }, (_, i) => i + 9); // 9 a 23
 
 // Loop principal sobre TMS — extrae ultimaTs, totalPiezas, bipeo por hora, filasTMS
 export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
@@ -23,7 +23,7 @@ export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
     if (tsMs > ultimaTs) ultimaTs = tsMs;
     if (!d['Shipment ID'] || h < horaInicioBipeos) return;
     totalPiezasSistema++;
-    if (h <= 18) bipeoPorHora[h]++;
+    if (h <= 23) bipeoPorHora[h]++;
     filasTMS.push({
       tsMs,
       patente: normalizarPatente(d['Truck ID']),
@@ -63,7 +63,7 @@ export const buildKpis = ({
   }, 0);
 
   const horasRestantes = Math.max(
-    ultimaReferencia.clone().set('hour', 18).set('minute', 0).diff(ultimaReferencia, 'hour', true), 0.5
+    ultimaReferencia.clone().set('hour', 22).set('minute', 0).diff(ultimaReferencia, 'hour', true), 0.5
   );
   const objXHoraGlobal = Math.round((proyectadoManual - totalPiezasSistema) / horasRestantes);
   const velocidadReal = Math.round(
@@ -107,16 +107,12 @@ export const buildKpis = ({
     };
   });
 
-  // Piezas totales recibidas por tipo de vehículo (desde Easy Docking)
-  const piezasPorTipo = { chasis: 0, camioneta: 0, semi: 0, otro: 0 };
-  easyDockingClean.forEach(doc => {
-    const hora = parsearHoraED(doc['Fecha y hora']);
-    if (hora === null || hora < horaInicioArribos) return;
-    const tipo = getTipoVehiculo(doc['TIPO DE VEHICULO']);
-    const piezas = parseFloat(doc['CANT PAQUETES']) || 0;
-    piezasPorTipo[tipo] = (piezasPorTipo[tipo] || 0) + piezas;
+  // Piezas bipeadas por tipo de vehículo — clasificadas por dársena del TMS
+  const piezasBipeadasPorTipo = { chasis: 0, camioneta: 0, semi: 0, otro: 0 };
+  filasTMS.forEach(({ patente, doca }) => {
+    const tipo = mapPatenteTipo.get(patente) || getTipoPorDoca(doca);
+    piezasBipeadasPorTipo[tipo]++;
   });
-  console.log('[TORTA DEBUG] piezasPorTipo:', piezasPorTipo);
 
   const kpis = {
     proyectado: proyectadoManual.toLocaleString(),
@@ -132,7 +128,7 @@ export const buildKpis = ({
     desviosDoca,
   };
 
-  return { kpis, matrix, targets, ultimaReferencia, piezasPorTipo };
+  return { kpis, matrix, targets, ultimaReferencia, piezasPorTipo: piezasBipeadasPorTipo };
 };
 
 // Chart data (arribo vs bipeo por hora + vehículos por tipo)

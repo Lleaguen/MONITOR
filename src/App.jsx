@@ -16,6 +16,7 @@ import ErrorScreen from './app/screens/ErrorScreen';
 import { fetchSnapshot, fetchStatus } from './core/api/index';
 import usePolling from './app/hooks/usePolling';
 import { useAdminSync } from './app/hooks/useAdminSync';
+import VelocidadDarsenas from './features/dashboard/pages/VelocidadDarsenas';
 
 function App() {
   const [appMode, setAppMode] = useState('loading');
@@ -152,6 +153,7 @@ function App() {
     activeTab === 'voluminoso'  ? 'VOLUMINOSO / PAQUETERÍA' :
     activeTab === 'superbigger' ? 'SUPER BIGGER / BIGGER' :
     activeTab === 'zonas'       ? 'ZONAS CPT' :
+    activeTab === 'velocidad'   ? 'VELOCIDAD_OBJETIVO' :
     'AJUSTE DE PARÁMETROS';
 
   return (
@@ -184,7 +186,10 @@ function App() {
             <SuperBigger data={dashboardData} />
           ) : activeTab === 'zonas' ? (
             <ZonasCPT overrides={zonaCPTOverrides} onOverridesChange={handleOverridesChange} />
-          ) : (
+          ) : activeTab === 'velocidad' ? (
+            <VelocidadDarsenas data={dashboardData}/>
+          ) 
+          : (
             <Parameters config={config} setConfig={setConfig} />
           )}
         </div>

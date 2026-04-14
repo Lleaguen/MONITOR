@@ -1,10 +1,49 @@
 import { useState } from 'react';
+import dayjs from 'dayjs';
 import KpiGrid from '../components/KpiGrid';
 import MainChart from '../components/MainChart';
 import VehiculosChart from '../../vehicles/components/VehiculosChart';
 import MatrixPanel from '../components/MatrixPanel';
 import HUTable from '../components/HUTable';
 import TargetCards from '../components/TargetCards';
+
+const PIEZAS_POR_USUARIO_HORA_DESCARGA = 300;
+
+const DescargaWidget = ({ kpis }) => {
+  if (!kpis) return null;
+  const proyectado = parseInt(String(kpis.proyectado || '0').replace(/\D/g, ''), 10) || 0;
+  const bipeado    = parseInt(String(kpis.bipeado    || '0').replace(/\D/g, ''), 10) || 0;
+  const restantes  = proyectado - bipeado;
+  if (restantes <= 0) return null;
+
+  const ahora        = dayjs();
+  const horasHasta22 = Math.max(ahora.clone().hour(22).minute(0).second(0).diff(ahora, 'hour', true), 0.25);
+  const necesarios   = Math.ceil(restantes / horasHasta22 / PIEZAS_POR_USUARIO_HORA_DESCARGA);
+
+  return (
+    <div className="flex flex-wrap items-center gap-4 mt-4 p-4 bg-[#111827]/40 border border-white/5 rounded-xl">
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Conectados p/ terminar a las 22hs</span>
+        <span className="text-sm font-black text-amber-400 bg-amber-400/10 px-3 py-1 rounded-lg">{necesarios}</span>
+      </div>
+      <div className="w-px h-6 bg-white/10 hidden sm:block" />
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Proyectado − Bipeado</span>
+        <span className="text-sm font-black text-slate-300">{restantes.toLocaleString()}</span>
+      </div>
+      <div className="w-px h-6 bg-white/10 hidden sm:block" />
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Horas disponibles</span>
+        <span className="text-sm font-black text-slate-300">{horasHasta22.toFixed(1)}hs</span>
+      </div>
+      <div className="w-px h-6 bg-white/10 hidden sm:block" />
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Promedio</span>
+        <span className="text-sm font-black text-slate-500">{PIEZAS_POR_USUARIO_HORA_DESCARGA} pzas/usr/hr</span>
+      </div>
+    </div>
+  );
+};
 
 const HUObjetivoWidget = ({ huStats }) => {
   if (!huStats) return null;
@@ -102,6 +141,7 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
 
       <section>
         <KpiGrid kpis={data.kpis} />
+        <DescargaWidget kpis={data.kpis} />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
@@ -119,6 +159,7 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
           planVehiculos={planVehiculos ?? data.planVehiculos}
           onPlanChange={onPlanChange}
           isViewer={isViewer}
+          piezasPorTipo={data.piezasPorTipo}
         />
       </section>
 

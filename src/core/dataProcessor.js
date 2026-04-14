@@ -4,6 +4,7 @@ import { buildPatentesTMS, buildMatchEDaTMS, buildDarsenasActivas,
 import { buildTMSData, buildKpis, buildChartData }             from './processors/kpisProcessor.js';
 import { buildHUData }                                         from './processors/huProcessor.js';
 import { buildVolData, buildSuperBigger, buildArrivalChasis }  from './processors/voluminosoProcessor.js';
+import { buildDarsenaStats }                                     from './processors/darsenaProcessor.js';
 
 /**
  * processCombinedData — Orquestador principal de procesamiento de datos.
@@ -83,6 +84,7 @@ export const processCombinedData = (
   const arrivalChasis    = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'chasis');
   const arrivalCamioneta = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'camioneta');
   const arrivalSemi      = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'semi');
+  const darsenaStats     = buildDarsenaStats(csvData, ultimaTs);
 
   return {
     kpis,
@@ -97,6 +99,7 @@ export const processCombinedData = (
     arrivalChasis,
     arrivalCamioneta,
     arrivalSemi,
+    darsenaStats,
     superBiggerList,
     biggerList,
     superBiggerChartData,
