@@ -65,7 +65,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
             { tab: 'cutoff',     icon: <ClipboardList size={18}/>,   text: 'CutOff' },
             { tab: 'vehiculos',  icon: <BarChart2 size={18}/>,       text: 'Vehículos Plan' },
             { tab: 'arribs',     icon: <Truck size={18}/>,           text: 'Arribs. Vehículos' },
-            { tab: 'darsenas',   icon: <Gauge size={18}/>,           text: 'Vel. Dársenas' },
+            { tab: 'velocidad',  icon: <Gauge size={18}/>,           text: 'Vel. Dársenas' },
             { tab: 'voluminoso', icon: <Package size={18}/>,         text: 'Voluminoso' },
             { tab: 'superbigger',icon: <Maximize2 size={18}/>,       text: 'Super Bigger' },
             { tab: 'zonas',      icon: <Map size={18}/>,             text: 'Zonas CPT' },

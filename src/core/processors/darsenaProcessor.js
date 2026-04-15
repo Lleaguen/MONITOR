@@ -43,12 +43,14 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
         piezas: 0,
         primerBipeo: ts,
         ultimoBipeo: ts,
-        patentes: new Map(), // patente → { piezas, primerBipeo, ultimoBipeo }
+        bipeoTs: [],
+        patentes: new Map(),
       });
     }
 
     const entry = porDoca.get(doca);
     entry.piezas++;
+    entry.bipeoTs.push(ts);
     if (ts < entry.primerBipeo) entry.primerBipeo = ts;
     if (ts > entry.ultimoBipeo) entry.ultimoBipeo = ts;
 
@@ -62,13 +64,18 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
   });
 
   // Calcular velocidades
-  const DIEZ_MIN_MS = 10 * 60 * 1000;
+  const DIEZ_MIN_MS  = 10 * 60 * 1000;
+  const UNA_HORA_MS  = 60 * 60 * 1000;
   const result = [];
 
   porDoca.forEach(entry => {
     const minutos = Math.max((entry.ultimoBipeo - entry.primerBipeo) / 60000, 1);
     const velocidad = Math.round((entry.piezas / minutos) * 60);
     const activa = (ultimaTs - entry.ultimoBipeo) <= DIEZ_MIN_MS;
+
+    // Velocidad última hora: bipeos dentro del último UNA_HORA_MS desde ultimaTs
+    const piezasUltimaHora = entry.bipeoTs.filter(ts => (ultimaTs - ts) <= UNA_HORA_MS).length;
+    const velUltimaHora = Math.round(piezasUltimaHora); // ya son piezas en 1hr exacta
 
     const patentes = Array.from(entry.patentes.values()).map(p => {
       const mins = Math.max((p.ultimoBipeo - p.primerBipeo) / 60000, 1);
@@ -89,6 +96,7 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
       tipo: entry.tipo,
       piezas: entry.piezas,
       velocidad,
+      velUltimaHora,
       ok: velocidad >= VELOCIDAD_OBJETIVO,
       activa,
       primerBipeo: dayjs(entry.primerBipeo).format('HH:mm'),
