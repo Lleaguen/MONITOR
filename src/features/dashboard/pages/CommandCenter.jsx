@@ -6,6 +6,7 @@ import VehiculosChart from '../../vehicles/components/VehiculosChart';
 import MatrixPanel from '../components/MatrixPanel';
 import HUTable from '../components/HUTable';
 import TargetCards from '../components/TargetCards';
+import HUVelocidadChart from '../components/HUVelocidadChart';
 
 const PIEZAS_POR_USUARIO_HORA_DESCARGA = 300;
 
@@ -176,6 +177,10 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
           <HUTable tableData={data.tableData} objetivo={data.huStats?.objetivoHU} />
         </div>
         <HUObjetivoWidget huStats={data.huStats} />
+      </section>
+
+      <section>
+        <HUVelocidadChart huVelocidadData={data.huVelocidadData} />
       </section>
 
       <section>

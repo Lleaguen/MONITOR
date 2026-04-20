@@ -5,6 +5,7 @@ import { buildTMSData, buildKpis, buildChartData }             from './processor
 import { buildHUData }                                         from './processors/huProcessor.js';
 import { buildVolData, buildSuperBigger, buildArrivalChasis }  from './processors/voluminosoProcessor.js';
 import { buildDarsenaStats }                                     from './processors/darsenaProcessor.js';
+import { buildHUVelocidadData }                                from './processors/huVelocidadProcessor.js';
 
 /**
  * processCombinedData — Orquestador principal de procesamiento de datos.
@@ -86,6 +87,9 @@ export const processCombinedData = (
   const arrivalSemi      = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'semi');
   const darsenaStats     = buildDarsenaStats(csvData, ultimaTs);
 
+  // 10. Velocidad de HU (pulso de descarga)
+  const huVelocidadData = buildHUVelocidadData(csvData, horaInicioHU, zonaCPTOverrides);
+
   return {
     kpis,
     matrix,
@@ -105,5 +109,6 @@ export const processCombinedData = (
     superBiggerChartData,
     biggerChartData,
     huStats,
+    huVelocidadData,
   };
 };
