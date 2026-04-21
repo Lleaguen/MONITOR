@@ -36,11 +36,19 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
     const ts = f.valueOf();
     const patente = normalizarPatente(d['Truck ID']);
 
+    // Clasificar voluminoso: misma lógica que voluminosoProcessor
+    const dimH = parseFloat(d['Height'] || 0);
+    const dimL = parseFloat(d['Length'] || 0);
+    const dimW = parseFloat(d['Width']  || 0);
+    const peso = parseFloat(d['Weight'] || 0);
+    const esVoluminoso = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
+
     if (!porDoca.has(doca)) {
       porDoca.set(doca, {
         doca,
         tipo: getTipoFromDoca(doca),
         piezas: 0,
+        voluminoso: 0,
         primerBipeo: ts,
         ultimoBipeo: ts,
         bipeoTs: [],
@@ -50,15 +58,17 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
 
     const entry = porDoca.get(doca);
     entry.piezas++;
+    if (esVoluminoso) entry.voluminoso++;
     entry.bipeoTs.push(ts);
     if (ts < entry.primerBipeo) entry.primerBipeo = ts;
     if (ts > entry.ultimoBipeo) entry.ultimoBipeo = ts;
 
     if (!entry.patentes.has(patente)) {
-      entry.patentes.set(patente, { patente, piezas: 0, primerBipeo: ts, ultimoBipeo: ts });
+      entry.patentes.set(patente, { patente, piezas: 0, voluminoso: 0, primerBipeo: ts, ultimoBipeo: ts });
     }
     const pat = entry.patentes.get(patente);
     pat.piezas++;
+    if (esVoluminoso) pat.voluminoso++;
     if (ts < pat.primerBipeo) pat.primerBipeo = ts;
     if (ts > pat.ultimoBipeo) pat.ultimoBipeo = ts;
   });
@@ -83,6 +93,8 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
       return {
         patente: p.patente,
         piezas: p.piezas,
+        voluminoso: p.voluminoso,
+        pctVoluminoso: p.piezas > 0 ? Math.round((p.voluminoso / p.piezas) * 100) : 0,
         velocidad: vel,
         ok: vel >= VELOCIDAD_OBJETIVO,
         primerBipeo: dayjs(p.primerBipeo).format('HH:mm'),
@@ -95,6 +107,8 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
       docaNum: parseInt(entry.doca.replace(/\D/g, ''), 10) || 0,
       tipo: entry.tipo,
       piezas: entry.piezas,
+      voluminoso: entry.voluminoso,
+      pctVoluminoso: entry.piezas > 0 ? Math.round((entry.voluminoso / entry.piezas) * 100) : 0,
       velocidad,
       velUltimaHora,
       ok: velocidad >= VELOCIDAD_OBJETIVO,

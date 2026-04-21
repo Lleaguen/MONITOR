@@ -21,6 +21,16 @@ const VelBadge = ({ velocidad }) => {
   );
 };
 
+const VolBadge = ({ pct }) => {
+  if (pct === undefined || pct === null) return null;
+  const color = pct >= 30 ? 'bg-orange-500/10 text-orange-400' : 'bg-slate-500/10 text-slate-400';
+  return (
+    <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full ${color}`}>
+      📦 {pct}%
+    </span>
+  );
+};
+
 /* ── Card mobile ── */
 const DarsenaCard = ({ d }) => {
   const [open, setOpen] = useState(false);
@@ -54,6 +64,10 @@ const DarsenaCard = ({ d }) => {
           <span className="text-slate-500">Rango</span>
           <span className="font-mono text-slate-500">{d.primerBipeo} – {d.ultimoBipeo}</span>
         </div>
+        <div className="flex justify-between col-span-2">
+          <span className="text-slate-500">Voluminoso</span>
+          <VolBadge pct={d.pctVoluminoso} />
+        </div>
       </div>
       {open && d.patentes.length > 0 && (
         <div className="border-t border-white/5 px-4 py-2 space-y-1">
@@ -62,6 +76,7 @@ const DarsenaCard = ({ d }) => {
               <span className="font-mono font-black text-slate-400">{p.patente || '—'}</span>
               <div className="flex items-center gap-2">
                 <span className="text-slate-600">{p.piezas.toLocaleString()} pzas</span>
+                <VolBadge pct={p.pctVoluminoso} />
                 <VelBadge velocidad={p.velocidad} />
               </div>
             </div>
@@ -96,6 +111,7 @@ const DarsenaRow = ({ d }) => {
         <td className="py-3 text-right"><VelBadge velocidad={d.velocidad} /></td>
         <td className="py-3 text-center font-mono text-[10px] text-slate-500">{d.primerBipeo} – {d.ultimoBipeo}</td>
         <td className="py-3 text-center"><VelBadge velocidad={d.velUltimaHora} /></td>
+        <td className="py-3 text-center"><VolBadge pct={d.pctVoluminoso} /></td>
         <td className="py-3 text-center text-[10px] text-slate-600">{d.patentes.length}</td>
       </tr>
       {open && d.patentes.map((p, i) => (
@@ -105,7 +121,8 @@ const DarsenaRow = ({ d }) => {
           <td className="py-2 text-right font-black text-slate-400">{p.piezas.toLocaleString()}</td>
           <td className="py-2 text-right"><VelBadge velocidad={p.velocidad} /></td>
           <td className="py-2 text-center font-mono text-[10px] text-slate-600">{p.primerBipeo} – {p.ultimoBipeo}</td>
-          <td /><td />
+          <td className="py-2 text-center"><VolBadge pct={p.pctVoluminoso} /></td>
+          <td />
         </tr>
       ))}
     </>
@@ -187,6 +204,7 @@ const VelocidadDarsenas = ({ data }) => {
               <th className="py-3 text-right">Velocidad</th>
               <th className="py-3 text-center">Rango horario</th>
               <th className="py-3 text-center">Últ. hora</th>
+              <th className="py-3 text-center">Vol%</th>
               <th className="py-3 text-center">Patentes</th>
             </tr>
           </thead>

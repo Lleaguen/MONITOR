@@ -10,6 +10,40 @@ import HUVelocidadChart from '../components/HUVelocidadChart';
 
 const PIEZAS_POR_USUARIO_HORA_DESCARGA = 300;
 
+const CHARTS = ['Pulso de Descarga', 'Pulso de Bipeo HU'];
+
+const ChartCarousel = ({ chartData, huVelocidadData }) => {
+  const [idx, setIdx] = useState(0);
+  return (
+    <div>
+      <div className="flex gap-1 mb-4">
+        {CHARTS.map((label, i) => (
+          <button
+            key={label}
+            onClick={() => setIdx(i)}
+            className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+              idx === i ? 'bg-white/10 text-white' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {idx === 0 && <MainChart chartData={chartData} />}
+      {idx === 1 && <HUVelocidadChart huVelocidadData={huVelocidadData} />}
+      <div className="flex justify-center gap-2 mt-3">
+        {CHARTS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIdx(i)}
+            className={`w-1.5 h-1.5 rounded-full transition-all ${idx === i ? 'bg-white' : 'bg-white/20'}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const DescargaWidget = ({ kpis }) => {
   if (!kpis) return null;
   const proyectado = parseInt(String(kpis.proyectado || '0').replace(/\D/g, ''), 10) || 0;
@@ -97,8 +131,6 @@ const CierreInhubModal = ({ data }) => {
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <div className="bg-[#080c14] border border-white/10 rounded-2xl w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
-
-            {/* Header: Cierre Inhub izq | hora + OCASA der */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <div>
                 <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Cierre Inhub</h2>
@@ -112,8 +144,6 @@ const CierreInhubModal = ({ data }) => {
                 </button>
               </div>
             </div>
-
-            {/* Solo Proyectado / Arribado / Bipeado */}
             <div className="p-6 space-y-3">
               {[
                 { label: 'Proyectado', value: proyectado, color: 'text-slate-300'   },
@@ -126,7 +156,6 @@ const CierreInhubModal = ({ data }) => {
                 </div>
               ))}
             </div>
-
           </div>
         </div>
       )}
@@ -147,7 +176,7 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
         <div className="lg:col-span-8">
-          <MainChart chartData={data.chartData} />
+          <ChartCarousel chartData={data.chartData} huVelocidadData={data.huVelocidadData} />
         </div>
         <div className="lg:col-span-4">
           <MatrixPanel matrix={data.matrix} />
@@ -177,12 +206,6 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
           <HUTable tableData={data.tableData} objetivo={data.huStats?.objetivoHU} />
         </div>
         <HUObjetivoWidget huStats={data.huStats} />
-      </section>
-
-      <section>
-        {/* Debug: Verificar si los datos están llegando */}
-        {console.log('CommandCenter - data.huVelocidadData:', data.huVelocidadData)}
-        <HUVelocidadChart huVelocidadData={data.huVelocidadData} />
       </section>
 
       <section>
