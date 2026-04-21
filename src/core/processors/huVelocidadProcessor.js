@@ -25,7 +25,7 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
   const arriboPorHora = {};   // Inbound Date Included  → rojo
   const bipeoPorHora  = {};   // Outbound Date Included → verde
 
-  const horaInicio = 13;
+  const horaInicio = horaInicioHU;
   for (let h = horaInicio; h <= 23; h++) {
     const hora = `${h}:00`;
     arriboPorHora[hora] = { total: 0 };
@@ -102,9 +102,9 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
   const velocidadPico = Math.max(...velocidadPorHora.map(h => h.total), 0);
   const horaPico = velocidadPorHora.find(h => h.total === velocidadPico)?.hora || '-';
 
-  // Velocidad por CPT (desde las 13:30 hasta las 22:30)
+  // Velocidad por CPT (desde horaInicioHU:30 hasta las 22:30)
   const ahora = dayjs();
-  const inicioTurno = ahora.clone().hour(13).minute(30).second(0);
+  const inicioTurno = ahora.clone().hour(horaInicioHU).minute(30).second(0);
   const finTurno    = ahora.clone().hour(22).minute(30).second(0);
 
   const velocidadPorCPT = {};
