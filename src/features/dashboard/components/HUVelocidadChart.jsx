@@ -35,14 +35,28 @@ const CustomTooltip = ({ active, payload }) => {
 };
 
 const HUVelocidadChart = ({ huVelocidadData }) => {
+  console.log('🎨 HUVelocidadChart - Renderizando con:', huVelocidadData);
+
   if (!huVelocidadData) {
-    console.log('HUVelocidadChart: No hay datos de huVelocidadData');
-    return null;
+    console.log('❌ HUVelocidadChart: No hay datos de huVelocidadData');
+    return (
+      <div className="bg-red-500/20 p-4 md:p-6 rounded-2xl border border-red-500/50">
+        <h3 className="text-base md:text-lg font-black text-white mb-1 tracking-tight">
+          Velocidad de Armado de HU
+        </h3>
+        <p className="text-[11px] text-slate-500 font-medium italic mb-4">
+          Pulso de descarga: HU cerrados y abiertos por hora
+        </p>
+        <div className="text-center py-12 text-red-400 font-black text-[11px] uppercase tracking-widest">
+          ⚠️ No hay datos de huVelocidadData (null o undefined)
+        </div>
+      </div>
+    );
   }
 
   const { velocidadPorHora, velocidadPorCPT, stats } = huVelocidadData;
 
-  console.log('HUVelocidadChart - Datos recibidos:', {
+  console.log('📊 HUVelocidadChart - Datos recibidos:', {
     velocidadPorHora: velocidadPorHora?.length,
     velocidadPorCPT: velocidadPorCPT?.length,
     stats
@@ -51,15 +65,15 @@ const HUVelocidadChart = ({ huVelocidadData }) => {
   // Si no hay datos, mostrar mensaje
   if (!velocidadPorHora || velocidadPorHora.length === 0) {
     return (
-      <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
+      <div className="bg-yellow-500/20 p-4 md:p-6 rounded-2xl border border-yellow-500/50">
         <h3 className="text-base md:text-lg font-black text-white mb-1 tracking-tight">
           Velocidad de Armado de HU
         </h3>
         <p className="text-[11px] text-slate-500 font-medium italic mb-4">
           Pulso de descarga: HU cerrados y abiertos por hora
         </p>
-        <div className="text-center py-12 text-slate-600 font-black text-[11px] uppercase tracking-widest">
-          Sin datos de velocidad de HU disponibles
+        <div className="text-center py-12 text-yellow-400 font-black text-[11px] uppercase tracking-widest">
+          ⚠️ Sin datos de velocidad de HU disponibles (array vacío)
         </div>
       </div>
     );

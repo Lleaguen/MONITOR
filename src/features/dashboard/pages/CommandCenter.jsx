@@ -180,6 +180,8 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
       </section>
 
       <section>
+        {/* Debug: Verificar si los datos están llegando */}
+        {console.log('CommandCenter - data.huVelocidadData:', data.huVelocidadData)}
         <HUVelocidadChart huVelocidadData={data.huVelocidadData} />
       </section>
 

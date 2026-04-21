@@ -16,6 +16,12 @@ dayjs.extend(customParseFormat);
  * @returns {Object} { velocidadPorHora, velocidadPorCPT, stats }
  */
 export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverrides = {}) => {
+  console.log('🚀 buildHUVelocidadData - Iniciando con:', {
+    totalFilas: csvData?.length,
+    horaInicioHU,
+    zonaCPTOverrides: Object.keys(zonaCPTOverrides).length
+  });
+
   // Estructura: { hora: { total: 0, porCPT: { '0:00': 0, ... } } }
   const huCerradosPorHora = {};
   const huAbiertosPorHora = {};
@@ -162,7 +168,7 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
     velocidadPorHora: Math.round((data.huCerrados + data.huAbiertos) / horasTranscurridas),
   })).sort((a, b) => b.total - a.total);
 
-  return {
+  const resultado = {
     velocidadPorHora,
     velocidadPorCPT: velocidadPorCPTArray,
     stats: {
@@ -175,4 +181,13 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
       horasConActividad,
     },
   };
+
+  console.log('✅ buildHUVelocidadData - Resultado:', {
+    velocidadPorHora: resultado.velocidadPorHora.length,
+    velocidadPorCPT: resultado.velocidadPorCPT.length,
+    totalHU: resultado.stats.totalHU,
+    velocidadPromedio: resultado.stats.velocidadPromedio
+  });
+
+  return resultado;
 };
