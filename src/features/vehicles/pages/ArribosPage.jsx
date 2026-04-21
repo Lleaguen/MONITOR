@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { ArrowUpDown, Clock, ArrowRightLeft } from 'lucide-react';
 import StatCard from '../../../shared/components/StatCard.jsx';
 import SortButton from '../../../shared/components/SortButton.jsx';
 import PageWrapper from '../../../shared/components/PageWrapper.jsx';
 
+// ID único por entrada: patente + hora (maneja duplicados de misma patente en distintas horas)
+const rowId = (row) => `${row.patente}|${row.hora}`;
+
 const COLOR_MAP = (piezas) => {
-  if (piezas >= 700) return { row: 'border-red-500/20 bg-red-500/5',       badge: 'bg-red-500/20 text-red-400',       dot: 'bg-red-400' };
-  if (piezas >= 500) return { row: 'border-orange-500/20 bg-orange-500/5', badge: 'bg-orange-500/20 text-orange-400', dot: 'bg-orange-400' };
+  if (piezas >= 700) return { row: 'border-red-500/20 bg-red-500/5',         badge: 'bg-red-500/20 text-red-400',       dot: 'bg-red-400'     };
+  if (piezas >= 500) return { row: 'border-orange-500/20 bg-orange-500/5',   badge: 'bg-orange-500/20 text-orange-400', dot: 'bg-orange-400'  };
   return               { row: 'border-emerald-500/10 bg-emerald-500/[0.03]', badge: 'bg-emerald-500/20 text-emerald-400', dot: 'bg-emerald-400' };
 };
 
@@ -22,19 +25,34 @@ const TIPOS = [
   { key: 'arrivalSemi',      label: 'Semi',      color: 'blue',    activeBg: 'bg-blue-600',    textColor: 'text-blue-400'    },
 ];
 
-// Modal de derivación
-const DerivarModal = ({ patente, tipoActual, onConfirm, onClose }) => {
+// Modal de derivación — recibe items completos (con patente + hora)
+const DerivarModal = ({ items, tipoActual, onConfirm, onClose }) => {
   const destinos = TIPOS.filter(t => t.key !== tipoActual);
   const [destino, setDestino] = useState(destinos[0].key);
+  const esMultiple = items.length > 1;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-[#0f172a] border border-white/10 rounded-2xl p-6 w-full max-w-sm flex flex-col gap-4">
         <div>
-          <h3 className="text-[11px] font-black text-white uppercase tracking-widest">Derivar Patente</h3>
+          <h3 className="text-[11px] font-black text-white uppercase tracking-widest">
+            Derivar Patente{esMultiple ? 's' : ''}
+          </h3>
           <p className="text-[10px] text-slate-500 mt-1">
-            Mover <span className="text-white font-black">{patente}</span> a otro sector
+            {esMultiple
+              ? `Mover ${items.length} entradas a otro sector`
+              : <>Mover <span className="text-white font-black">{items[0].patente}</span> ({items[0].hora}) a otro sector</>
+            }
           </p>
+          {esMultiple && (
+            <div className="mt-2 flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+              {items.map(it => (
+                <span key={rowId(it)} className="text-[9px] font-black bg-white/5 text-slate-300 px-2 py-0.5 rounded-full">
+                  {it.patente} <span className="text-slate-500">{it.hora}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -66,8 +84,59 @@ const DerivarModal = ({ patente, tipoActual, onConfirm, onClose }) => {
   );
 };
 
+// Card mobile — usa rowId como identificador único
+const MobilePatentCard = ({ row, selected, onToggle, onDerivarSingle, isDragging }) => {
+  const id = rowId(row);
+  const c = COLOR_MAP(row.piezas);
+  const isSelected = selected.has(id);
+
+  return (
+    <div
+      data-rowid={id}
+      onPointerDown={() => onToggle(id)}
+      className={`relative rounded-xl border px-4 py-3 flex items-center gap-3 transition-all select-none cursor-pointer
+        ${isSelected ? 'border-blue-500/60 bg-blue-500/10' : `${c.row} border`}
+        ${isDragging ? 'touch-none' : ''}
+      `}
+    >
+      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+        isSelected ? 'border-blue-400 bg-blue-500' : 'border-white/20 bg-transparent'
+      }`}>
+        {isSelected && <span className="text-white text-[10px] font-black">✓</span>}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-black text-white tracking-wider text-sm">{row.patente}</span>
+          {row.derivado && <span className="text-[8px] font-black text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full">DERIVADO</span>}
+        </div>
+        <div className="flex items-center gap-3 mt-0.5">
+          <span className="text-[9px] text-slate-500 font-mono">{row.hora}</span>
+          <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full ${c.badge}`}>
+            <span className={`w-1 h-1 rounded-full ${c.dot}`} />
+            {row.piezas.toLocaleString()} pzas
+          </span>
+        </div>
+      </div>
+
+      {selected.size === 0 && (
+        <button
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); onDerivarSingle(row); }}
+          className="p-2 rounded-lg bg-white/5 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all flex-shrink-0"
+        >
+          <ArrowRightLeft size={13} />
+        </button>
+      )}
+    </div>
+  );
+};
+
 const ArribosTable = ({ arrivals, orden, setOrden, label, onDerivar, tipoActivo }) => {
-  const [modalPatente, setModalPatente] = useState(null);
+  const [modalItems, setModalItems] = useState(null);
+  const [selected, setSelected] = useState(new Set()); // Set de rowId
+  const [isDragging, setIsDragging] = useState(false);
+  const lastToggledRef = useRef(null);
 
   const sorted = useMemo(() => {
     const copy = [...arrivals];
@@ -76,14 +145,63 @@ const ArribosTable = ({ arrivals, orden, setOrden, label, onDerivar, tipoActivo 
     return copy.sort((a, b) => b.hora.localeCompare(a.hora));
   }, [arrivals, orden]);
 
+  // Mapa id → row para recuperar el item completo al derivar
+  const rowMap = useMemo(() => {
+    const m = new Map();
+    sorted.forEach(r => m.set(rowId(r), r));
+    return m;
+  }, [sorted]);
+
+  const toggleId = useCallback((id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handlePointerMove = useCallback((e) => {
+    if (!isDragging) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const card = el?.closest('[data-rowid]');
+    if (!card) return;
+    const id = card.dataset.rowid;
+    if (id && id !== lastToggledRef.current) {
+      lastToggledRef.current = id;
+      setSelected(prev => { const next = new Set(prev); next.add(id); return next; });
+    }
+  }, [isDragging]);
+
+  const handlePointerUp = useCallback(() => {
+    setIsDragging(false);
+    lastToggledRef.current = null;
+  }, []);
+
+  const handlePointerDown = useCallback((id) => {
+    lastToggledRef.current = id;
+    setIsDragging(true);
+  }, []);
+
+  const clearSelection = () => setSelected(new Set());
+
+  const derivarSeleccionados = () => {
+    if (selected.size === 0) return;
+    const items = Array.from(selected).map(id => rowMap.get(id)).filter(Boolean);
+    setModalItems(items);
+  };
+
   return (
     <>
-      {modalPatente && (
+      {modalItems && (
         <DerivarModal
-          patente={modalPatente}
+          items={modalItems}
           tipoActual={tipoActivo}
-          onConfirm={(destino) => onDerivar(modalPatente, tipoActivo, destino)}
-          onClose={() => setModalPatente(null)}
+          onConfirm={(destino) => {
+            modalItems.forEach(item => onDerivar(rowId(item), tipoActivo, destino));
+            clearSelection();
+          }}
+          onClose={() => setModalItems(null)}
         />
       )}
 
@@ -94,7 +212,50 @@ const ArribosTable = ({ arrivals, orden, setOrden, label, onDerivar, tipoActivo 
         ))}
       </div>
 
-      <div className="bg-[#111827]/10 rounded-2xl border border-white/5 overflow-x-auto">
+      {selected.size > 0 && (
+        <div className="sm:hidden flex items-center justify-between gap-3 px-4 py-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+            {selected.size} seleccionada{selected.size > 1 ? 's' : ''}
+          </span>
+          <div className="flex gap-2">
+            <button onClick={clearSelection}
+              className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-slate-400 border border-white/10 hover:text-white transition-all">
+              Limpiar
+            </button>
+            <button onClick={derivarSeleccionados}
+              className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-blue-600 text-white hover:bg-blue-500 transition-all flex items-center gap-1.5">
+              <ArrowRightLeft size={11} /> Derivar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile */}
+      <div
+        className="sm:hidden flex flex-col gap-2 touch-pan-y"
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        {sorted.map((row) => (
+          <MobilePatentCard
+            key={rowId(row)}
+            row={row}
+            selected={selected}
+            onToggle={(id) => { handlePointerDown(id); toggleId(id); }}
+            onDerivarSingle={(r) => setModalItems([r])}
+            isDragging={isDragging}
+          />
+        ))}
+        {sorted.length === 0 && (
+          <div className="text-center py-12 text-slate-600 font-black text-[11px] uppercase tracking-widest">
+            Sin {label.toLowerCase()}s pendientes
+          </div>
+        )}
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden sm:block bg-[#111827]/10 rounded-2xl border border-white/5 overflow-x-auto">
         <table className="w-full min-w-[400px] text-left">
           <thead>
             <tr className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] border-b border-white/10">
@@ -109,7 +270,7 @@ const ArribosTable = ({ arrivals, orden, setOrden, label, onDerivar, tipoActivo 
             {sorted.map((row, idx) => {
               const c = COLOR_MAP(row.piezas);
               return (
-                <tr key={idx} className={`border-b ${c.row} text-[11px] transition-colors`}>
+                <tr key={rowId(row)} className={`border-b ${c.row} text-[11px] transition-colors`}>
                   <td className="px-4 py-3 font-bold text-slate-600">{idx + 1}</td>
                   <td className="py-3 font-black text-white tracking-wider">{row.patente}</td>
                   <td className="py-3 text-center font-black text-slate-300 font-mono">{row.hora}</td>
@@ -120,8 +281,7 @@ const ArribosTable = ({ arrivals, orden, setOrden, label, onDerivar, tipoActivo 
                     </span>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <button onClick={() => setModalPatente(row.patente)}
-                      title="Derivar a otro sector"
+                    <button onClick={() => setModalItems([row])}
                       className="p-1.5 rounded-lg bg-white/5 text-slate-500 hover:text-blue-400 hover:bg-blue-500/10 transition-all">
                       <ArrowRightLeft size={13} />
                     </button>
@@ -144,27 +304,22 @@ const ArribosTable = ({ arrivals, orden, setOrden, label, onDerivar, tipoActivo 
 const ArribosPage = ({ data }) => {
   const [tipoActivo, setTipoActivo] = useState('arrivalChasis');
   const [orden, setOrden] = useState('hora');
-
-  // derivaciones: { patente: destinoKey }
+  // derivaciones keyed por rowId (patente|hora) en lugar de solo patente
   const [derivaciones, setDerivaciones] = useState({});
 
-  const derivar = (patente, origen, destino) => {
-    setDerivaciones(prev => ({ ...prev, [patente]: destino }));
+  const derivar = (id, origen, destino) => {
+    setDerivaciones(prev => ({ ...prev, [id]: destino }));
   };
 
-  // Construir listas con derivaciones aplicadas
   const listas = useMemo(() => {
     const base = {
       arrivalChasis:    [...(data?.arrivalChasis    || [])],
       arrivalCamioneta: [...(data?.arrivalCamioneta || [])],
       arrivalSemi:      [...(data?.arrivalSemi      || [])],
     };
-
-    // Aplicar derivaciones
-    Object.entries(derivaciones).forEach(([patente, destino]) => {
-      // Buscar en qué lista original está la patente
+    Object.entries(derivaciones).forEach(([id, destino]) => {
       for (const key of Object.keys(base)) {
-        const idx = base[key].findIndex(r => r.patente === patente);
+        const idx = base[key].findIndex(r => rowId(r) === id);
         if (idx !== -1 && key !== destino) {
           const [item] = base[key].splice(idx, 1);
           base[destino].push({ ...item, derivado: true });
@@ -172,22 +327,13 @@ const ArribosPage = ({ data }) => {
         }
       }
     });
-
     return base;
   }, [data, derivaciones]);
 
-  const chasis    = listas.arrivalChasis;
-  const camioneta = listas.arrivalCamioneta;
-  const semi      = listas.arrivalSemi;
-  const total     = chasis.length + camioneta.length + semi.length;
-  const totalPiezas = [...chasis, ...camioneta, ...semi].reduce((a, r) => a + r.piezas, 0);
+  const arrivals  = listas[tipoActivo] || [];
+  const tipoInfo  = TIPOS.find(t => t.key === tipoActivo);
+  const countOf   = (key) => listas[key].length;
 
-  const arrivals = listas[tipoActivo] || [];
-  const tipoInfo = TIPOS.find(t => t.key === tipoActivo);
-
-  const countOf = (key) => listas[key].length;
-
-  // Cards reactivas al tipo seleccionado
   const totalPiezasActivo = arrivals.reduce((a, r) => a + r.piezas, 0);
   const rojosActivo    = arrivals.filter(r => r.piezas >= 700).length;
   const naranjasActivo = arrivals.filter(r => r.piezas >= 500 && r.piezas < 700).length;
@@ -195,7 +341,6 @@ const ArribosPage = ({ data }) => {
 
   return (
     <PageWrapper>
-      {/* Cards reactivas al tipo seleccionado */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label={`Total ${tipoInfo?.label ?? ''}`} value={arrivals.length} sub={`${totalPiezasActivo.toLocaleString()} piezas`} />
         <StatCard label="Menos de 500" value={verdesActivo}   color="emerald" />
@@ -203,7 +348,6 @@ const ArribosPage = ({ data }) => {
         <StatCard label="700 o más"    value={rojosActivo}    color="red"     />
       </div>
 
-      {/* Tabs + conteos por tipo a la derecha */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2 flex-wrap">
           {TIPOS.map(({ key, label, activeBg }) => (
@@ -221,8 +365,6 @@ const ArribosPage = ({ data }) => {
             </button>
           )}
         </div>
-
-        {/* Conteos por tipo */}
         <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest">
           {TIPOS.map(({ key, label, textColor }) => (
             <span key={key} className={`flex items-center gap-1.5 ${textColor}`}>
@@ -233,7 +375,6 @@ const ArribosPage = ({ data }) => {
         </div>
       </div>
 
-      {/* Tabla */}
       <ArribosTable
         arrivals={arrivals}
         orden={orden}

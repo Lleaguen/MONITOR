@@ -34,7 +34,7 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
 };
 
 // Super Bigger: peso > 50kg (50000g) O alguna dimensión >= 200cm
-// Bigger:       peso >= 30kg (30000g) O alguna dimensión >= 150cm (y no es super bigger)
+// Bigger:       peso > 30kg (30000g) Y alguna dimensión > 150cm (y no es super bigger)
 export const buildSuperBigger = (csvData) => {
   const superPorHora = new Array(24).fill(0);
   const biggerPorHora = new Array(24).fill(0);
@@ -49,7 +49,7 @@ export const buildSuperBigger = (csvData) => {
     const peso = parseFloat(d['Weight'] || 0);
 
     const esSuper  = peso > 50000 || dimH >= 200 || dimL >= 200 || dimW >= 200;
-    const esBigger = !esSuper && (peso >= 30000 || dimH >= 150 || dimL >= 150 || dimW >= 150);
+    const esBigger = !esSuper && (peso > 30000 && (dimH > 150 || dimL > 150 || dimW > 150));
 
     if (!esSuper && !esBigger) return;
 
