@@ -12,6 +12,12 @@ export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
   let totalPiezasSistema = 0;
   const bipeoPorHora = new Array(24).fill(0);
   const filasTMS = [];
+  
+  // Conjuntos para contar shipments únicos por hora
+  const shipmentsInboundPorHora = {};
+  for (let h = 0; h <= 23; h++) {
+    shipmentsInboundPorHora[h] = new Set();
+  }
 
   csvData.forEach(d => {
     const raw = d['Inbound Date Included'];
@@ -22,8 +28,17 @@ export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
     const h = f.hour();
     if (tsMs > ultimaTs) ultimaTs = tsMs;
     if (!d['Shipment ID'] || h < horaInicioBipeos) return;
+    
+    const shipmentId = String(d['Shipment ID']).trim();
+    
     totalPiezasSistema++;
-    if (h <= 23) bipeoPorHora[h]++;
+    
+    // Contar shipments únicos por hora (igual que huVelocidadProcessor)
+    if (h <= 23 && !shipmentsInboundPorHora[h].has(shipmentId)) {
+      shipmentsInboundPorHora[h].add(shipmentId);
+      bipeoPorHora[h]++;
+    }
+    
     filasTMS.push({
       tsMs,
       patente: normalizarPatente(d['Truck ID']),

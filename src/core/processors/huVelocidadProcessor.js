@@ -177,13 +177,13 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
       horasConActividad,
     },
   };
-
+/*
   console.log('✅ buildHUVelocidadData - Resultado:', {
     velocidadPorHora: resultado.velocidadPorHora.length,
     velocidadPorCPT: resultado.velocidadPorCPT.length,
     totalArribo: resultado.stats.totalArribo,
     totalBipeo: resultado.stats.totalBipeo,
   });
-
+*/
   return resultado;
 };
