@@ -7,7 +7,20 @@ dayjs.extend(customParseFormat);
 // Umbral de velocidad "decente": 600 piezas/hora = 10 piezas/min
 export const VELOCIDAD_OBJETIVO = 600;
 
-const getTipoFromDoca = (doca) => getTipoPorDoca(doca);
+// Dársenas válidas para mostrar en velocidad de dársenas:
+// 16-19 → otro, 20-26 → semi, 27-42 → chasis, 43-75 → camioneta
+const DOCAS_VALIDAS = (num) =>
+  (num >= 16 && num <= 19) ||
+  (num >= 20 && num <= 26) ||
+  (num >= 27 && num <= 42) ||
+  (num >= 43 && num <= 75);
+
+const getTipoFromDoca = (doca) => {
+  const num = parseInt(String(doca || '').replace(/\D/g, ''), 10);
+  if (isNaN(num)) return null;
+  if (num >= 16 && num <= 19) return 'otro';
+  return getTipoPorDoca(doca); // maneja 20-75
+};
 
 /**
  * buildDarsenaStats — calcula velocidad de descarga por dársena y patente.
@@ -29,6 +42,8 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
     if (!d['Shipment ID']) return;
     const doca = String(d['Inbound Dock ID'] || '').trim();
     if (!doca) return;
+    const docaNum = parseInt(doca.replace(/\D/g, ''), 10);
+    if (isNaN(docaNum) || !DOCAS_VALIDAS(docaNum)) return; // excluir dársenas ficticias
     const raw = d['Inbound Date Included'];
     if (!raw) return;
     const f = dayjs(raw, 'DD/MM/YYYY HH:mm:ss');

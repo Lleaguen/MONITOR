@@ -68,7 +68,7 @@ export const buildDarsenasActivas = (csvData, ultimaTs) => {
     }
   });
 
-  const activas = { chasis: new Set(), camioneta: new Set(), semi: new Set() };
+  const activas = { chasis: new Set(), camioneta: new Set(), semi: new Set(), otro: new Set() };
   ultimoBipeoPorDoca.forEach((ts, doca) => {
     if ((ultimaTs - ts) > DIEZ_MIN_MS) return;
     const num = parseInt(doca.replace(/\D/g, ""), 10);
@@ -76,6 +76,7 @@ export const buildDarsenasActivas = (csvData, ultimaTs) => {
     if (num >= 20 && num <= 26) activas.semi.add(doca);
     else if (num >= 27 && num <= 42) activas.chasis.add(doca);
     else if (num >= 43 && num <= 75) activas.camioneta.add(doca);
+    else if (num >= 16 && num <= 19) activas.otro.add(doca);
   });
 
   return activas;
@@ -115,6 +116,7 @@ export const buildVehiculosEspera = (easyDockingClean, matchEDaTMS, patentesTMSM
   conteoEspera.darsenasChasis    = darsenasActivas.chasis.size;
   conteoEspera.darsenаsCamioneta = darsenasActivas.camioneta.size;
   conteoEspera.darsenaSemi       = darsenasActivas.semi.size;
+  conteoEspera.darsenasOtro      = darsenasActivas.otro?.size ?? 0;
 
   const desviosDoca = {
     chasisEnCamioneta: chasisEnCamionetaTotal,

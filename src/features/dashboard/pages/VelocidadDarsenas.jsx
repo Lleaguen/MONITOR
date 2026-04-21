@@ -129,7 +129,7 @@ const DarsenaRow = ({ d }) => {
   );
 };
 
-const TIPOS = ['todos', 'chasis', 'camioneta', 'semi'];
+const TIPOS = ['todos', 'chasis', 'camioneta', 'semi', 'otro'];
 
 const VelocidadDarsenas = ({ data }) => {
   const [filtroTipo, setFiltroTipo] = useState('todos');
