@@ -20,8 +20,10 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
   const huCerradosPorHora = {};
   const huAbiertosPorHora = {};
   
-  // Inicializar horas desde horaInicioHU hasta 23
-  for (let h = horaInicioHU; h <= 23; h++) {
+  // Inicializar horas desde las 13:30 hasta 23:00
+  // Usamos 13 como hora de inicio para la gráfica
+  const horaInicio = 13;
+  for (let h = horaInicio; h <= 23; h++) {
     const hora = `${h}:00`;
     huCerradosPorHora[hora] = { total: 0, porCPT: {} };
     huAbiertosPorHora[hora] = { total: 0, porCPT: {} };
@@ -49,7 +51,7 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
     const fechaCierre = d['Outbound Date Closed'];
     if (fechaCierre) {
       const ts = dayjs(fechaCierre, "DD/MM/YYYY HH:mm:ss");
-      if (ts.isValid() && ts.hour() >= horaInicioHU) {
+      if (ts.isValid() && ts.hour() >= horaInicio) {
         const hora = `${ts.hour()}:00`;
         if (huCerradosPorHora[hora]) {
           huCerradosPorHora[hora].total++;
@@ -65,7 +67,7 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
     const fechaIncluido = d['Outbound Included Date'];
     if (fechaIncluido && !fechaCierre) {
       const ts = dayjs(fechaIncluido, "DD/MM/YYYY HH:mm:ss");
-      if (ts.isValid() && ts.hour() >= horaInicioHU) {
+      if (ts.isValid() && ts.hour() >= horaInicio) {
         const hora = `${ts.hour()}:00`;
         if (huAbiertosPorHora[hora]) {
           huAbiertosPorHora[hora].total++;
@@ -102,9 +104,10 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
   const velocidadPico = Math.max(...velocidadPorHora.map(h => h.total), 0);
   const horaPico = velocidadPorHora.find(h => h.total === velocidadPico)?.hora || '-';
 
-  // Velocidad por CPT (últimas 3 horas)
+  // Velocidad por CPT (desde las 13:30 hasta las 22:30)
   const ahora = dayjs();
-  const tresHorasAtras = ahora.subtract(3, 'hour');
+  const inicioTurno = ahora.clone().hour(13).minute(30).second(0);
+  const finTurno = ahora.clone().hour(22).minute(30).second(0);
   
   const velocidadPorCPT = {};
   csvData.forEach(d => {
@@ -127,7 +130,7 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
     const fechaCierre = d['Outbound Date Closed'];
     if (fechaCierre) {
       const ts = dayjs(fechaCierre, "DD/MM/YYYY HH:mm:ss");
-      if (ts.isValid() && ts.isAfter(tresHorasAtras)) {
+      if (ts.isValid() && ts.isAfter(inicioTurno) && ts.isBefore(finTurno)) {
         if (!velocidadPorCPT[cpt]) {
           velocidadPorCPT[cpt] = { huCerrados: 0, huAbiertos: 0 };
         }
@@ -138,7 +141,7 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
     const fechaIncluido = d['Outbound Included Date'];
     if (fechaIncluido && !fechaCierre) {
       const ts = dayjs(fechaIncluido, "DD/MM/YYYY HH:mm:ss");
-      if (ts.isValid() && ts.isAfter(tresHorasAtras)) {
+      if (ts.isValid() && ts.isAfter(inicioTurno) && ts.isBefore(finTurno)) {
         if (!velocidadPorCPT[cpt]) {
           velocidadPorCPT[cpt] = { huCerrados: 0, huAbiertos: 0 };
         }
@@ -147,13 +150,16 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
     }
   });
 
-  // Convertir a array y calcular velocidad por hora (últimas 3 horas)
+  // Calcular horas transcurridas desde inicio del turno
+  const horasTranscurridas = Math.max(ahora.diff(inicioTurno, 'hour', true), 0.5);
+  
+  // Convertir a array y calcular velocidad por hora (desde 13:30)
   const velocidadPorCPTArray = Object.entries(velocidadPorCPT).map(([cpt, data]) => ({
     cpt,
     huCerrados: data.huCerrados,
     huAbiertos: data.huAbiertos,
     total: data.huCerrados + data.huAbiertos,
-    velocidadPorHora: Math.round((data.huCerrados + data.huAbiertos) / 3),
+    velocidadPorHora: Math.round((data.huCerrados + data.huAbiertos) / horasTranscurridas),
   })).sort((a, b) => b.total - a.total);
 
   return {
