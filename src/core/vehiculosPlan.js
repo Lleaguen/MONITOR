@@ -1,6 +1,6 @@
-// Horas del plan de vehículos (10hs a 21hs)
-export const PLAN_HOURS = Array.from({ length: 12 }, (_, i) => {
-  const h = i + 10;
+// Horas del plan de vehículos (9hs a 23hs)
+export const PLAN_HOURS = Array.from({ length: 15 }, (_, i) => {
+  const h = i + 9;
   return `${String(h).padStart(2, '0')}:00`;
 });
 
