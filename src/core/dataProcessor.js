@@ -51,7 +51,7 @@ export const processCombinedData = (
   const easyDockingClean = parseEasyDocking(excelRaw);
 
   // 2. TMS — loop principal
-  const { ultimaTs, totalPiezasSistema, bipeoPorHora, filasTMS } = buildTMSData(csvData, horaInicioBipeos);
+  const { ultimaTs, totalPiezasSistema, bipeoPorHora, filasTMS } = buildTMSData(csvData, horaInicioBipeos, zonaCPTOverrides);
 
   // 3. Matching patentes
   const patentesTMS = buildPatentesTMS(csvData);
@@ -88,7 +88,7 @@ export const processCombinedData = (
   const darsenaStats     = buildDarsenaStats(csvData, ultimaTs);
 
   // 10. Velocidad de HU (pulso de descarga)
-  const huVelocidadData = buildHUVelocidadData(csvData, horaInicioHU, zonaCPTOverrides);
+  const huVelocidadData = buildHUVelocidadData(csvData, horaInicioBipeos, zonaCPTOverrides);
 
   return {
     kpis,

@@ -1,17 +1,24 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import { normalizarPatente, getTipoPorDoca, parsearHoraED, getTipoVehiculo } from './helpers.js';
+import { getCPTdeZona } from './zonaCPT.js';
 
 dayjs.extend(customParseFormat);
 
 const HORAS_RANGO = Array.from({ length: 15 }, (_, i) => i + 9); // 9 a 23
 
 // Loop principal sobre TMS — extrae ultimaTs, totalPiezas, bipeo por hora, filasTMS
-export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
+export const buildTMSData = (csvData, horaInicioBipeos = 9, zonaCPTOverrides = {}) => {
   let ultimaTs = 0;
   let totalPiezasSistema = 0;
   const bipeoPorHora = new Array(24).fill(0);
   const filasTMS = [];
+  
+  // Conjuntos para contar shipments únicos por hora
+  const shipmentsInboundPorHora = {};
+  for (let h = 0; h <= 23; h++) {
+    shipmentsInboundPorHora[h] = new Set();
+  }
 
   csvData.forEach(d => {
     const raw = d['Inbound Date Included'];
@@ -22,8 +29,39 @@ export const buildTMSData = (csvData, horaInicioBipeos = 9) => {
     const h = f.hour();
     if (tsMs > ultimaTs) ultimaTs = tsMs;
     if (!d['Shipment ID'] || h < horaInicioBipeos) return;
+    
+    // ── Filtros adicionales (igual que huVelocidadProcessor) ──
+    const zonaRaw = String(d['Labeling Zone'] || "").trim();
+    if (!zonaRaw || zonaRaw !== zonaRaw.toUpperCase()) return;
+    const zonaUpper = zonaRaw.toUpperCase();
+    
+    // Excluir zonas que terminan en _A o _B (Meli Air)
+    if (/_[AB]$/.test(zonaUpper)) return;
+    
+    // Excluir CK390
+    if (zonaUpper === 'CK390') return;
+    
+    const zona = zonaUpper.replace(/_+$/, "");
+    
+    // Validar que la zona tenga un CPT asignado
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
+    if (!cpt) return;
+    
+    // Excluir Hub Status cancelados/rechazados/bloqueados
+    const hubStatus = String(d['Hub Status'] || "").toLowerCase().trim();
+    if (['cancelled', 'in_hub_reject', 'blocked'].includes(hubStatus)) return;
+    // ── Fin filtros adicionales ──
+    
+    const shipmentId = String(d['Shipment ID']).trim();
+    
     totalPiezasSistema++;
-    if (h <= 23) bipeoPorHora[h]++;
+    
+    // Contar shipments únicos por hora (igual que huVelocidadProcessor)
+    if (h <= 23 && !shipmentsInboundPorHora[h].has(shipmentId)) {
+      shipmentsInboundPorHora[h].add(shipmentId);
+      bipeoPorHora[h]++;
+    }
+    
     filasTMS.push({
       tsMs,
       patente: normalizarPatente(d['Truck ID']),

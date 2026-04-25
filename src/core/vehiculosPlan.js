@@ -1,7 +1,6 @@
-// Horas del plan de vehículos (10hs a 21hs)
-export const PLAN_HOURS = Array.from({ length: 12 }, (_, i) => {
-  const h = i + 10;
-  return `${String(h).padStart(2, '0')}:00`;
+// Horas del plan de vehículos (0hs a 23hs)
+export const PLAN_HOURS = Array.from({ length: 24 }, (_, i) => {
+  return `${String(i).padStart(2, '0')}:00`;
 });
 
 // Plan vacío por defecto
