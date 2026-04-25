@@ -17,6 +17,7 @@ import { fetchSnapshot, fetchStatus } from './core/api/index';
 import usePolling from './app/hooks/usePolling';
 import { useAdminSync } from './app/hooks/useAdminSync';
 import VelocidadDarsenas from './features/dashboard/pages/VelocidadDarsenas';
+import VoluminosoDashboard from './features/dashboard/pages/VoluminosoDashboard';
 
 function App() {
   const [appMode, setAppMode] = useState('loading');
@@ -151,6 +152,7 @@ function App() {
     activeTab === 'vehiculos'   ? 'VEHÍCULOS — PLAN VS REAL' :
     activeTab === 'arribs'      ? 'ARRIBS. DE VEHÍCULOS' :
     activeTab === 'voluminoso'  ? 'VOLUMINOSO / PAQUETERÍA' :
+    activeTab === 'voluminoso-dashboard' ? 'DASHBOARD VOLUMINOSO' :
     activeTab === 'superbigger' ? 'SUPER BIGGER / BIGGER' :
     activeTab === 'zonas'       ? 'ZONAS CPT' :
     activeTab === 'velocidad'   ? 'VELOCIDAD_OBJETIVO' :
@@ -182,6 +184,8 @@ function App() {
             <ArribosPage data={dashboardData} />
           ) : activeTab === 'voluminoso' ? (
             <Voluminoso data={dashboardData} />
+          ) : activeTab === 'voluminoso-dashboard' ? (
+            <VoluminosoDashboard data={dashboardData} />
           ) : activeTab === 'superbigger' ? (
             <SuperBigger data={dashboardData} />
           ) : activeTab === 'zonas' ? (

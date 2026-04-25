@@ -1,9 +1,27 @@
 import React, { useState } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import StatCard from '../../../shared/components/StatCard';
 import SortButton from '../../../shared/components/SortButton';
 import PageWrapper from '../../../shared/components/PageWrapper';
+import { TOOLTIP_STYLE } from '../../../shared/constants/design';
 
 const CPT_ORDEN = ['0:00','1:00','2:00','3:00','4:00','5:00','6:00','7:00','8:00','9:00','10:00','11:00','13:00'];
+
+const CPT_COLORS = {
+  '0:00': '#ef4444',
+  '1:00': '#f97316',
+  '2:00': '#f59e0b',
+  '3:00': '#eab308',
+  '4:00': '#84cc16',
+  '5:00': '#22c55e',
+  '6:00': '#10b981',
+  '7:00': '#14b8a6',
+  '8:00': '#06b6d4',
+  '9:00': '#0ea5e9',
+  '10:00': '#3b82f6',
+  '11:00': '#6366f1',
+  '13:00': '#8b5cf6',
+};
 
 const FILTROS = [
   { key: 'todos',      label: 'Todos' },
@@ -12,16 +30,17 @@ const FILTROS = [
 ];
 
 const Voluminoso = ({ data }) => {
-  if (!data?.volData) return null;
+  if (!data?.volDataByZona) return null;
 
   const [filtro, setFiltro] = useState('todos');
+  const [showModal, setShowModal] = useState(false);
 
   const porCPT = {};
   CPT_ORDEN.forEach(c => { porCPT[c] = []; });
-  data.volData.forEach(row => { if (porCPT[row.cpt]) porCPT[row.cpt].push(row); });
+  data.volDataByZona.forEach(row => { if (porCPT[row.cpt]) porCPT[row.cpt].push(row); });
 
-  const totalPaq = data.volData.reduce((a, r) => a + r.paqueteria, 0);
-  const totalVol = data.volData.reduce((a, r) => a + r.voluminoso, 0);
+  const totalPaq = data.volDataByZona.reduce((a, r) => a + r.paqueteria, 0);
+  const totalVol = data.volDataByZona.reduce((a, r) => a + r.voluminoso, 0);
   const totalPiezas = totalPaq + totalVol;
   const pctVol = totalPiezas > 0 ? Math.round((totalVol / totalPiezas) * 100) : 0;
   const pctPaq = totalPiezas > 0 ? Math.round((totalPaq / totalPiezas) * 100) : 0;
@@ -32,6 +51,13 @@ const Voluminoso = ({ data }) => {
     return true;
   });
 
+  // Pie chart data por CPT
+  const pieDataByCPT = (data.volDataByCPT || []).map(cpt => {
+    const total = cpt.paqueteria + cpt.voluminoso;
+    const pct = total > 0 ? Math.round((cpt.voluminoso / total) * 100) : 0;
+    return { cpt: cpt.cpt, voluminoso: cpt.voluminoso, paqueteria: cpt.paqueteria, total, pct };
+  }).filter(d => d.total > 0);
+
   return (
     <PageWrapper>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -40,11 +66,19 @@ const Voluminoso = ({ data }) => {
         <StatCard label="Voluminoso (≥50cm o >20kg)" value={totalVol.toLocaleString()} sub={`${pctVol}%`} color="orange" />
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center">
-        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mr-2">Filtrar:</span>
-        {FILTROS.map(({ key, label }) => (
-          <SortButton key={key} active={filtro === key} onClick={() => setFiltro(key)}>{label}</SortButton>
-        ))}
+      <div className="flex flex-wrap gap-2 items-center justify-between">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mr-2">Filtrar:</span>
+          {FILTROS.map(({ key, label }) => (
+            <SortButton key={key} active={filtro === key} onClick={() => setFiltro(key)}>{label}</SortButton>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black rounded-lg transition-colors"
+        >
+          Resumen General
+        </button>
       </div>
 
       <div className="bg-[#111827]/10 rounded-2xl border border-white/5 overflow-x-auto">
@@ -120,6 +154,49 @@ const Voluminoso = ({ data }) => {
           </tfoot>
         </table>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-[#111827] rounded-2xl border border-white/10 max-w-6xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-[#111827] border-b border-white/10 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-[14px] font-black text-white uppercase tracking-widest">Resumen General - Voluminoso por CPT</h2>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white text-[20px] font-black">×</button>
+            </div>
+            <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {pieDataByCPT.map(cptData => (
+                <div key={cptData.cpt} className="bg-white/[0.02] rounded-xl border border-white/5 p-4">
+                  <h3 className="text-[11px] font-black text-blue-400 uppercase tracking-widest mb-3">CPT {cptData.cpt}</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Paquetería', value: cptData.paqueteria },
+                          { name: 'Voluminoso', value: cptData.voluminoso }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        <Cell fill="#22c55e" />
+                        <Cell fill="#f97316" />
+                      </Pie>
+                      <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="mt-3 text-center">
+                    <p className="text-[10px] font-black text-slate-400">Total: {cptData.total.toLocaleString()} piezas</p>
+                    <p className="text-[10px] font-black text-orange-400">{cptData.pct}% Voluminoso</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </PageWrapper>
   );
 };

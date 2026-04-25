@@ -8,6 +8,8 @@ dayjs.extend(customParseFormat);
 // Voluminoso / Paquetería por zona
 export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
   const volPorZona = {};
+  const volPorHora = {};
+  const volPorCPT = {};
 
   csvData.forEach(d => {
     if (!d['Shipment ID']) return;
@@ -23,14 +25,62 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
     const dimW = parseFloat(d['Width']  || 0);
     const peso = parseFloat(d['Weight'] || 0);
 
-    if (dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000) {
+    const esVol = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
+
+    if (esVol) {
       volPorZona[zona].voluminoso++;
     } else {
       volPorZona[zona].paqueteria++;
     }
+
+    // Tracking por hora y procesado/pendiente
+    const inboundRaw = d['Inbound Date Included'];
+    const outboundRaw = d['Outbound Included Date'];
+    let hora = null;
+    if (inboundRaw) {
+      const f = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
+      if (f.isValid()) hora = f.hour();
+    }
+
+    if (hora !== null) {
+      const horaKey = `${String(hora).padStart(2,'0')}:00`;
+      if (!volPorHora[horaKey]) {
+        volPorHora[horaKey] = { hora: horaKey, voluminoso: 0, paqueteria: 0, procesado: 0, pendiente: 0 };
+      }
+      if (esVol) {
+        volPorHora[horaKey].voluminoso++;
+      } else {
+        volPorHora[horaKey].paqueteria++;
+      }
+
+      if (outboundRaw && outboundRaw.trim()) {
+        volPorHora[horaKey].procesado++;
+      } else {
+        volPorHora[horaKey].pendiente++;
+      }
+    }
+
+    // Tracking por CPT
+    if (!volPorCPT[cpt]) {
+      volPorCPT[cpt] = { cpt, voluminoso: 0, paqueteria: 0, procesado: 0, pendiente: 0 };
+    }
+    if (esVol) {
+      volPorCPT[cpt].voluminoso++;
+    } else {
+      volPorCPT[cpt].paqueteria++;
+    }
+    if (outboundRaw && outboundRaw.trim()) {
+      volPorCPT[cpt].procesado++;
+    } else {
+      volPorCPT[cpt].pendiente++;
+    }
   });
 
-  return Object.values(volPorZona).sort((a, b) => a.cpt.localeCompare(b.cpt));
+  const volDataByZona = Object.values(volPorZona).sort((a, b) => a.cpt.localeCompare(b.cpt));
+  const volDataByHora = Object.values(volPorHora).sort((a, b) => a.hora.localeCompare(b.hora));
+  const volDataByCPT = Object.values(volPorCPT).sort((a, b) => a.cpt.localeCompare(b.cpt));
+
+  return { volDataByZona, volDataByHora, volDataByCPT };
 };
 
 // Super Bigger: peso > 50kg (50000g) O alguna dimensión >= 200cm

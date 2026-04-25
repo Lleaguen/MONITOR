@@ -1,0 +1,9 @@
+export { default as HUTable } from './HUTable';
+export { default as HUVelocidadChart } from './HUVelocidadChart';
+export { default as KpiGrid } from './KpiGrid';
+export { default as MainChart } from './MainChart';
+export { default as MatrixPanel } from './MatrixPanel';
+export { default as TargetCards } from './TargetCards';
+export { default as VoluminosoPieChart } from './VoluminosoPieChart';
+export { default as VoluminosoCPTTable } from './VoluminosoCPTTable';
+export { default as VoluminosoHourlyChart } from './VoluminosoHourlyChart';
