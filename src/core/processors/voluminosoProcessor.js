@@ -11,6 +11,11 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
   const volPorHora = {};
   const volPorCPT = {};
 
+  let debugCount = 0;
+  let voluminosoCount = 0;
+  let voluminosoProcesadoCount = 0;
+  let voluminosoPendienteCount = 0;
+
   csvData.forEach(d => {
     if (!d['Shipment ID']) return;
     const zona = String(d['Labeling Zone'] || "").trim();
@@ -29,6 +34,7 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
 
     if (esVol) {
       volPorZona[zona].voluminoso++;
+      voluminosoCount++;
     } else {
       volPorZona[zona].paqueteria++;
     }
@@ -36,6 +42,18 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
     // Tracking por hora y procesado/pendiente
     const inboundRaw = d['Inbound Date Included'];
     const outboundRaw = d['Outbound Included Date'];
+    
+    // Debug: log primeras 5 piezas voluminosas
+    if (esVol && debugCount < 5) {
+      console.log('🔍 Debug voluminoso:', {
+        shipmentId: d['Shipment ID'],
+        outboundRaw,
+        hasOutbound: !!(outboundRaw && outboundRaw.trim()),
+        cpt
+      });
+      debugCount++;
+    }
+    
     let hora = null;
     if (inboundRaw) {
       const f = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
@@ -45,14 +63,30 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
     if (hora !== null) {
       const horaKey = `${String(hora).padStart(2,'0')}:00`;
       if (!volPorHora[horaKey]) {
-        volPorHora[horaKey] = { hora: horaKey, voluminoso: 0, paqueteria: 0, procesado: 0, pendiente: 0 };
+        volPorHora[horaKey] = { 
+          hora: horaKey, 
+          voluminoso: 0, 
+          paqueteria: 0, 
+          procesado: 0, 
+          pendiente: 0,
+          voluminosoProcesado: 0,
+          voluminosoPendiente: 0
+        };
       }
       if (esVol) {
         volPorHora[horaKey].voluminoso++;
+        if (outboundRaw && outboundRaw.trim()) {
+          volPorHora[horaKey].voluminosoProcesado++;
+          voluminosoProcesadoCount++;
+        } else {
+          volPorHora[horaKey].voluminosoPendiente++;
+          voluminosoPendienteCount++;
+        }
       } else {
         volPorHora[horaKey].paqueteria++;
       }
 
+      // Total procesado/pendiente (todas las piezas)
       if (outboundRaw && outboundRaw.trim()) {
         volPorHora[horaKey].procesado++;
       } else {
@@ -62,18 +96,39 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
 
     // Tracking por CPT
     if (!volPorCPT[cpt]) {
-      volPorCPT[cpt] = { cpt, voluminoso: 0, paqueteria: 0, procesado: 0, pendiente: 0 };
+      volPorCPT[cpt] = { 
+        cpt, 
+        voluminoso: 0, 
+        paqueteria: 0, 
+        procesado: 0, 
+        pendiente: 0,
+        voluminosoProcesado: 0,
+        voluminosoPendiente: 0
+      };
     }
     if (esVol) {
       volPorCPT[cpt].voluminoso++;
+      if (outboundRaw && outboundRaw.trim()) {
+        volPorCPT[cpt].voluminosoProcesado++;
+      } else {
+        volPorCPT[cpt].voluminosoPendiente++;
+      }
     } else {
       volPorCPT[cpt].paqueteria++;
     }
+    
+    // Total procesado/pendiente (todas las piezas)
     if (outboundRaw && outboundRaw.trim()) {
       volPorCPT[cpt].procesado++;
     } else {
       volPorCPT[cpt].pendiente++;
     }
+  });
+
+  console.log('📊 Resumen voluminoso:', {
+    totalVoluminoso: voluminosoCount,
+    voluminosoProcesado: voluminosoProcesadoCount,
+    voluminosoPendiente: voluminosoPendienteCount
   });
 
   const volDataByZona = Object.values(volPorZona).sort((a, b) => a.cpt.localeCompare(b.cpt));

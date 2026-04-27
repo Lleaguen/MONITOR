@@ -5,8 +5,8 @@ const CPT_ORDER = ['0:00', '1:00', '2:00', '3:00', '4:00', '5:00', '6:00', '7:00
 
 const TooltipPieChart = ({ data }) => {
   const chartData = [
-    { name: 'Procesado', value: data.procesado, color: '#22c55e' },
-    { name: 'Pendiente', value: data.pendiente, color: '#f97316' }
+    { name: 'Procesado', value: data.voluminosoProcesado || 0, color: '#22c55e' },
+    { name: 'Pendiente', value: data.voluminosoPendiente || 0, color: '#f97316' }
   ].filter(item => item.value > 0);
 
   if (chartData.length === 0) return null;
@@ -140,10 +140,10 @@ const VoluminosoCPTTable = ({ volDataByCPT }) => {
                   {row.voluminoso.toLocaleString()}
                 </td>
                 <td className="py-3 text-right font-black text-green-400">
-                  {row.procesado.toLocaleString()}
+                  {(row.voluminosoProcesado || 0).toLocaleString()}
                 </td>
                 <td className="py-3 text-right font-black text-orange-300">
-                  {row.pendiente.toLocaleString()}
+                  {(row.voluminosoPendiente || 0).toLocaleString()}
                 </td>
                 <td className="py-3 text-right font-black text-slate-300">
                   {Math.round((row.voluminoso / totalVoluminoso) * 100)}%
@@ -160,10 +160,10 @@ const VoluminosoCPTTable = ({ volDataByCPT }) => {
                 {totalVoluminoso.toLocaleString()}
               </td>
               <td className="py-3 text-right font-black text-green-400">
-                {tableData.reduce((sum, item) => sum + item.procesado, 0).toLocaleString()}
+                {tableData.reduce((sum, item) => sum + (item.voluminosoProcesado || 0), 0).toLocaleString()}
               </td>
               <td className="py-3 text-right font-black text-orange-300">
-                {tableData.reduce((sum, item) => sum + item.pendiente, 0).toLocaleString()}
+                {tableData.reduce((sum, item) => sum + (item.voluminosoPendiente || 0), 0).toLocaleString()}
               </td>
               <td className="py-3 text-right font-black text-slate-300">100%</td>
             </tr>
@@ -196,18 +196,18 @@ const VoluminosoCPTTable = ({ volDataByCPT }) => {
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
                 <span className="text-slate-300">
-                  Procesado: {hoveredCPT.procesado.toLocaleString()}
+                  Procesado: {(hoveredCPT.voluminosoProcesado || 0).toLocaleString()}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-orange-500" />
                 <span className="text-slate-300">
-                  Pendiente: {hoveredCPT.pendiente.toLocaleString()}
+                  Pendiente: {(hoveredCPT.voluminosoPendiente || 0).toLocaleString()}
                 </span>
               </div>
               <div className="text-slate-400 pt-1 border-t border-white/10">
-                {hoveredCPT.procesado + hoveredCPT.pendiente > 0 ? 
-                  Math.round((hoveredCPT.procesado / (hoveredCPT.procesado + hoveredCPT.pendiente)) * 100) : 0
+                {(hoveredCPT.voluminosoProcesado || 0) + (hoveredCPT.voluminosoPendiente || 0) > 0 ? 
+                  Math.round(((hoveredCPT.voluminosoProcesado || 0) / ((hoveredCPT.voluminosoProcesado || 0) + (hoveredCPT.voluminosoPendiente || 0))) * 100) : 0
                 }% procesado
               </div>
             </div>
