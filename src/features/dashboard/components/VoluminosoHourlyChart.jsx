@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
 import { TOOLTIP_STYLE } from '../../../shared/constants/design';
+import { X } from 'lucide-react';
 
 const formatNumber = (num) => {
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -71,6 +72,8 @@ const CustomLabelPercent = ({ x, y, width, value }) => {
 };
 
 const VoluminosoHourlyChart = ({ volDataByHora }) => {
+  const [showResumen, setShowResumen] = useState(false);
+
   if (!volDataByHora || volDataByHora.length === 0) {
     return (
       <div className="bg-[#111827]/10 rounded-2xl border border-white/5 p-6 flex items-center justify-center h-64">
@@ -105,28 +108,36 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
 
   return (
     <div className="bg-[#111827]/10 rounded-2xl border border-white/5 p-6">
-      <div className="mb-4">
-        <h3 className="text-[12px] font-black text-white uppercase tracking-widest mb-2">
-          Avance Voluminoso por Hora
-        </h3>
-        <div className="grid grid-cols-4 gap-2 text-center text-[8px]">
-          <div>
-            <p className="text-slate-500 font-black uppercase tracking-widest">Total</p>
-            <p className="text-blue-400 font-black text-[10px]">{totalIngresado.toLocaleString()}</p>
-          </div>
-          <div>
-            <p className="text-slate-500 font-black uppercase tracking-widest">% Vol.</p>
-            <p className="text-orange-400 font-black text-[10px]">{pctVoluminosoTotal}%</p>
-          </div>
-          <div>
-            <p className="text-slate-500 font-black uppercase tracking-widest">Procesado</p>
-            <p className="text-green-400 font-black text-[10px]">{totalProcesado.toLocaleString()}</p>
-          </div>
-          <div>
-            <p className="text-slate-500 font-black uppercase tracking-widest">Pendiente</p>
-            <p className="text-red-400 font-black text-[10px]">{totalPendiente.toLocaleString()}</p>
+      <div className="mb-4 flex justify-between items-start">
+        <div>
+          <h3 className="text-[12px] font-black text-white uppercase tracking-widest mb-2">
+            Avance Voluminoso por Hora
+          </h3>
+          <div className="grid grid-cols-4 gap-2 text-center text-[8px]">
+            <div>
+              <p className="text-slate-500 font-black uppercase tracking-widest">Total</p>
+              <p className="text-blue-400 font-black text-[10px]">{totalIngresado.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-slate-500 font-black uppercase tracking-widest">% Vol.</p>
+              <p className="text-orange-400 font-black text-[10px]">{pctVoluminosoTotal}%</p>
+            </div>
+            <div>
+              <p className="text-slate-500 font-black uppercase tracking-widest">Procesado</p>
+              <p className="text-green-400 font-black text-[10px]">{totalProcesado.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-slate-500 font-black uppercase tracking-widest">Pendiente</p>
+              <p className="text-red-400 font-black text-[10px]">{totalPendiente.toLocaleString()}</p>
+            </div>
           </div>
         </div>
+        <button
+          onClick={() => setShowResumen(true)}
+          className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest transition-all"
+        >
+          Ver Resumen
+        </button>
       </div>
 
       <div className="h-48">
@@ -161,6 +172,72 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Modal Resumen */}
+      {showResumen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-[#080c14] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <h2 className="text-[11px] font-black text-white uppercase tracking-widest">
+                Resumen Voluminoso por Hora
+              </h2>
+              <button
+                onClick={() => setShowResumen(false)}
+                className="text-slate-500 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] border-b border-white/10">
+                    <th className="px-3 py-3">Hora</th>
+                    <th className="py-3 text-right">Total Ingresado</th>
+                    <th className="py-3 text-right">Voluminoso</th>
+                    <th className="py-3 text-right">% Voluminoso</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chartData.map((row, index) => (
+                    <tr
+                      key={row.hora}
+                      className="border-b border-white/[0.03] text-[10px] hover:bg-white/[0.02] transition-colors"
+                    >
+                      <td className="px-3 py-3 font-black text-blue-400">{row.hora}</td>
+                      <td className="py-3 text-right font-black text-slate-300">
+                        {row.cantidadTotal.toLocaleString()}
+                      </td>
+                      <td className="py-3 text-right font-black text-orange-400">
+                        {row.cantidadVoluminoso.toLocaleString()}
+                      </td>
+                      <td className="py-3 text-right font-black text-orange-400">
+                        {row.pctVoluminoso}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-white/10 bg-white/[0.03] text-[10px]">
+                    <td className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                      Total
+                    </td>
+                    <td className="py-3 text-right font-black text-white">
+                      {totalIngresado.toLocaleString()}
+                    </td>
+                    <td className="py-3 text-right font-black text-orange-400">
+                      {totalVoluminoso.toLocaleString()}
+                    </td>
+                    <td className="py-3 text-right font-black text-orange-400">
+                      {pctVoluminosoTotal}%
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
