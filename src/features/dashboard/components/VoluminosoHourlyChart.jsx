@@ -105,6 +105,8 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
   const pctVoluminosoTotal = totalIngresado > 0 ? Math.round((totalVoluminoso / totalIngresado) * 100) : 0;
   const totalProcesado = chartData.reduce((sum, item) => sum + item.procesado, 0);
   const totalPendiente = chartData.reduce((sum, item) => sum + item.pendiente, 0);
+  const totalVoluminosoProcesado = volDataByHora.reduce((sum, item) => sum + (item.voluminosoProcesado || 0), 0);
+  const totalVoluminosoPendiente = volDataByHora.reduce((sum, item) => sum + (item.voluminosoPendiente || 0), 0);
 
   return (
     <div className="bg-[#111827]/10 rounded-2xl border border-white/5 p-6">
@@ -116,7 +118,7 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
           <div className="grid grid-cols-4 gap-2 text-center text-[8px]">
             <div>
               <p className="text-slate-500 font-black uppercase tracking-widest">Total</p>
-              <p className="text-blue-400 font-black text-[10px]">{totalIngresado.toLocaleString()}</p>
+              <p className="text-blue-400 font-black text-[10px]">{totalVoluminoso.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-slate-500 font-black uppercase tracking-widest">% Vol.</p>
@@ -124,11 +126,11 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
             </div>
             <div>
               <p className="text-slate-500 font-black uppercase tracking-widest">Procesado</p>
-              <p className="text-green-400 font-black text-[10px]">{totalProcesado.toLocaleString()}</p>
+              <p className="text-green-400 font-black text-[10px]">{totalVoluminosoProcesado.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-slate-500 font-black uppercase tracking-widest">Pendiente</p>
-              <p className="text-red-400 font-black text-[10px]">{totalPendiente.toLocaleString()}</p>
+              <p className="text-red-400 font-black text-[10px]">{totalVoluminosoPendiente.toLocaleString()}</p>
             </div>
           </div>
         </div>
