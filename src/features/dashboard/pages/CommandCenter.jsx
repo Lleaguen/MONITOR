@@ -180,16 +180,18 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer, rawCsvData
     const ahora = dayjs();
     const lista = data.shipmentsSinMovimiento || [];
 
-    // Filtrar: ingresados DESDE la hora seleccionada hasta ahora
+    // Filtrar: ingresados DESDE la hora seleccionada hasta ahora, Y con más de 3hs sin movimiento
     const filtrados = lista.filter(({ inboundTs }) => {
-      const horaInbound = dayjs(inboundTs).hour();
-      return horaInbound >= horasFiltro;
+      const inbound = dayjs(inboundTs);
+      const horaInbound = inbound.hour();
+      const horasTranscurridas = ahora.diff(inbound, 'hour', true);
+      return horaInbound >= horasFiltro && horasTranscurridas >= 3;
     });
 
     const ids = filtrados.map(({ id }) => id);
 
     if (ids.length === 0) {
-      alert(`No hay Shipment IDs con Hub Status in_hub/in_hub_finished ingresados desde las ${String(horasFiltro).padStart(2,'0')}:00`);
+      alert(`No hay Shipment IDs con Hub Status in_hub/in_hub_finished ingresados desde las ${String(horasFiltro).padStart(2,'0')}:00 con más de 3hs sin movimiento`);
       return;
     }
 
