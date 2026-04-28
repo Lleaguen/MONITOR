@@ -1,3 +1,5 @@
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import { parseEasyDocking }                                    from './processors/easyDockingParser.js';
 import { buildPatentesTMS, buildMatchEDaTMS, buildDarsenasActivas,
          buildVehiculosEspera, buildMapPatenteTipo }           from './processors/vehiculosProcessor.js';
@@ -6,6 +8,8 @@ import { buildHUData }                                         from './processor
 import { buildVolData, buildSuperBigger, buildArrivalChasis }  from './processors/voluminosoProcessor.js';
 import { buildDarsenaStats }                                     from './processors/darsenaProcessor.js';
 import { buildHUVelocidadData }                                from './processors/huVelocidadProcessor.js';
+
+dayjs.extend(customParseFormat);
 
 /**
  * processCombinedData — Orquestador principal de procesamiento de datos.
@@ -52,6 +56,34 @@ export const processCombinedData = (
 
   // 2. TMS — loop principal
   const { ultimaTs, totalPiezasSistema, bipeoPorHora, filasTMS } = buildTMSData(csvData, horaInicioBipeos, zonaCPTOverrides);
+
+  // 2.1. Extraer Shipment IDs filtrados: in_hub / in_hub_finished con más de N horas
+  // Se guardan con su inbound timestamp para que el componente pueda filtrar por horas dinámicamente
+  const shipmentsSinMovimiento = csvData
+    .filter(d => {
+      if (!d['Shipment ID']) return false;
+      const hubStatus = String(d['Hub Status'] || '').toLowerCase().trim();
+      if (!['in_hub', 'in_hub_finished'].includes(hubStatus)) return false;
+      const inboundRaw = d['Inbound Date Included'];
+      if (!inboundRaw) return false;
+      const inbound = dayjs(inboundRaw, 'DD/MM/YYYY HH:mm:ss');
+      return inbound.isValid();
+    })
+    .map(d => ({
+      id: String(d['Shipment ID']).trim(),
+      inboundTs: dayjs(d['Inbound Date Included'], 'DD/MM/YYYY HH:mm:ss').valueOf(),
+    }));
+
+  // Deduplicar por ID (quedarse con el inboundTs más reciente)
+  const shipmentsSinMovimientoMap = new Map();
+  shipmentsSinMovimiento.forEach(({ id, inboundTs }) => {
+    if (!shipmentsSinMovimientoMap.has(id) || inboundTs > shipmentsSinMovimientoMap.get(id)) {
+      shipmentsSinMovimientoMap.set(id, inboundTs);
+    }
+  });
+  const shipmentsSinMovimientoList = Array.from(shipmentsSinMovimientoMap.entries())
+    .map(([id, inboundTs]) => ({ id, inboundTs }))
+    .sort((a, b) => a.id.localeCompare(b.id));
 
   // 3. Matching patentes
   const patentesTMS = buildPatentesTMS(csvData);
@@ -112,5 +144,6 @@ export const processCombinedData = (
     biggerChartData,
     huStats,
     huVelocidadData,
+    shipmentsSinMovimiento: shipmentsSinMovimientoList,
   };
 };

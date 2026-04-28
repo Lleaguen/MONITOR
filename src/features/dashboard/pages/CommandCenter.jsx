@@ -163,8 +163,48 @@ const CierreInhubModal = ({ data }) => {
   );
 };
 
-const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
+const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer, rawCsvData }) => {
+  const [horasFiltro, setHorasFiltro] = useState(2);
+
   if (!data) return null;
+
+  // Generar opciones de horas desde inicio de inhub (13hs) hasta hora actual
+  const horaActual = dayjs().hour();
+  const HORA_INICIO_INHUB = 13;
+  const opcionesHoras = [];
+  for (let h = HORA_INICIO_INHUB; h <= horaActual; h++) {
+    opcionesHoras.push(h);
+  }
+
+  const handleExportShipmentIds = () => {
+    const ahora = dayjs();
+    const lista = data.shipmentsSinMovimiento || [];
+
+    // Filtrar: ingresados DESDE la hora seleccionada hasta ahora
+    const filtrados = lista.filter(({ inboundTs }) => {
+      const horaInbound = dayjs(inboundTs).hour();
+      return horaInbound >= horasFiltro;
+    });
+
+    const ids = filtrados.map(({ id }) => id);
+
+    if (ids.length === 0) {
+      alert(`No hay Shipment IDs con Hub Status in_hub/in_hub_finished ingresados desde las ${String(horasFiltro).padStart(2,'0')}:00`);
+      return;
+    }
+
+    const csvContent = 'Shipment ID\n' + ids.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `shipments_sin_movimiento_desde_${String(horasFiltro).padStart(2,'0')}hs_${dayjs().format('YYYY-MM-DD_HH-mm')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
@@ -210,7 +250,32 @@ const CommandCenter = ({ data, planVehiculos, onPlanChange, isViewer }) => {
 
       <section>
         <TargetCards targets={data.targets} />
-        <div className="flex justify-end mt-4">
+        <div className="flex justify-between items-center mt-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sin movimiento desde</span>
+            <select
+              value={horasFiltro}
+              onChange={e => setHorasFiltro(Number(e.target.value))}
+              className="bg-[#111827] border border-white/10 text-white text-[9px] font-black rounded-lg px-2 py-1.5 uppercase tracking-widest focus:outline-none focus:border-white/20"
+            >
+              {opcionesHoras.map(h => (
+                <option key={h} value={h}>
+                  {String(h).padStart(2, '0')}:00
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleExportShipmentIds}
+              className="flex items-center gap-2 px-4 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 hover:text-emerald-300 text-[9px] font-black uppercase tracking-widest transition-all"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Exportar Shipment IDs
+            </button>
+          </div>
           <CierreInhubModal data={data} />
         </div>
       </section>

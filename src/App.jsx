@@ -175,7 +175,7 @@ function App() {
         />
         <div className="p-4 md:p-6 lg:p-10 flex-1">
           {activeTab === 'command' ? (
-            <CommandCenter data={dashboardData} planVehiculos={planVehiculos} onPlanChange={handlePlanChange} isViewer={isViewer} />
+            <CommandCenter data={dashboardData} planVehiculos={planVehiculos} onPlanChange={handlePlanChange} isViewer={isViewer} rawCsvData={rawFiles?.csvData} />
           ) : activeTab === 'cutoff' ? (
             <CutOff data={dashboardData} />
           ) : activeTab === 'vehiculos' ? (
