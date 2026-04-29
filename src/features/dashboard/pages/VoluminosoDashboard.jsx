@@ -6,6 +6,11 @@ import VoluminosoHourlyChart from '../components/VoluminosoHourlyChart';
 import StatCard from '../../../shared/components/StatCard';
 
 const VoluminosoDashboard = ({ data }) => {
+  console.log('📦 VoluminosoDashboard - Datos recibidos:', {
+    volDataByHora: data?.volDataByHora?.length,
+    volDataByCPT: data?.volDataByCPT?.length
+  });
+
   if (!data?.volDataByHora || !data?.volDataByCPT) {
     return (
       <PageWrapper>

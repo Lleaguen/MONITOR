@@ -32,6 +32,11 @@ export const useAdminSync = ({
   // ── Recalcular cuando cambian parámetros (solo modo Admin con archivos) ──
   useEffect(() => {
     if (appMode !== 'dashboard-admin' || !rawFiles) return;
+    console.log('🔄 useAdminSync - Recalculando con:', {
+      csvFilas: rawFiles.csv?.length,
+      excelFilas: rawFiles.excel?.length,
+      config
+    });
     const data = processCombinedData(
       rawFiles.csv, rawFiles.excel,
       config.proyectado, config.objetivoHU, config.productividadHU,
@@ -42,6 +47,11 @@ export const useAdminSync = ({
         zonaCPTOverrides,
       }
     );
+    console.log('✅ useAdminSync - Datos procesados:', {
+      totalPiezas: data.kpis?.bipeado,
+      volDataByHora: data.volDataByHora?.length,
+      huVelocidadData: data.huVelocidadData ? 'presente' : 'faltante'
+    });
     const dataWithPlan = { ...data, planVehiculos };
     setDashboardData(dataWithPlan);
     setSyncState('syncing');
@@ -56,6 +66,10 @@ export const useAdminSync = ({
 
   // ── handleDataLoad ──────────────────────────────────────────────────────────
   const handleDataLoad = async (csv, excel) => {
+    console.log('📥 handleDataLoad - Cargando archivos:', {
+      csvFilas: csv?.length,
+      excelFilas: excel?.length
+    });
     setRawFiles({ csv, excel });
     const data = processCombinedData(
       csv, excel,
@@ -67,6 +81,11 @@ export const useAdminSync = ({
         zonaCPTOverrides,
       }
     );
+    console.log('✅ handleDataLoad - Datos procesados:', {
+      totalPiezas: data.kpis?.bipeado,
+      volDataByHora: data.volDataByHora?.length,
+      huVelocidadData: data.huVelocidadData ? 'presente' : 'faltante'
+    });
     const dataWithPlan = { ...data, planVehiculos };
     setDashboardData(dataWithPlan);
     setAppMode('dashboard-admin');

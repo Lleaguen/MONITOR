@@ -5,141 +5,137 @@ import { getCPTdeZona } from './zonaCPT.js';
 
 dayjs.extend(customParseFormat);
 
+/*
+ * Criterios de clasificación voluminoso:
+ *   - Dimensiones en MILÍMETROS: >= 500mm (= 50cm) en cualquier eje
+ *   - Peso en GRAMOS:            > 20000g (= 20kg)
+ *
+ * Criterios de procesado:
+ *   - Procesado = tiene Outbound Date Closed (HU cerrado)
+ *   - Pendiente = no tiene Outbound Date Closed
+ */
+
 // Voluminoso / Paquetería por zona
-export const buildVolData = (csvData, zonaCPTOverrides = {}) => {
+export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 9, horaInicioHU = 10) => {
   const volPorZona = {};
   const volPorHora = {};
-  const volPorCPT = {};
+  const volPorCPT  = {};
 
-  let debugCount = 0;
-  let voluminosoCount = 0;
-  let voluminosoProcesadoCount = 0;
-  let voluminosoPendienteCount = 0;
-
+  // Deduplicar por Shipment ID — quedarse con la fila más reciente (mayor Inbound Date)
+  const porShipment = new Map();
   csvData.forEach(d => {
     if (!d['Shipment ID']) return;
-    const zona = String(d['Labeling Zone'] || "").trim();
-    if (!zona) return;
+    const id = String(d['Shipment ID']).trim();
+    const existing = porShipment.get(id);
+    if (!existing) {
+      porShipment.set(id, d);
+    } else {
+      // Quedarse con la fila que tenga Inbound Date más reciente
+      const tsNew = d['Inbound Date Included']
+        ? dayjs(d['Inbound Date Included'], "DD/MM/YYYY HH:mm:ss").valueOf()
+        : 0;
+      const tsOld = existing['Inbound Date Included']
+        ? dayjs(existing['Inbound Date Included'], "DD/MM/YYYY HH:mm:ss").valueOf()
+        : 0;
+      if (tsNew > tsOld) porShipment.set(id, d);
+    }
+  });
+
+  porShipment.forEach(d => {
+    // ── Mismos filtros que huProcessor ───────────────────────────────────────
+    const zonaRaw = String(d['Labeling Zone'] || "").trim();
+    if (!zonaRaw) return;
+    if (zonaRaw !== zonaRaw.toUpperCase()) return;
+    const zonaUpper = zonaRaw.toUpperCase();
+    if (/_[AB]$/.test(zonaUpper)) return;
+    if (zonaUpper === 'CK390') return;
+    const zona = zonaUpper.replace(/_+$/, "");
+
     const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
     if (!cpt) return;
 
+    const hubStatus = String(d['Hub Status'] || "").toLowerCase().trim();
+    if (['cancelled', 'in_hub_reject', 'blocked'].includes(hubStatus)) return;
+    // ────────────────────────────────────────────────────────────────────────
+
     if (!volPorZona[zona]) volPorZona[zona] = { zona, cpt, paqueteria: 0, voluminoso: 0 };
 
+    // Dimensiones en mm, peso en gramos
     const dimH = parseFloat(d['Height'] || 0);
     const dimL = parseFloat(d['Length'] || 0);
     const dimW = parseFloat(d['Width']  || 0);
     const peso = parseFloat(d['Weight'] || 0);
 
-    const esVol = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
+    // Voluminoso: alguna dimensión >= 500mm (50cm) O peso > 20000g (20kg)
+    const esVol = dimH >= 500 || dimL >= 500 || dimW >= 500 || peso > 20000;
+
+    // Procesado = HU cerrado
+    const estaCerrado = !!d['Outbound Date Closed'];
+
+    // ── Filtrar por hora de inbound (igual que buildTMSData) ─────────────────
+    const inboundRaw = d['Inbound Date Included'];
+    if (!inboundRaw) return;
+    const f = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
+    if (!f.isValid()) return;
+    const horaInbound = f.hour();
+    if (horaInbound < horaInicioBipeos) return;
+    // ────────────────────────────────────────────────────────────────────────
 
     if (esVol) {
       volPorZona[zona].voluminoso++;
-      voluminosoCount++;
     } else {
       volPorZona[zona].paqueteria++;
     }
 
-    // Tracking por hora y procesado/pendiente
-    const inboundRaw = d['Inbound Date Included'];
-    const outboundRaw = d['Outbound Included Date'];
-    
-    // Debug: log primeras 5 piezas voluminosas
-    if (esVol && debugCount < 5) {
-      console.log('🔍 Debug voluminoso:', {
-        shipmentId: d['Shipment ID'],
-        outboundRaw,
-        hasOutbound: !!(outboundRaw && outboundRaw.trim()),
-        cpt
-      });
-      debugCount++;
+    // ── Por hora de inbound ──────────────────────────────────────────────────
+    const horaKey = `${String(horaInbound).padStart(2, '0')}:00`;
+    if (!volPorHora[horaKey]) {
+      volPorHora[horaKey] = {
+        hora: horaKey,
+        voluminoso: 0, paqueteria: 0,
+        procesado: 0, pendiente: 0,
+        voluminosoProcesado: 0, voluminosoPendiente: 0,
+      };
     }
-    
-    let hora = null;
-    if (inboundRaw) {
-      const f = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
-      if (f.isValid()) hora = f.hour();
+    if (esVol) {
+      volPorHora[horaKey].voluminoso++;
+      if (estaCerrado) volPorHora[horaKey].voluminosoProcesado++;
+      else             volPorHora[horaKey].voluminosoPendiente++;
+    } else {
+      volPorHora[horaKey].paqueteria++;
     }
+    if (estaCerrado) volPorHora[horaKey].procesado++;
+    else             volPorHora[horaKey].pendiente++;
 
-    if (hora !== null) {
-      const horaKey = `${String(hora).padStart(2,'0')}:00`;
-      if (!volPorHora[horaKey]) {
-        volPorHora[horaKey] = { 
-          hora: horaKey, 
-          voluminoso: 0, 
-          paqueteria: 0, 
-          procesado: 0, 
-          pendiente: 0,
-          voluminosoProcesado: 0,
-          voluminosoPendiente: 0
-        };
-      }
-      if (esVol) {
-        volPorHora[horaKey].voluminoso++;
-        if (outboundRaw && outboundRaw.trim()) {
-          volPorHora[horaKey].voluminosoProcesado++;
-          voluminosoProcesadoCount++;
-        } else {
-          volPorHora[horaKey].voluminosoPendiente++;
-          voluminosoPendienteCount++;
-        }
-      } else {
-        volPorHora[horaKey].paqueteria++;
-      }
-
-      // Total procesado/pendiente (todas las piezas)
-      if (outboundRaw && outboundRaw.trim()) {
-        volPorHora[horaKey].procesado++;
-      } else {
-        volPorHora[horaKey].pendiente++;
-      }
-    }
-
-    // Tracking por CPT
+    // ── Por CPT ─────────────────────────────────────────────────────────────
     if (!volPorCPT[cpt]) {
-      volPorCPT[cpt] = { 
-        cpt, 
-        voluminoso: 0, 
-        paqueteria: 0, 
-        procesado: 0, 
-        pendiente: 0,
-        voluminosoProcesado: 0,
-        voluminosoPendiente: 0
+      volPorCPT[cpt] = {
+        cpt,
+        voluminoso: 0, paqueteria: 0,
+        procesado: 0, pendiente: 0,
+        voluminosoProcesado: 0, voluminosoPendiente: 0,
       };
     }
     if (esVol) {
       volPorCPT[cpt].voluminoso++;
-      if (outboundRaw && outboundRaw.trim()) {
-        volPorCPT[cpt].voluminosoProcesado++;
-      } else {
-        volPorCPT[cpt].voluminosoPendiente++;
-      }
+      if (estaCerrado) volPorCPT[cpt].voluminosoProcesado++;
+      else             volPorCPT[cpt].voluminosoPendiente++;
     } else {
       volPorCPT[cpt].paqueteria++;
     }
-    
-    // Total procesado/pendiente (todas las piezas)
-    if (outboundRaw && outboundRaw.trim()) {
-      volPorCPT[cpt].procesado++;
-    } else {
-      volPorCPT[cpt].pendiente++;
-    }
+    if (estaCerrado) volPorCPT[cpt].procesado++;
+    else             volPorCPT[cpt].pendiente++;
   });
 
-  console.log('📊 Resumen voluminoso:', {
-    totalVoluminoso: voluminosoCount,
-    voluminosoProcesado: voluminosoProcesadoCount,
-    voluminosoPendiente: voluminosoPendienteCount
-  });
-
-  const volDataByZona = Object.values(volPorZona).sort((a, b) => a.cpt.localeCompare(b.cpt));
-  const volDataByHora = Object.values(volPorHora).sort((a, b) => a.hora.localeCompare(b.hora));
-  const volDataByCPT = Object.values(volPorCPT).sort((a, b) => a.cpt.localeCompare(b.cpt));
-
-  return { volDataByZona, volDataByHora, volDataByCPT };
+  return {
+    volDataByZona: Object.values(volPorZona).sort((a, b) => a.cpt.localeCompare(b.cpt)),
+    volDataByHora: Object.values(volPorHora).sort((a, b) => a.hora.localeCompare(b.hora)),
+    volDataByCPT:  Object.values(volPorCPT).sort((a, b) => a.cpt.localeCompare(b.cpt)),
+  };
 };
 
-// Super Bigger: peso > 50kg (50000g) O alguna dimensión >= 200cm
-// Bigger:       peso > 30kg (30000g) Y alguna dimensión > 150cm (y no es super bigger)
+// Super Bigger: peso > 50kg (50000g) O alguna dimensión >= 2000mm (200cm)
+// Bigger:       peso > 30kg (30000g) Y alguna dimensión > 1500mm (150cm), y no es super bigger
 export const buildSuperBigger = (csvData) => {
   const superPorHora = new Array(24).fill(0);
   const biggerPorHora = new Array(24).fill(0);
@@ -153,8 +149,9 @@ export const buildSuperBigger = (csvData) => {
     const dimW = parseFloat(d['Width']  || 0);
     const peso = parseFloat(d['Weight'] || 0);
 
-    const esSuper  = peso > 50000 || dimH >= 200 || dimL >= 200 || dimW >= 200;
-    const esBigger = !esSuper && (peso > 30000 && (dimH > 150 || dimL > 150 || dimW > 150));
+    // Dimensiones en mm, peso en gramos
+    const esSuper  = peso > 50000 || dimH >= 2000 || dimL >= 2000 || dimW >= 2000;
+    const esBigger = !esSuper && (peso > 30000 && (dimH > 1500 || dimL > 1500 || dimW > 1500));
 
     if (!esSuper && !esBigger) return;
 
@@ -167,11 +164,11 @@ export const buildSuperBigger = (csvData) => {
 
     const item = {
       shipmentId: String(d['Shipment ID'] || ""),
-      height: dimH,
-      length: dimL,
-      width:  dimW,
-      weight: Math.round(peso / 1000 * 100) / 100,
-      hora:   hora !== null ? `${String(hora).padStart(2,'0')}:00` : '--',
+      height: Math.round(dimH / 10),  // mostrar en cm
+      length: Math.round(dimL / 10),
+      width:  Math.round(dimW / 10),
+      weight: Math.round(peso / 1000 * 100) / 100,  // mostrar en kg
+      hora:   hora !== null ? `${String(hora).padStart(2, '0')}:00` : '--',
     };
 
     if (esSuper) {
@@ -185,21 +182,17 @@ export const buildSuperBigger = (csvData) => {
 
   const HORAS = Array.from({ length: 15 }, (_, i) => i + 9);
 
-  const superBiggerChartData = HORAS.map(h => ({
-    hora: `${String(h).padStart(2,'0')}:00`,
-    cantidad: superPorHora[h] || 0,
-  }));
-
-  const biggerChartData = HORAS.map(h => ({
-    hora: `${String(h).padStart(2,'0')}:00`,
-    cantidad: biggerPorHora[h] || 0,
-  }));
-
   return {
     superBiggerList: superList,
     biggerList,
-    superBiggerChartData,
-    biggerChartData,
+    superBiggerChartData: HORAS.map(h => ({
+      hora: `${String(h).padStart(2, '0')}:00`,
+      cantidad: superPorHora[h] || 0,
+    })),
+    biggerChartData: HORAS.map(h => ({
+      hora: `${String(h).padStart(2, '0')}:00`,
+      cantidad: biggerPorHora[h] || 0,
+    })),
   };
 };
 

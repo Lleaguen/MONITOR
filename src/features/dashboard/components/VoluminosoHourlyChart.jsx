@@ -1,13 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, LabelList } from 'recharts';
-import { TOOLTIP_STYLE } from '../../../shared/constants/design';
 import { X } from 'lucide-react';
-
-const formatNumber = (num) => {
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toString();
-};
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null;
@@ -81,7 +74,6 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
   };
 
   const VISTA_LABELS = { ambos: 'Ambos', naranja: '% Vol.', verde: 'Procesado' };
-  const VISTA_COLORS = { ambos: 'text-slate-300', naranja: 'text-orange-400', verde: 'text-green-400' };
 
   if (!volDataByHora || volDataByHora.length === 0) {
     return (
@@ -119,8 +111,6 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
   const totalPaqueteria = volDataByHora.reduce((sum, item) => sum + item.paqueteria, 0);
   const totalIngresado = totalVoluminoso + totalPaqueteria;
   const pctVoluminosoTotal = totalIngresado > 0 ? Math.round((totalVoluminoso / totalIngresado) * 100) : 0;
-  const totalProcesado = chartData.reduce((sum, item) => sum + item.procesado, 0);
-  const totalPendiente = chartData.reduce((sum, item) => sum + item.pendiente, 0);
   const totalVoluminosoProcesado = volDataByHora.reduce((sum, item) => sum + (item.voluminosoProcesado || 0), 0);
   const totalVoluminosoPendiente = volDataByHora.reduce((sum, item) => sum + (item.voluminosoPendiente || 0), 0);
 
@@ -170,7 +160,7 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
         </div>
       </div>
 
-      <div className="h-48">
+      <div style={{ width: '100%', height: 192, minHeight: 192 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartDataNorm} margin={{ top: 15, right: 5, left: 5, bottom: 5 }}>
             <XAxis 
@@ -240,7 +230,7 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {chartData.map((row, index) => (
+                  {chartData.map((row) => (
                     <tr
                       key={row.hora}
                       className="border-b border-white/[0.03] text-[10px] hover:bg-white/[0.02] transition-colors"

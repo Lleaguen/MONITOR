@@ -112,7 +112,7 @@ export const processCombinedData = (
   const { tableData, totalesHU, huStats } = buildHUData(csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU, zonaCPTOverrides);
 
   // 9. Voluminoso + Super Bigger + Arrivals Chasis
-  const { volDataByZona, volDataByHora, volDataByCPT } = buildVolData(csvData, zonaCPTOverrides);
+  const { volDataByZona, volDataByHora, volDataByCPT } = buildVolData(csvData, zonaCPTOverrides, horaInicioBipeos, horaInicioHU);
   const { superBiggerList, biggerList, superBiggerChartData, biggerChartData } = buildSuperBigger(csvData);
   const arrivalChasis    = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'chasis');
   const arrivalCamioneta = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'camioneta');

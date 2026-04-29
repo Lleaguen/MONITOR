@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 const CPT_ORDER = ['0:00', '1:00', '2:00', '3:00', '4:00', '5:00', '6:00', '7:00', '8:00', '9:00', '10:00', '11:00', '13:00'];
@@ -38,7 +38,7 @@ const TooltipPieChart = ({ data }) => {
   };
 
   return (
-    <div className="w-32 h-32">
+    <div style={{ width: 128, height: 128, minWidth: 128, minHeight: 128 }}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie

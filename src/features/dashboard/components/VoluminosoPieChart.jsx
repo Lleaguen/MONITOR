@@ -1,6 +1,4 @@
-import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { TOOLTIP_STYLE } from '../../../shared/constants/design';
 
 const TIME_RANGES = [
   { range: 'CPT 0:00-1:00', color: '#ef4444', label: 'Rojo' },
@@ -30,7 +28,7 @@ const CustomTooltip = ({ active, payload }) => {
   
   const data = payload[0].payload;
   return (
-    <div style={TOOLTIP_STYLE}>
+    <div className="bg-[#111827] border border-white/20 rounded-lg p-3 shadow-lg">
       <p className="text-[10px] font-black text-white mb-1">{data.label}</p>
       <p className="text-[9px] text-slate-300">
         Voluminoso: <span className="font-black text-orange-400">{data.value.toLocaleString()}</span>
@@ -98,7 +96,7 @@ const VoluminosoPieChart = ({ volDataByCPT }) => {
         </p>
       </div>
 
-      <div className="h-80">
+      <div style={{ width: '100%', height: 320, minHeight: 320 }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
