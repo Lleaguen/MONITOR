@@ -73,6 +73,15 @@ const CustomLabelPercent = ({ x, y, width, value }) => {
 
 const VoluminosoHourlyChart = ({ volDataByHora }) => {
   const [showResumen, setShowResumen] = useState(false);
+  // 'ambos' | 'naranja' | 'verde'
+  const [vista, setVista] = useState('ambos');
+
+  const toggleVista = () => {
+    setVista(v => v === 'ambos' ? 'naranja' : v === 'naranja' ? 'verde' : 'ambos');
+  };
+
+  const VISTA_LABELS = { ambos: 'Ambos', naranja: '% Vol.', verde: 'Procesado' };
+  const VISTA_COLORS = { ambos: 'text-slate-300', naranja: 'text-orange-400', verde: 'text-green-400' };
 
   if (!volDataByHora || volDataByHora.length === 0) {
     return (
@@ -84,20 +93,27 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
 
   // Preparar datos para el gráfico
   const chartData = volDataByHora
-    .filter(item => (item.voluminoso + item.paqueteria) > 0) // Solo mostrar horas con datos
+    .filter(item => (item.voluminoso + item.paqueteria) > 0)
     .map(item => {
       const totalHora = item.voluminoso + item.paqueteria;
       const pctVoluminoso = totalHora > 0 ? Math.round((item.voluminoso / totalHora) * 100) : 0;
       return {
         hora: item.hora,
-        pctVoluminoso: pctVoluminoso,
+        pctVoluminoso,
         cantidadVoluminoso: item.voluminoso,
         cantidadTotal: totalHora,
         procesado: item.procesado || 0,
-        pendiente: item.pendiente || 0
+        pendiente: item.pendiente || 0,
       };
     })
     .sort((a, b) => a.hora.localeCompare(b.hora));
+
+  // Normalizar procesado a escala 0-100 para que sea comparable con pctVoluminoso
+  const maxProcesado = Math.max(...chartData.map(d => d.procesado), 1);
+  const chartDataNorm = chartData.map(d => ({
+    ...d,
+    procesadoNorm: Math.round((d.procesado / maxProcesado) * 100),
+  }));
 
   const totalVoluminoso = volDataByHora.reduce((sum, item) => sum + item.voluminoso, 0);
   const totalPaqueteria = volDataByHora.reduce((sum, item) => sum + item.paqueteria, 0);
@@ -134,43 +150,66 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
             </div>
           </div>
         </div>
-        <button
-          onClick={() => setShowResumen(true)}
-          className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest transition-all"
-        >
-          Ver Resumen
-        </button>
+        <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={() => setShowResumen(true)}
+            className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest transition-all"
+          >
+            Ver Resumen
+          </button>
+          <button
+            onClick={toggleVista}
+            className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all
+              ${vista === 'ambos'   ? 'bg-white/5 border-white/10 text-slate-400' : ''}
+              ${vista === 'naranja' ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' : ''}
+              ${vista === 'verde'   ? 'bg-green-500/10 border-green-500/20 text-green-400' : ''}
+            `}
+          >
+            {VISTA_LABELS[vista]}
+          </button>
+        </div>
       </div>
 
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 15, right: 5, left: 5, bottom: 5 }}>
+          <BarChart data={chartDataNorm} margin={{ top: 15, right: 5, left: 5, bottom: 5 }}>
             <XAxis 
               dataKey="hora" 
               tick={{ fontSize: 8, fill: '#94a3b8' }}
               axisLine={{ stroke: '#374151' }}
               tickLine={{ stroke: '#374151' }}
             />
-            <YAxis hide />
+            <YAxis hide domain={[0, 100]} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey="pctVoluminoso" 
-              name="% Voluminoso" 
-              fill="#f97316" 
-              radius={[2, 2, 0, 0]}
-              yAxisId="percent"
-            >
-              <LabelList content={<CustomLabelPercent />} />
-            </Bar>
-            <Bar 
-              dataKey="procesado" 
-              name="Procesado" 
-              fill="#22c55e" 
-              radius={[2, 2, 0, 0]}
-              yAxisId="cantidad"
-            >
-              <LabelList content={(p) => <CustomLabel {...p} fill="#22c55e" />} />
-            </Bar>
+            {(vista === 'ambos' || vista === 'naranja') && (
+              <Bar 
+                dataKey="pctVoluminoso" 
+                name="% Voluminoso" 
+                fill="#f97316" 
+                radius={[2, 2, 0, 0]}
+              >
+                <LabelList content={<CustomLabelPercent />} />
+              </Bar>
+            )}
+            {(vista === 'ambos' || vista === 'verde') && (
+              <Bar 
+                dataKey="procesadoNorm" 
+                name="Procesado" 
+                fill="#22c55e" 
+                radius={[2, 2, 0, 0]}
+              >
+                <LabelList
+                  dataKey="procesado"
+                  content={({ x, y, width, value }) => (
+                    value > 0
+                      ? <text x={x + width / 2} y={y - 2} fill="#22c55e" textAnchor="middle" fontSize="8" fontWeight="900">
+                          {value > 999 ? `${(value / 1000).toFixed(1)}k` : value}
+                        </text>
+                      : null
+                  )}
+                />
+              </Bar>
+            )}
           </BarChart>
         </ResponsiveContainer>
       </div>
