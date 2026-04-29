@@ -30,7 +30,6 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     if (!existing) {
       porShipment.set(id, d);
     } else {
-      // Quedarse con la fila que tenga Inbound Date más reciente
       const tsNew = d['Inbound Date Included']
         ? dayjs(d['Inbound Date Included'], "DD/MM/YYYY HH:mm:ss").valueOf()
         : 0;
@@ -42,23 +41,12 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
   });
 
   porShipment.forEach(d => {
-    // ── Mismos filtros que huProcessor ───────────────────────────────────────
+    // ── Filtros base (sin requerir CPT) ──────────────────────────────────────
     const zonaRaw = String(d['Labeling Zone'] || "").trim();
-    if (!zonaRaw) return;
-    if (zonaRaw !== zonaRaw.toUpperCase()) return;
     const zonaUpper = zonaRaw.toUpperCase();
-    if (/_[AB]$/.test(zonaUpper)) return;
-    if (zonaUpper === 'CK390') return;
     const zona = zonaUpper.replace(/_+$/, "");
-
-    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
-    if (!cpt) return;
-
     const hubStatus = String(d['Hub Status'] || "").toLowerCase().trim();
     if (['cancelled', 'in_hub_reject', 'blocked'].includes(hubStatus)) return;
-    // ────────────────────────────────────────────────────────────────────────
-
-    if (!volPorZona[zona]) volPorZona[zona] = { zona, cpt, paqueteria: 0, voluminoso: 0 };
 
     // Dimensiones en mm, peso en gramos
     const dimH = parseFloat(d['Height'] || 0);
@@ -68,44 +56,51 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
 
     // Voluminoso: alguna dimensión >= 500mm (50cm) O peso > 20000g (20kg)
     const esVol = dimH >= 500 || dimL >= 500 || dimW >= 500 || peso > 20000;
-
-    // Procesado = HU cerrado
     const estaCerrado = !!d['Outbound Date Closed'];
 
-    // ── Filtrar por hora de inbound (igual que buildTMSData) ─────────────────
+    // ── Por hora de inbound (sin filtro de CPT) ──────────────────────────────
     const inboundRaw = d['Inbound Date Included'];
+    if (inboundRaw) {
+      const f = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
+      if (f.isValid() && f.hour() >= horaInicioBipeos) {
+        const horaKey = `${String(f.hour()).padStart(2, '0')}:00`;
+        if (!volPorHora[horaKey]) {
+          volPorHora[horaKey] = {
+            hora: horaKey,
+            voluminoso: 0, paqueteria: 0,
+            procesado: 0, pendiente: 0,
+            voluminosoProcesado: 0, voluminosoPendiente: 0,
+          };
+        }
+        if (esVol) {
+          volPorHora[horaKey].voluminoso++;
+          if (estaCerrado) volPorHora[horaKey].voluminosoProcesado++;
+          else             volPorHora[horaKey].voluminosoPendiente++;
+        } else {
+          volPorHora[horaKey].paqueteria++;
+        }
+        if (estaCerrado) volPorHora[horaKey].procesado++;
+        else             volPorHora[horaKey].pendiente++;
+      }
+    }
+
+    // ── Filtros adicionales para zona/CPT ────────────────────────────────────
+    if (!zonaRaw) return;
+    if (zonaRaw !== zonaRaw.toUpperCase()) return;
+    if (/_[AB]$/.test(zonaUpper)) return;
+    if (zonaUpper === 'CK390') return;
+
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
+    if (!cpt) return;
+
     if (!inboundRaw) return;
-    const f = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
-    if (!f.isValid()) return;
-    const horaInbound = f.hour();
-    if (horaInbound < horaInicioBipeos) return;
+    const fInbound = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
+    if (!fInbound.isValid() || fInbound.hour() < horaInicioBipeos) return;
     // ────────────────────────────────────────────────────────────────────────
 
-    if (esVol) {
-      volPorZona[zona].voluminoso++;
-    } else {
-      volPorZona[zona].paqueteria++;
-    }
-
-    // ── Por hora de inbound ──────────────────────────────────────────────────
-    const horaKey = `${String(horaInbound).padStart(2, '0')}:00`;
-    if (!volPorHora[horaKey]) {
-      volPorHora[horaKey] = {
-        hora: horaKey,
-        voluminoso: 0, paqueteria: 0,
-        procesado: 0, pendiente: 0,
-        voluminosoProcesado: 0, voluminosoPendiente: 0,
-      };
-    }
-    if (esVol) {
-      volPorHora[horaKey].voluminoso++;
-      if (estaCerrado) volPorHora[horaKey].voluminosoProcesado++;
-      else             volPorHora[horaKey].voluminosoPendiente++;
-    } else {
-      volPorHora[horaKey].paqueteria++;
-    }
-    if (estaCerrado) volPorHora[horaKey].procesado++;
-    else             volPorHora[horaKey].pendiente++;
+    if (!volPorZona[zona]) volPorZona[zona] = { zona, cpt, paqueteria: 0, voluminoso: 0 };
+    if (esVol) volPorZona[zona].voluminoso++;
+    else       volPorZona[zona].paqueteria++;
 
     // ── Por CPT ─────────────────────────────────────────────────────────────
     if (!volPorCPT[cpt]) {

@@ -4,69 +4,50 @@ import { X } from 'lucide-react';
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload || !payload.length) return null;
-  
   const data = payload[0].payload;
-  
   return (
     <div className="bg-[#111827] border border-white/20 rounded-lg p-3 shadow-lg">
-      <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">
-        Hora: {label}
-      </p>
+      <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">{label}</p>
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-3">
           <span className="text-[9px] text-slate-400">Total ingresado:</span>
           <span className="text-[9px] font-black text-white">{data.cantidadTotal.toLocaleString()}</span>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[9px] text-slate-400">Voluminoso:</span>
-          <span className="text-[9px] font-black text-orange-400">{data.cantidadVoluminoso.toLocaleString()}</span>
+          <span className="text-[9px] text-orange-400">% Voluminoso:</span>
+          <span className="text-[9px] font-black text-orange-400">{data.pctVoluminoso}% ({data.voluminoso.toLocaleString()} pzas)</span>
         </div>
-        <div className="flex items-center justify-between gap-3 pt-1 border-t border-white/10">
-          <span className="text-[9px] text-slate-400">% Voluminoso:</span>
-          <span className="text-[10px] font-black text-orange-400">{data.pctVoluminoso}%</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[9px] text-green-400">Procesado:</span>
+          <span className="text-[9px] font-black text-green-400">{data.procesado.toLocaleString()}</span>
         </div>
       </div>
     </div>
   );
 };
 
-const CustomLabel = ({ x, y, width, value, fill }) => {
-  if (value === 0) return null;
-  
+// Label naranja: muestra el porcentaje
+const PctLabel = ({ x, y, width, value }) => {
+  if (!value || value === 0) return null;
   return (
-    <text 
-      x={x + width / 2} 
-      y={y - 2} 
-      fill={fill} 
-      textAnchor="middle" 
-      fontSize="8" 
-      fontWeight="900"
-    >
-      {value > 999 ? `${(value / 1000).toFixed(1)}k` : value}
+    <text x={x + width / 2} y={y - 3} fill="#f97316" textAnchor="middle" fontSize="8" fontWeight="900">
+      {value}%
     </text>
   );
 };
 
-const CustomLabelPercent = ({ x, y, width, value }) => {
-  if (value === 0) return null;
-  
+// Label verde: muestra la cantidad real de procesados
+const CantLabel = ({ x, y, width, value }) => {
+  if (!value || value === 0) return null;
   return (
-    <text 
-      x={x + width / 2} 
-      y={y - 2} 
-      fill="#f97316" 
-      textAnchor="middle" 
-      fontSize="8" 
-      fontWeight="900"
-    >
-      {value}%
+    <text x={x + width / 2} y={y - 3} fill="#22c55e" textAnchor="middle" fontSize="8" fontWeight="900">
+      {value > 999 ? `${(value / 1000).toFixed(1)}k` : value}
     </text>
   );
 };
 
 const VoluminosoHourlyChart = ({ volDataByHora }) => {
   const [showResumen, setShowResumen] = useState(false);
-  // 'ambos' | 'naranja' | 'verde'
   const [vista, setVista] = useState('ambos');
 
   const toggleVista = () => {
@@ -83,39 +64,38 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
     );
   }
 
-  // Preparar datos para el gráfico
   const chartData = volDataByHora
     .filter(item => (item.voluminoso + item.paqueteria) > 0)
     .map(item => {
-      const totalHora = item.voluminoso + item.paqueteria;
-      const pctVoluminoso = totalHora > 0 ? Math.round((item.voluminoso / totalHora) * 100) : 0;
+      const cantidadTotal = item.voluminoso + item.paqueteria;
+      const pctVoluminoso = cantidadTotal > 0 ? Math.round((item.voluminoso / cantidadTotal) * 100) : 0;
       return {
         hora: item.hora,
         pctVoluminoso,
-        cantidadVoluminoso: item.voluminoso,
-        cantidadTotal: totalHora,
+        voluminoso: item.voluminoso,
         procesado: item.procesado || 0,
-        pendiente: item.pendiente || 0,
+        cantidadTotal,
       };
     })
     .sort((a, b) => a.hora.localeCompare(b.hora));
 
-  // Normalizar procesado a escala 0-100 para que sea comparable con pctVoluminoso
+  // Normalizar procesado a escala 0-100 para que sea visible junto al porcentaje
   const maxProcesado = Math.max(...chartData.map(d => d.procesado), 1);
   const chartDataNorm = chartData.map(d => ({
     ...d,
     procesadoNorm: Math.round((d.procesado / maxProcesado) * 100),
   }));
 
-  const totalVoluminoso = volDataByHora.reduce((sum, item) => sum + item.voluminoso, 0);
-  const totalPaqueteria = volDataByHora.reduce((sum, item) => sum + item.paqueteria, 0);
-  const totalIngresado = totalVoluminoso + totalPaqueteria;
-  const pctVoluminosoTotal = totalIngresado > 0 ? Math.round((totalVoluminoso / totalIngresado) * 100) : 0;
-  const totalVoluminosoProcesado = volDataByHora.reduce((sum, item) => sum + (item.voluminosoProcesado || 0), 0);
-  const totalVoluminosoPendiente = volDataByHora.reduce((sum, item) => sum + (item.voluminosoPendiente || 0), 0);
+  const totalVoluminoso          = volDataByHora.reduce((s, i) => s + i.voluminoso, 0);
+  const totalPaqueteria          = volDataByHora.reduce((s, i) => s + i.paqueteria, 0);
+  const totalIngresado           = totalVoluminoso + totalPaqueteria;
+  const pctVoluminosoTotal       = totalIngresado > 0 ? Math.round((totalVoluminoso / totalIngresado) * 100) : 0;
+  const totalVoluminosoProcesado = volDataByHora.reduce((s, i) => s + (i.voluminosoProcesado || 0), 0);
+  const totalVoluminosoPendiente = volDataByHora.reduce((s, i) => s + (i.voluminosoPendiente || 0), 0);
 
   return (
     <div className="bg-[#111827]/10 rounded-2xl border border-white/5 p-6">
+      {/* Header */}
       <div className="mb-4 flex justify-between items-start">
         <div>
           <h3 className="text-[12px] font-black text-white uppercase tracking-widest mb-2">
@@ -124,7 +104,7 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
           <div className="grid grid-cols-4 gap-2 text-center text-[8px]">
             <div>
               <p className="text-slate-500 font-black uppercase tracking-widest">Total</p>
-              <p className="text-blue-400 font-black text-[10px]">{totalVoluminoso.toLocaleString()}</p>
+              <p className="text-orange-400 font-black text-[10px]">{totalVoluminoso.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-slate-500 font-black uppercase tracking-widest">% Vol.</p>
@@ -160,44 +140,41 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
         </div>
       </div>
 
+      {/* Leyenda */}
+      <div className="flex gap-4 mb-3 text-[9px] font-black tracking-widest">
+        {(vista === 'ambos' || vista === 'naranja') && (
+          <span className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-orange-500 opacity-80" /> % VOLUMINOSO
+          </span>
+        )}
+        {(vista === 'ambos' || vista === 'verde') && (
+          <span className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-green-500 opacity-80" /> PROCESADO
+          </span>
+        )}
+      </div>
+
+      {/* Gráfico — naranja usa pctVoluminoso (0-100), verde usa procesadoNorm (0-100) */}
       <div style={{ width: '100%', height: 192, minHeight: 192 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartDataNorm} margin={{ top: 15, right: 5, left: 5, bottom: 5 }}>
-            <XAxis 
-              dataKey="hora" 
+          <BarChart data={chartDataNorm} barGap={3} margin={{ top: 16, right: 5, left: 5, bottom: 5 }}>
+            <XAxis
+              dataKey="hora"
               tick={{ fontSize: 8, fill: '#94a3b8' }}
               axisLine={{ stroke: '#374151' }}
-              tickLine={{ stroke: '#374151' }}
+              tickLine={false}
             />
-            <YAxis hide domain={[0, 100]} />
-            <Tooltip content={<CustomTooltip />} />
+            <YAxis yAxisId="pct"  hide domain={[0, 100]} />
+            <YAxis yAxisId="proc" hide domain={[0, 100]} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: '#1e293b' }} />
             {(vista === 'ambos' || vista === 'naranja') && (
-              <Bar 
-                dataKey="pctVoluminoso" 
-                name="% Voluminoso" 
-                fill="#f97316" 
-                radius={[2, 2, 0, 0]}
-              >
-                <LabelList content={<CustomLabelPercent />} />
+              <Bar yAxisId="pct" dataKey="pctVoluminoso" name="% Voluminoso" fill="#f97316" fillOpacity={0.85} radius={[2, 2, 0, 0]}>
+                <LabelList content={(p) => <PctLabel {...p} />} />
               </Bar>
             )}
             {(vista === 'ambos' || vista === 'verde') && (
-              <Bar 
-                dataKey="procesadoNorm" 
-                name="Procesado" 
-                fill="#22c55e" 
-                radius={[2, 2, 0, 0]}
-              >
-                <LabelList
-                  dataKey="procesado"
-                  content={({ x, y, width, value }) => (
-                    value > 0
-                      ? <text x={x + width / 2} y={y - 2} fill="#22c55e" textAnchor="middle" fontSize="8" fontWeight="900">
-                          {value > 999 ? `${(value / 1000).toFixed(1)}k` : value}
-                        </text>
-                      : null
-                  )}
-                />
+              <Bar yAxisId="proc" dataKey="procesadoNorm" name="Procesado" fill="#22c55e" fillOpacity={0.85} radius={[2, 2, 0, 0]}>
+                <LabelList dataKey="procesado" content={(p) => <CantLabel {...p} />} />
               </Bar>
             )}
           </BarChart>
@@ -212,10 +189,7 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
               <h2 className="text-[11px] font-black text-white uppercase tracking-widest">
                 Resumen Voluminoso por Hora
               </h2>
-              <button
-                onClick={() => setShowResumen(false)}
-                className="text-slate-500 hover:text-white transition-colors"
-              >
+              <button onClick={() => setShowResumen(false)} className="text-slate-500 hover:text-white transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -224,44 +198,30 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
                 <thead>
                   <tr className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] border-b border-white/10">
                     <th className="px-3 py-3">Hora</th>
-                    <th className="py-3 text-right">Total Ingresado</th>
+                    <th className="py-3 text-right">Total</th>
                     <th className="py-3 text-right">Voluminoso</th>
-                    <th className="py-3 text-right">% Voluminoso</th>
+                    <th className="py-3 text-right">% Vol.</th>
+                    <th className="py-3 text-right">Procesado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {chartData.map((row) => (
-                    <tr
-                      key={row.hora}
-                      className="border-b border-white/[0.03] text-[10px] hover:bg-white/[0.02] transition-colors"
-                    >
+                    <tr key={row.hora} className="border-b border-white/[0.03] text-[10px] hover:bg-white/[0.02] transition-colors">
                       <td className="px-3 py-3 font-black text-blue-400">{row.hora}</td>
-                      <td className="py-3 text-right font-black text-slate-300">
-                        {row.cantidadTotal.toLocaleString()}
-                      </td>
-                      <td className="py-3 text-right font-black text-orange-400">
-                        {row.cantidadVoluminoso.toLocaleString()}
-                      </td>
-                      <td className="py-3 text-right font-black text-orange-400">
-                        {row.pctVoluminoso}%
-                      </td>
+                      <td className="py-3 text-right font-black text-slate-300">{row.cantidadTotal.toLocaleString()}</td>
+                      <td className="py-3 text-right font-black text-orange-400">{row.voluminoso.toLocaleString()}</td>
+                      <td className="py-3 text-right font-black text-orange-400">{row.pctVoluminoso}%</td>
+                      <td className="py-3 text-right font-black text-green-400">{row.procesado.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-white/10 bg-white/[0.03] text-[10px]">
-                    <td className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                      Total
-                    </td>
-                    <td className="py-3 text-right font-black text-white">
-                      {totalIngresado.toLocaleString()}
-                    </td>
-                    <td className="py-3 text-right font-black text-orange-400">
-                      {totalVoluminoso.toLocaleString()}
-                    </td>
-                    <td className="py-3 text-right font-black text-orange-400">
-                      {pctVoluminosoTotal}%
-                    </td>
+                    <td className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</td>
+                    <td className="py-3 text-right font-black text-white">{totalIngresado.toLocaleString()}</td>
+                    <td className="py-3 text-right font-black text-orange-400">{totalVoluminoso.toLocaleString()}</td>
+                    <td className="py-3 text-right font-black text-orange-400">{pctVoluminosoTotal}%</td>
+                    <td className="py-3 text-right font-black text-green-400">{totalVoluminosoProcesado.toLocaleString()}</td>
                   </tr>
                 </tfoot>
               </table>
