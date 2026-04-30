@@ -54,8 +54,8 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     const dimW = parseFloat(d['Width']  || 0);
     const peso = parseFloat(d['Weight'] || 0);
 
-    // Voluminoso: alguna dimensión >= 500mm (50cm) O peso > 20000g (20kg)
-    const esVol = dimH >= 500 || dimL >= 500 || dimW >= 500 || peso > 20000;
+    // Voluminoso: alguna dimensión >= 50cm O peso > 20000g (20kg)
+    const esVol = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
     const estaCerrado = !!d['Outbound Date Closed'];
 
     // ── Por hora de inbound (sin filtro de CPT) ──────────────────────────────
@@ -144,9 +144,9 @@ export const buildSuperBigger = (csvData) => {
     const dimW = parseFloat(d['Width']  || 0);
     const peso = parseFloat(d['Weight'] || 0);
 
-    // Dimensiones en mm, peso en gramos
-    const esSuper  = peso > 50000 || dimH >= 2000 || dimL >= 2000 || dimW >= 2000;
-    const esBigger = !esSuper && (peso > 30000 && (dimH > 1500 || dimL > 1500 || dimW > 1500));
+    // Dimensiones en cm, peso en gramos
+    const esSuper  = peso > 50000 || dimH >= 200 || dimL >= 200 || dimW >= 200;
+    const esBigger = !esSuper && (peso > 30000 && (dimH > 150 || dimL > 150 || dimW > 150));
 
     if (!esSuper && !esBigger) return;
 
@@ -159,9 +159,9 @@ export const buildSuperBigger = (csvData) => {
 
     const item = {
       shipmentId: String(d['Shipment ID'] || ""),
-      height: Math.round(dimH / 10),  // mostrar en cm
-      length: Math.round(dimL / 10),
-      width:  Math.round(dimW / 10),
+      height: dimH,
+      length: dimL,
+      width:  dimW,
       weight: Math.round(peso / 1000 * 100) / 100,  // mostrar en kg
       hora:   hora !== null ? `${String(hora).padStart(2, '0')}:00` : '--',
     };
