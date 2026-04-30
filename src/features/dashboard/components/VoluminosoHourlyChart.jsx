@@ -48,13 +48,14 @@ const CantLabel = ({ x, y, width, value }) => {
 
 const VoluminosoHourlyChart = ({ volDataByHora }) => {
   const [showResumen, setShowResumen] = useState(false);
-  const [vista, setVista] = useState('ambos');
+  const [vista, setVista] = useState('naranja');
 
   const toggleVista = () => {
-    setVista(v => v === 'ambos' ? 'naranja' : v === 'naranja' ? 'verde' : 'ambos');
+    setVista(v => v === 'naranja' ? 'verde' : v === 'verde' ? 'ambos' : 'naranja');
   };
 
-  const VISTA_LABELS = { ambos: 'Ambos', naranja: '% Vol.', verde: 'Procesado' };
+  const VISTA_LABELS  = { naranja: '% Vol.', verde: 'Procesado', ambos: 'Ambos' };
+  const VISTA_NEXT    = { naranja: 'Ver Procesado →', verde: 'Ver Ambos →', ambos: 'Ver % Vol. →' };
 
   if (!volDataByHora || volDataByHora.length === 0) {
     return (
@@ -106,18 +107,24 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
               <p className="text-slate-500 font-black uppercase tracking-widest">Total</p>
               <p className="text-orange-400 font-black text-[10px]">{totalVoluminoso.toLocaleString()}</p>
             </div>
-            <div>
-              <p className="text-slate-500 font-black uppercase tracking-widest">% Vol.</p>
-              <p className="text-orange-400 font-black text-[10px]">{pctVoluminosoTotal}%</p>
-            </div>
-            <div>
-              <p className="text-slate-500 font-black uppercase tracking-widest">Procesado</p>
-              <p className="text-green-400 font-black text-[10px]">{totalVoluminosoProcesado.toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-slate-500 font-black uppercase tracking-widest">Pendiente</p>
-              <p className="text-red-400 font-black text-[10px]">{totalVoluminosoPendiente.toLocaleString()}</p>
-            </div>
+            {(vista === 'naranja' || vista === 'ambos') && (
+              <div>
+                <p className="text-slate-500 font-black uppercase tracking-widest">% Vol.</p>
+                <p className="text-orange-400 font-black text-[10px]">{pctVoluminosoTotal}%</p>
+              </div>
+            )}
+            {(vista === 'verde' || vista === 'ambos') && (
+              <div>
+                <p className="text-slate-500 font-black uppercase tracking-widest">Procesado</p>
+                <p className="text-green-400 font-black text-[10px]">{totalVoluminosoProcesado.toLocaleString()}</p>
+              </div>
+            )}
+            {vista === 'ambos' && (
+              <div>
+                <p className="text-slate-500 font-black uppercase tracking-widest">Pendiente</p>
+                <p className="text-red-400 font-black text-[10px]">{totalVoluminosoPendiente.toLocaleString()}</p>
+              </div>
+            )}
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -130,12 +137,12 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
           <button
             onClick={toggleVista}
             className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all
-              ${vista === 'ambos'   ? 'bg-white/5 border-white/10 text-slate-400' : ''}
               ${vista === 'naranja' ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' : ''}
               ${vista === 'verde'   ? 'bg-green-500/10 border-green-500/20 text-green-400' : ''}
+              ${vista === 'ambos'   ? 'bg-white/5 border-white/10 text-slate-400' : ''}
             `}
           >
-            {VISTA_LABELS[vista]}
+            {VISTA_NEXT[vista]}
           </button>
         </div>
       </div>
