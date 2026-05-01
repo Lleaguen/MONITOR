@@ -98,10 +98,13 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
     <div className="bg-[#111827]/10 rounded-2xl border border-white/5 p-6">
       {/* Header */}
       <div className="mb-4 flex justify-between items-start">
-        <div>
-          <h3 className="text-[12px] font-black text-white uppercase tracking-widest mb-2">
-            Avance Voluminoso por Hora
-          </h3>
+        <div className="flex items-center gap-3">
+          <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-16 w-auto opacity-90" />
+          <div className="w-px h-8 bg-white/10" />
+          <div>
+            <h3 className="text-[12px] font-black text-white uppercase tracking-widest mb-2">
+              Avance Voluminoso por Hora
+            </h3>
           <div className="grid grid-cols-4 gap-2 text-center text-[8px]">
             <div>
               <p className="text-slate-500 font-black uppercase tracking-widest">Total</p>
@@ -125,6 +128,7 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
                 <p className="text-red-400 font-black text-[10px]">{totalVoluminosoPendiente.toLocaleString()}</p>
               </div>
             )}
+          </div>
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -193,9 +197,13 @@ const VoluminosoHourlyChart = ({ volDataByHora }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <div className="bg-[#080c14] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-              <h2 className="text-[11px] font-black text-white uppercase tracking-widest">
-                Resumen Voluminoso por Hora
-              </h2>
+              <div className="flex items-center gap-4">
+                <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-16 w-auto opacity-90" />
+                <div className="w-px h-6 bg-white/10" />
+                <h2 className="text-[11px] font-black text-white uppercase tracking-widest">
+                  Resumen Voluminoso por Hora
+                </h2>
+              </div>
               <button onClick={() => setShowResumen(false)} className="text-slate-500 hover:text-white transition-colors">
                 <X size={18} />
               </button>

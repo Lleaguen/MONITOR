@@ -132,17 +132,18 @@ const CierreInhubModal = ({ data }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <div className="bg-[#080c14] border border-white/10 rounded-2xl w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-              <div>
-                <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Cierre Inhub</h2>
-                <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">{now} hs</p>
+              <div className="flex items-center gap-4">
+                <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-16 w-auto opacity-90" />
+                <div className="w-px h-6 bg-white/10" />
+                <div>
+                  <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Cierre Inhub</h2>
+                  <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">{now} hs</p>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-base font-black tracking-widest text-white italic">OCASA</span>
-                <button onClick={() => setOpen(false)}
-                  className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-all">
-                  Cerrar
-                </button>
-              </div>
+              <button onClick={() => setOpen(false)}
+                className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-all">
+                Cerrar
+              </button>
             </div>
             <div className="p-6 space-y-3">
               {[

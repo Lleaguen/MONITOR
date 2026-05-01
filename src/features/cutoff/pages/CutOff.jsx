@@ -95,9 +95,13 @@ const CierreModal = ({ data, onClose }) => {
       <div className="bg-[#080c14] border border-white/10 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto flex flex-col">
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 sticky top-0 bg-[#080c14] z-10">
-          <div>
-            <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Cierre de HU</h2>
-            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{now} hs</p>
+          <div className="flex items-center gap-4">
+            <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-16 w-auto opacity-90" />
+            <div className="w-px h-6 bg-white/10" />
+            <div>
+              <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Cierre de HU</h2>
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{now} hs</p>
+            </div>
           </div>
           <button onClick={onClose}
             className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-all">
