@@ -1,4 +1,3 @@
-import React from 'react';
 import PageWrapper from '../../../shared/components/PageWrapper';
 import VoluminosoPieChart from '../components/VoluminosoPieChart';
 import VoluminosoCPTTable from '../components/VoluminosoCPTTable';
@@ -6,11 +5,6 @@ import VoluminosoHourlyChart from '../components/VoluminosoHourlyChart';
 import StatCard from '../../../shared/components/StatCard';
 
 const VoluminosoDashboard = ({ data }) => {
-  console.log('📦 VoluminosoDashboard - Datos recibidos:', {
-    volDataByHora: data?.volDataByHora?.length,
-    volDataByCPT: data?.volDataByCPT?.length
-  });
-
   if (!data?.volDataByHora || !data?.volDataByCPT) {
     return (
       <PageWrapper>
@@ -23,7 +17,7 @@ const VoluminosoDashboard = ({ data }) => {
     );
   }
 
-  // Calcular estadísticas generales
+  // Totales desde volDataByCPT — misma fuente que el card de arriba
   const totalVoluminoso = data.volDataByCPT.reduce((sum, item) => sum + item.voluminoso, 0);
   const totalPaqueteria = data.volDataByCPT.reduce((sum, item) => sum + item.paqueteria, 0);
   const totalPiezas = totalVoluminoso + totalPaqueteria;

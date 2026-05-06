@@ -48,7 +48,7 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     const hubStatus = String(d['Hub Status'] || "").toLowerCase().trim();
     if (['cancelled', 'in_hub_reject', 'blocked'].includes(hubStatus)) return;
 
-    // Dimensiones en mm, peso en gramos
+    // Dimensiones en cm, peso en gramos
     const dimH = parseFloat(d['Height'] || 0);
     const dimL = parseFloat(d['Length'] || 0);
     const dimW = parseFloat(d['Width']  || 0);
@@ -58,33 +58,7 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     const esVol = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
     const estaCerrado = !!d['Outbound Date Closed'];
 
-    // ── Por hora de inbound (sin filtro de CPT) ──────────────────────────────
-    const inboundRaw = d['Inbound Date Included'];
-    if (inboundRaw) {
-      const f = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
-      if (f.isValid() && f.hour() >= horaInicioBipeos) {
-        const horaKey = `${String(f.hour()).padStart(2, '0')}:00`;
-        if (!volPorHora[horaKey]) {
-          volPorHora[horaKey] = {
-            hora: horaKey,
-            voluminoso: 0, paqueteria: 0,
-            procesado: 0, pendiente: 0,
-            voluminosoProcesado: 0, voluminosoPendiente: 0,
-          };
-        }
-        if (esVol) {
-          volPorHora[horaKey].voluminoso++;
-          if (estaCerrado) volPorHora[horaKey].voluminosoProcesado++;
-          else             volPorHora[horaKey].voluminosoPendiente++;
-        } else {
-          volPorHora[horaKey].paqueteria++;
-        }
-        if (estaCerrado) volPorHora[horaKey].procesado++;
-        else             volPorHora[horaKey].pendiente++;
-      }
-    }
-
-    // ── Filtros adicionales para zona/CPT ────────────────────────────────────
+    // ── Filtros de zona/CPT (mismos que huProcessor) ─────────────────────────
     if (!zonaRaw) return;
     if (zonaRaw !== zonaRaw.toUpperCase()) return;
     if (/_[AB]$/.test(zonaUpper)) return;
@@ -93,10 +67,31 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
     if (!cpt) return;
 
+    const inboundRaw = d['Inbound Date Included'];
     if (!inboundRaw) return;
     const fInbound = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
     if (!fInbound.isValid() || fInbound.hour() < horaInicioBipeos) return;
     // ────────────────────────────────────────────────────────────────────────
+
+    // ── Por hora de inbound ──────────────────────────────────────────────────
+    const horaKey = `${String(fInbound.hour()).padStart(2, '0')}:00`;
+    if (!volPorHora[horaKey]) {
+      volPorHora[horaKey] = {
+        hora: horaKey,
+        voluminoso: 0, paqueteria: 0,
+        procesado: 0, pendiente: 0,
+        voluminosoProcesado: 0, voluminosoPendiente: 0,
+      };
+    }
+    if (esVol) {
+      volPorHora[horaKey].voluminoso++;
+      if (estaCerrado) volPorHora[horaKey].voluminosoProcesado++;
+      else             volPorHora[horaKey].voluminosoPendiente++;
+    } else {
+      volPorHora[horaKey].paqueteria++;
+    }
+    if (estaCerrado) volPorHora[horaKey].procesado++;
+    else             volPorHora[horaKey].pendiente++;
 
     if (!volPorZona[zona]) volPorZona[zona] = { zona, cpt, paqueteria: 0, voluminoso: 0 };
     if (esVol) volPorZona[zona].voluminoso++;
