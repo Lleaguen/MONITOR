@@ -17,31 +17,35 @@ const VoluminosoDashboard = ({ data }) => {
     );
   }
 
-  // Totales desde volDataByCPT — misma fuente que el card de arriba
-  const totalVoluminoso = data.volDataByCPT.reduce((sum, item) => sum + item.voluminoso, 0);
-  const totalPaqueteria = data.volDataByCPT.reduce((sum, item) => sum + item.paqueteria, 0);
-  const totalPiezas = totalVoluminoso + totalPaqueteria;
-  const voluminosoPercent = totalPiezas > 0 ? Math.round((totalVoluminoso / totalPiezas) * 100) : 0;
+  // Totales: voluminoso/paquetería desde volDataByCPT, % sobre total real recibido
+  const totalVoluminoso   = data.volDataByCPT.reduce((sum, item) => sum + item.voluminoso, 0);
+  const totalPaqueteria   = data.volDataByCPT.reduce((sum, item) => sum + item.paqueteria, 0);
+  const totalPiezas       = data.volData?.totalRecibidoGlobal ?? (totalVoluminoso + totalPaqueteria);
+  const voluminosoPercent = data.volData?.pctVoluminosoGlobal
+    ?? (totalPiezas > 0 ? Math.round((totalVoluminoso / totalPiezas) * 100) : 0);
+  const paqueteriaPercent = totalPiezas > 0
+    ? Math.round(((totalPiezas - (data.volData?.totalVoluminosoGlobal ?? totalVoluminoso)) / totalPiezas) * 100)
+    : 0;
 
   return (
     <PageWrapper>
       {/* Estadísticas generales */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard 
-          label="Total Piezas" 
-          value={totalPiezas.toLocaleString()} 
+        <StatCard
+          label="Total Piezas"
+          value={totalPiezas.toLocaleString()}
         />
-        <StatCard 
-          label="Voluminoso" 
-          value={totalVoluminoso.toLocaleString()} 
+        <StatCard
+          label="Voluminoso"
+          value={totalVoluminoso.toLocaleString()}
           sub={`${voluminosoPercent}%`}
-          color="orange" 
+          color="orange"
         />
-        <StatCard 
-          label="Paquetería" 
-          value={totalPaqueteria.toLocaleString()} 
-          sub={`${100 - voluminosoPercent}%`}
-          color="emerald" 
+        <StatCard
+          label="Paquetería"
+          value={totalPaqueteria.toLocaleString()}
+          sub={`${paqueteriaPercent}%`}
+          color="emerald"
         />
       </div>
 

@@ -21,6 +21,11 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
   const volPorHora = {};
   const volPorCPT  = {};
 
+  // Contadores globales sobre TODAS las piezas recibidas (sin filtro de CPT)
+  // para que el % de voluminoso coincida con el monitor Excel
+  let totalRecibidoGlobal   = 0;
+  let totalVoluminosoGlobal = 0;
+
   // Deduplicar por Shipment ID — quedarse con la fila más reciente (mayor Inbound Date)
   const porShipment = new Map();
   csvData.forEach(d => {
@@ -41,12 +46,13 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
   });
 
   porShipment.forEach(d => {
-    // ── Filtros base (sin requerir CPT) ──────────────────────────────────────
-    const zonaRaw = String(d['Labeling Zone'] || "").trim();
-    const zonaUpper = zonaRaw.toUpperCase();
-    const zona = zonaUpper.replace(/_+$/, "");
     const hubStatus = String(d['Hub Status'] || "").toLowerCase().trim();
     if (['cancelled', 'in_hub_reject', 'blocked'].includes(hubStatus)) return;
+
+    const inboundRaw = d['Inbound Date Included'];
+    if (!inboundRaw) return;
+    const fInbound = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
+    if (!fInbound.isValid() || fInbound.hour() < horaInicioBipeos) return;
 
     // Dimensiones en cm, peso en gramos
     const dimH = parseFloat(d['Height'] || 0);
@@ -58,19 +64,20 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     const esVol = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
     const estaCerrado = !!d['Outbound Date Closed'];
 
+    // Conteo global (todas las piezas recibidas, sin filtro de CPT)
+    totalRecibidoGlobal++;
+    if (esVol) totalVoluminosoGlobal++;
+
     // ── Filtros de zona/CPT (mismos que huProcessor) ─────────────────────────
-    if (!zonaRaw) return;
-    if (zonaRaw !== zonaRaw.toUpperCase()) return;
+    const zonaRaw = String(d['Labeling Zone'] || "").trim();
+    if (!zonaRaw || zonaRaw !== zonaRaw.toUpperCase()) return;
+    const zonaUpper = zonaRaw.toUpperCase();
     if (/_[AB]$/.test(zonaUpper)) return;
     if (zonaUpper === 'CK390') return;
+    const zona = zonaUpper.replace(/_+$/, "");
 
     const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
     if (!cpt) return;
-
-    const inboundRaw = d['Inbound Date Included'];
-    if (!inboundRaw) return;
-    const fInbound = dayjs(inboundRaw, "DD/MM/YYYY HH:mm:ss");
-    if (!fInbound.isValid() || fInbound.hour() < horaInicioBipeos) return;
     // ────────────────────────────────────────────────────────────────────────
 
     // ── Por hora de inbound ──────────────────────────────────────────────────
@@ -121,6 +128,12 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     volDataByZona: Object.values(volPorZona).sort((a, b) => a.cpt.localeCompare(b.cpt)),
     volDataByHora: Object.values(volPorHora).sort((a, b) => a.hora.localeCompare(b.hora)),
     volDataByCPT:  Object.values(volPorCPT).sort((a, b) => a.cpt.localeCompare(b.cpt)),
+    // Totales globales sobre todas las piezas recibidas (para % correcto)
+    totalRecibidoGlobal,
+    totalVoluminosoGlobal,
+    pctVoluminosoGlobal: totalRecibidoGlobal > 0
+      ? Math.round((totalVoluminosoGlobal / totalRecibidoGlobal) * 100)
+      : 0,
   };
 };
 
