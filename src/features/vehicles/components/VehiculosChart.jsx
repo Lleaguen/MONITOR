@@ -389,48 +389,87 @@ const ResumenModal = ({ open, onClose, data }) => {
     return acc;
   }, { ciuChasis:0, ciuCamioneta:0, ciuSemi:0, meliChasis:0, meliCamioneta:0, meliSemi:0 });
 
+  const totalReal = totales.ciuChasis + totales.ciuCamioneta + totales.ciuSemi;
+
   const rows = [
-    { label: 'Chasis',    meli: totales.meliChasis,    ciu: totales.ciuChasis,    color: '#34d399' },
-    { label: 'Camioneta', meli: totales.meliCamioneta, ciu: totales.ciuCamioneta, color: '#ffab00' },
-    { label: 'Semi',      meli: totales.meliSemi,      ciu: totales.ciuSemi,      color: '#60a5fa' },
+    { label: 'Chasis',    plan: totales.meliChasis,    real: totales.ciuChasis,    color: '#34d399' },
+    { label: 'Camioneta', plan: totales.meliCamioneta, real: totales.ciuCamioneta, color: '#ffab00' },
+    { label: 'Semi',      plan: totales.meliSemi,      real: totales.ciuSemi,      color: '#60a5fa' },
     { label: 'Total',
-      meli: totales.meliChasis + totales.meliCamioneta + totales.meliSemi,
-      ciu:  totales.ciuChasis  + totales.ciuCamioneta  + totales.ciuSemi,
+      plan: totales.meliChasis + totales.meliCamioneta + totales.meliSemi,
+      real: totalReal,
       color: '#a78bfa' },
-  ];
+  ].map(r => ({
+    ...r,
+    diferencia: r.real - r.plan,
+    porcentaje: totalReal > 0 ? ((r.real / totalReal) * 100).toFixed(1) : '0.0',
+  }));
 
   return (
     <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4" onClick={onClose}>
-      <div className="bg-[#0f172a] p-5 rounded-2xl w-full max-w-xs border border-white/10 flex flex-col gap-4"
+      <div className="bg-[#0f172a] p-5 rounded-2xl w-full max-w-2xl border border-white/10 flex flex-col gap-4"
         onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center">
-          <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Resumen General</h2>
+          <div className="flex items-center gap-3">
+            <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
+            <div className="w-px h-6 bg-white/10" />
+            <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Resumen General</h2>
+          </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white text-xs font-black">✕</button>
         </div>
-        <div className="grid grid-cols-3 text-[9px] font-black uppercase tracking-widest text-slate-500 px-1">
-          <span>Tipo</span>
-          <span className="text-center text-violet-400">Meli</span>
-          <span className="text-center text-emerald-400">Ciu</span>
+        
+        {/* Tabla */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="text-[9px] font-black uppercase tracking-widest text-slate-500 border-b border-white/10">
+                <th className="text-left pb-2 px-2">Tipo</th>
+                <th className="text-center pb-2 px-2 text-violet-400">Plan</th>
+                <th className="text-center pb-2 px-2 text-emerald-400">Real</th>
+                <th className="text-center pb-2 px-2 text-blue-400">Diferencia</th>
+                <th className="text-center pb-2 px-2 text-orange-400">% Distrib.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(r => (
+                <tr key={r.label} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                  <td className="py-2 px-2">
+                    <span className="text-[10px] font-black" style={{ color: r.color }}>{r.label}</span>
+                  </td>
+                  <td className="text-center py-2 px-2">
+                    <span className="text-[11px] font-black text-violet-300">{r.plan}</span>
+                  </td>
+                  <td className="text-center py-2 px-2">
+                    <span className="text-[11px] font-black text-emerald-300">{r.real}</span>
+                  </td>
+                  <td className="text-center py-2 px-2">
+                    <span className={`text-[11px] font-black ${r.diferencia >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {r.diferencia >= 0 ? '+' : ''}{r.diferencia}
+                    </span>
+                  </td>
+                  <td className="text-center py-2 px-2">
+                    <span className="text-[11px] font-black text-orange-300">{r.porcentaje}%</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="space-y-2">
-          {rows.map(r => (
-            <div key={r.label} className="grid grid-cols-3 items-center px-1">
-              <span className="text-[10px] font-black" style={{ color: r.color }}>{r.label}</span>
-              <span className="text-center text-[11px] font-black text-violet-300">{r.meli}</span>
-              <span className="text-center text-[11px] font-black text-emerald-300">{r.ciu}</span>
-            </div>
-          ))}
-        </div>
-        <div className="h-40">
+
+        <div className="h-48">
           <ResponsiveContainer>
-            <BarChart data={rows.map(r => ({ tipo: r.label, Meli: r.meli, Ciu: r.ciu }))} barSize={18} barGap={4}>
+            <BarChart data={rows.slice(0, 3).map(r => ({ tipo: r.label, Plan: r.plan, Real: r.real }))} barSize={24} barGap={8}>
               <CartesianGrid stroke="#1e293b" strokeDasharray="4 4" />
               <XAxis dataKey="tipo" axisLine={false} tickLine={false}
                 tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }} />
               <YAxis hide />
               <Tooltip contentStyle={chartTooltipStyle} />
-              <Bar dataKey="Meli" fill="#a78bfa" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Ciu"  fill="#22c55e" radius={[4, 4, 0, 0]} />
+              <Legend 
+                wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }}
+                iconType="rect"
+              />
+              <Bar dataKey="Plan" fill="#a78bfa" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Real"  fill="#22c55e" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -487,9 +526,13 @@ const TortaModal = ({ open, onClose, data, piezasPorTipo = {} }) => {
 
         {/* Header */}
         <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-sm font-black text-white uppercase tracking-widest">Distribución por Tipo de Vehículo</h2>
-            <p className="text-[10px] text-slate-500 mt-1">Vehículos recibidos y piezas recibidas por tipo</p>
+          <div className="flex items-center gap-3">
+            <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
+            <div className="w-px h-8 bg-white/10" />
+            <div>
+              <h2 className="text-sm font-black text-white uppercase tracking-widest">Distribución por Tipo de Vehículo</h2>
+              <p className="text-[10px] text-slate-500 mt-1">Vehículos recibidos y piezas recibidas por tipo</p>
+            </div>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white font-black text-sm">✕</button>
         </div>

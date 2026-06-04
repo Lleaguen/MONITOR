@@ -105,21 +105,23 @@ export const processCombinedData = (
     horaInicioArribos,
   });
 
-  // 7. Chart data
-  const { chartData, vehiculosChartData } = buildChartData(easyDockingClean, bipeoPorHora, horaInicioArribos);
+  // 7. Voluminoso (necesario antes de chartData)
+  const { volDataByZona, volDataByHora, volDataByCPT, totalRecibidoGlobal, totalVoluminosoGlobal, pctVoluminosoGlobal } = buildVolData(csvData, zonaCPTOverrides, horaInicioBipeos, horaInicioHU);
 
-  // 8. HU / CutOff
+  // 8. Chart data (incluye voluminoso por hora)
+  const { chartData, vehiculosChartData } = buildChartData(easyDockingClean, bipeoPorHora, horaInicioArribos, volDataByHora);
+
+  // 9. HU / CutOff
   const { tableData, totalesHU, huStats } = buildHUData(csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU, zonaCPTOverrides);
 
-  // 9. Voluminoso + Super Bigger + Arrivals Chasis
-  const { volDataByZona, volDataByHora, volDataByCPT, totalRecibidoGlobal, totalVoluminosoGlobal, pctVoluminosoGlobal } = buildVolData(csvData, zonaCPTOverrides, horaInicioBipeos, horaInicioHU);
+  // 10. Super Bigger + Arrivals Chasis
   const { superBiggerList, biggerList, superBiggerChartData, biggerChartData } = buildSuperBigger(csvData);
   const arrivalChasis    = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'chasis');
   const arrivalCamioneta = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'camioneta');
   const arrivalSemi      = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'semi');
   const darsenaStats     = buildDarsenaStats(csvData, ultimaTs);
 
-  // 10. Velocidad de HU (pulso de descarga)
+  // 11. Velocidad de HU (pulso de descarga)
   const huVelocidadData = buildHUVelocidadData(csvData, horaInicioBipeos, zonaCPTOverrides);
 
   return {

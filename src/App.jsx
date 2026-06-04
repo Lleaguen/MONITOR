@@ -18,6 +18,7 @@ import usePolling from './app/hooks/usePolling';
 import { useAdminSync } from './app/hooks/useAdminSync';
 import VelocidadDarsenas from './features/dashboard/pages/VelocidadDarsenas';
 import VoluminosoDashboard from './features/dashboard/pages/VoluminosoDashboard';
+import ComparativaDias from './features/dashboard/pages/ComparativaDias';
 
 function App() {
   const [appMode, setAppMode] = useState('loading');
@@ -78,6 +79,30 @@ function App() {
   // ── fetchStatus al montar ────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
+      // Detectar si viene el parámetro tab=comparativa en la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      
+      if (tabParam === 'comparativa') {
+        // Si es comparativa, intentar cargar datos del servidor pero no es obligatorio
+        try {
+          const status = await fetchStatus();
+          if (status?.hasData) {
+            const data = await fetchSnapshot();
+            setDashboardData(data);
+            setServerLastUpdate(data?.kpis?.ultimaActualizacion ?? null);
+            if (data?.planVehiculos?.length) setPlanVehiculos(data.planVehiculos);
+          }
+        } catch (error) {
+          console.log('Servidor no disponible, continuando sin datos del día actual');
+          // No hacer nada, la comparativa puede funcionar sin datos del día actual
+        }
+        setActiveTab('comparativa');
+        setAppMode('dashboard-viewer');
+        return;
+      }
+
+      // Flujo normal
       try {
         const status = await fetchStatus();
         if (status?.hasData) {
@@ -151,6 +176,7 @@ function App() {
     activeTab === 'cutoff'      ? 'CONTROL CPT / HU' :
     activeTab === 'vehiculos'   ? 'VEHÍCULOS — PLAN VS REAL' :
     activeTab === 'arribs'      ? 'ARRIBS. DE VEHÍCULOS' :
+    activeTab === 'comparativa' ? 'COMPARATIVA DE DÍAS' :
     activeTab === 'voluminoso'  ? 'VOLUMINOSO / PAQUETERÍA' :
     activeTab === 'voluminoso-dashboard' ? 'DASHBOARD VOLUMINOSO' :
     activeTab === 'superbigger' ? 'SUPER BIGGER / BIGGER' :
@@ -182,6 +208,8 @@ function App() {
             <VehiculosPlan data={dashboardData} planVehiculos={planVehiculos} />
           ) : activeTab === 'arribs' ? (
             <ArribosPage data={dashboardData} />
+          ) : activeTab === 'comparativa' ? (
+            <ComparativaDias data={dashboardData} />
           ) : activeTab === 'voluminoso' ? (
             <Voluminoso data={dashboardData} />
           ) : activeTab === 'voluminoso-dashboard' ? (

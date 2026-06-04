@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Settings, ClipboardList, Package, Truck, Maximize2, BarChart2, Map, Gauge, Plus, Menu, X, PieChart } from 'lucide-react';
+import { LayoutDashboard, Settings, ClipboardList, Package, Truck, Maximize2, BarChart2, Map, Gauge, Plus, Menu, X, PieChart, Calendar } from 'lucide-react';
 
 const NavItem = ({ icon, text, active, onClick, expanded }) => (
   <div
@@ -27,6 +27,15 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
   const [hovered, setHovered] = useState(false);
 
   const handleNav = (tab) => {
+    // Si es comparativa, abrir en nueva pestaña
+    if (tab === 'comparativa') {
+      // Construir la URL actual sin hash
+      const baseUrl = window.location.origin + window.location.pathname;
+      // Abrir en nueva pestaña con el parámetro de tab
+      window.open(`${baseUrl}?tab=comparativa`, '_blank');
+      return;
+    }
+    
     setActiveTab(tab);
     setMobileOpen(false);
   };
@@ -66,12 +75,12 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
             { tab: 'vehiculos',  icon: <BarChart2 size={18}/>,       text: 'Vehículos Plan' },
             { tab: 'arribs',     icon: <Truck size={18}/>,           text: 'Arribs. Vehículos' },
             { tab: 'velocidad',  icon: <Gauge size={18}/>,           text: 'Vel. Dársenas' },
+            { tab: 'comparativa', icon: <Calendar size={18}/>,       text: 'Comparativa Días' },
             { tab: 'voluminoso', icon: <Package size={18}/>,         text: 'Voluminoso' },
             { tab: 'voluminoso-dashboard', icon: <PieChart size={18}/>, text: 'Dashboard Voluminoso' },
             { tab: 'superbigger',icon: <Maximize2 size={18}/>,       text: 'Super Bigger' },
             { tab: 'zonas',      icon: <Map size={18}/>,             text: 'Zonas CPT' },
             { tab: 'params',     icon: <Settings size={18}/>,        text: 'Parámetros' },
-            // { tab: 'velocidad',  icon: <Gauge size={18}/>, text: 'Velo. Descarga' },
           ].map(({ tab, icon, text }) => (
             <div key={tab} onClick={() => handleNav(tab)}
               className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition-all ${activeTab === tab ? 'bg-blue-600/10 text-blue-400 border border-blue-500/10' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}>
@@ -117,6 +126,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
           <NavItem icon={<BarChart2 size={18}/>}      text="Vehículos Plan"      active={activeTab === 'vehiculos'}   onClick={() => handleNav('vehiculos')}   expanded={expanded} />
           <NavItem icon={<Truck size={18}/>}          text="Arribs. Vehículos"   active={activeTab === 'arribs'}      onClick={() => handleNav('arribs')}      expanded={expanded} />
           <NavItem icon={<Gauge size={18}/>}       text="Velo. Darsenas"          active={activeTab === 'velocidad'}      onClick={() => handleNav('velocidad')}      expanded={expanded} />
+          <NavItem icon={<Calendar size={18}/>}       text="Comparativa Días"    active={activeTab === 'comparativa'} onClick={() => handleNav('comparativa')} expanded={expanded} />
           <NavItem icon={<Package size={18}/>}        text="Voluminoso"          active={activeTab === 'voluminoso'}  onClick={() => handleNav('voluminoso')}  expanded={expanded} />
           <NavItem icon={<PieChart size={18}/>}       text="Dashboard Voluminoso" active={activeTab === 'voluminoso-dashboard'} onClick={() => handleNav('voluminoso-dashboard')} expanded={expanded} />
           <NavItem icon={<Maximize2 size={18}/>}      text="Super Bigger"        active={activeTab === 'superbigger'} onClick={() => handleNav('superbigger')} expanded={expanded} />

@@ -10,15 +10,50 @@ const BarLabel = ({ x, y, width, value, fill }) => {
   );
 };
 
+const PctLabel = ({ x, y, width, height, value, index, data }) => {
+  if (!value || value === 0) return null;
+  const arribo = data?.[index]?.arribo || 0;
+  const pct = arribo > 0 ? Math.round((value / arribo) * 100) : 0;
+  if (pct === 0 || height < 20) return null;
+  const cx = x + width / 2;
+  const cy = y + height / 2;
+  return (
+    <g>
+      {/* Línea superior decorativa */}
+      <line x1={x + 2} y1={y + 4} x2={x + width - 2} y2={y + 4}
+        stroke="rgba(255,255,255,0.3)" strokeWidth={1} />
+      {/* Porcentaje centrado, rotado */}
+      <text
+        x={cx}
+        y={cy + 4}
+        textAnchor="middle"
+        fill="white"
+        fontSize={9}
+        fontWeight="900"
+        letterSpacing="1"
+        opacity={0.95}
+        transform={height > 40 ? `rotate(-90, ${cx}, ${cy})` : undefined}
+      >
+        {pct}%
+      </text>
+    </g>
+  );
+};
+
 const MainChart = ({ chartData }) => (
   <div className="bg-[#111827]/20 p-4 md:p-6 rounded-2xl border border-white/5">
     <div className="flex flex-wrap justify-between items-end gap-3 mb-6">
-      <div>
-        <h3 className="text-base md:text-lg font-black text-white mb-1 tracking-tight">Pulso de Descarga</h3>
-        <p className="text-[11px] text-slate-500 font-medium italic">Paquetes arribados vs bipeados por hora</p>
+      <div className="flex items-center gap-3">
+        <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
+        <div className="w-px h-8 bg-white/10" />
+        <div>
+          <h3 className="text-base md:text-lg font-black text-white mb-1 tracking-tight">Pulso de Descarga</h3>
+          <p className="text-[11px] text-slate-500 font-medium italic">Paquetes arribados vs bipeados por hora</p>
+        </div>
       </div>
       <div className="flex gap-4 text-[9px] font-black tracking-widest">
         <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-sm bg-red-500 opacity-50" /> ARRIBO</span>
+        <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-sm bg-orange-400 opacity-80" /> VOLUMINOSO</span>
         <span className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-sm bg-emerald-400 opacity-50" /> BIPEO</span>
       </div>
     </div>
@@ -33,6 +68,9 @@ const MainChart = ({ chartData }) => (
             contentStyle={{ backgroundColor: '#080c14', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
           <Bar dataKey="arribo" name="Arribo" fill="#ef4444" fillOpacity={0.75} radius={[2, 2, 0, 0]}>
             <LabelList content={(p) => <BarLabel {...p} fill="#ef4444" />} />
+          </Bar>
+          <Bar dataKey="voluminoso" name="Voluminoso" fill="#f97316" fillOpacity={0.85} radius={[2, 2, 0, 0]}>
+            <LabelList content={(p) => <PctLabel {...p} data={chartData} />} />
           </Bar>
           <Bar dataKey="bipeo" name="Bipeo" fill="#34d399" fillOpacity={0.75} radius={[2, 2, 0, 0]}>
             <LabelList content={(p) => <BarLabel {...p} fill="#34d399" />} />

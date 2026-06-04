@@ -134,7 +134,7 @@ export const buildKpis = ({
 };
 
 // Chart data (arribo vs bipeo por hora + vehículos por tipo)
-export const buildChartData = (easyDockingClean, bipeoPorHora, horaInicioArribos = 9) => {
+export const buildChartData = (easyDockingClean, bipeoPorHora, horaInicioArribos = 9, volDataByHora = []) => {
   const arriboPorHora = new Array(24).fill(0);
   const vehiculosPorHoraTipo = {};
 
@@ -149,11 +149,24 @@ export const buildChartData = (easyDockingClean, bipeoPorHora, horaInicioArribos
     else if (tipo === 'semi') vehiculosPorHoraTipo[hora].semi++;
   });
 
-  const chartData = HORAS_RANGO.map(h => ({
-    hora: `${String(h).padStart(2, '0')}:00`,
-    arribo: arriboPorHora[h],
-    bipeo: bipeoPorHora[h],
-  }));
+  // Mapa de voluminoso por hora
+  const volPorHora = {};
+  volDataByHora.forEach(item => {
+    const h = parseInt(item.hora.split(':')[0]);
+    volPorHora[h] = item.voluminoso || 0;
+  });
+
+  const chartData = HORAS_RANGO.map(h => {
+    const arribo = arriboPorHora[h];
+    const voluminoso = volPorHora[h] || 0;
+    return {
+      hora: `${String(h).padStart(2, '0')}:00`,
+      arribo,
+      arriboBase: Math.max(arribo - voluminoso, 0),
+      bipeo: bipeoPorHora[h],
+      voluminoso,
+    };
+  });
 
   const vehiculosChartData = HORAS_RANGO.map(h => ({
     hora: `${String(h).padStart(2, '0')}:00`,
