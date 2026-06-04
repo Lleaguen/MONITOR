@@ -122,7 +122,7 @@ export const processCombinedData = (
   const darsenaStats     = buildDarsenaStats(csvData, ultimaTs);
 
   // 11. Velocidad de HU (pulso de descarga)
-  const huVelocidadData = buildHUVelocidadData(csvData, horaInicioBipeos, zonaCPTOverrides);
+  const huVelocidadData = buildHUVelocidadData(csvData, horaInicioHU, zonaCPTOverrides);
 
   return {
     kpis,

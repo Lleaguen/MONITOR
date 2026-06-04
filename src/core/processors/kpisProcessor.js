@@ -153,18 +153,26 @@ export const buildChartData = (easyDockingClean, bipeoPorHora, horaInicioArribos
   const volPorHora = {};
   volDataByHora.forEach(item => {
     const h = parseInt(item.hora.split(':')[0]);
-    volPorHora[h] = item.voluminoso || 0;
+    volPorHora[h] = {
+      voluminoso: item.voluminoso || 0,
+      paqueteria: item.paqueteria || 0,
+    };
   });
 
   const chartData = HORAS_RANGO.map(h => {
     const arribo = arriboPorHora[h];
-    const voluminoso = volPorHora[h] || 0;
+    const volEntry = volPorHora[h] || { voluminoso: 0, paqueteria: 0 };
+    const voluminoso = volEntry.voluminoso;
+    const totalTMS = voluminoso + volEntry.paqueteria;
+    // % de voluminoso calculado igual que en VoluminosoHourlyChart: vol / (vol + paqueteria) del TMS
+    const pctVoluminoso = totalTMS > 0 ? Math.round((voluminoso / totalTMS) * 100) : 0;
     return {
       hora: `${String(h).padStart(2, '0')}:00`,
       arribo,
       arriboBase: Math.max(arribo - voluminoso, 0),
       bipeo: bipeoPorHora[h],
       voluminoso,
+      pctVoluminoso,
     };
   });
 

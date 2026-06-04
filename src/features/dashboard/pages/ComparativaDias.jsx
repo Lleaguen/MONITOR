@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Upload, X, Calendar } from 'lucide-react';
-import { ComposedChart, Line, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart, Pie, Cell } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart, Pie, Cell } from 'recharts';
 import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { processCombinedData } from '../../../core/dataProcessor';
+import VoluminosoHourlyChart from '../components/VoluminosoHourlyChart';
 
 dayjs.extend(customParseFormat);
 
@@ -23,6 +23,7 @@ const ComparativaDias = ({ data: dataHoy }) => {
   const [uploading, setUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState({ csv: null, excel: null, proyectado: 239000 });
   const [showProyectadoModal, setShowProyectadoModal] = useState(false);
+  const [diaVoluminosoIdx, setDiaVoluminosoIdx] = useState(0);
 
   // Extraer fecha del CSV
   const getFechaFromCSV = (csvData) => {
@@ -177,16 +178,7 @@ const ComparativaDias = ({ data: dataHoy }) => {
     ...diasCargados,
   ];
 
-  // Datos para gráfico de barras comparativo
-  const datosBarras = todosDias.map(dia => ({
-    fecha: dia.fecha,
-    Chasis: dia.totales.chasis,
-    Camioneta: dia.totales.camioneta,
-    Semi: dia.totales.semi,
-    Total: dia.totales.chasis + dia.totales.camioneta + dia.totales.semi,
-  }));
-
-  // Datos para curvas comparativas por hora
+  // Datos para curvas comparativas por hora (vehículos)
   const datosCurvas = [];
   const horas = Array.from({ length: 15 }, (_, i) => `${String(i + 9).padStart(2, '0')}:00`);
   
@@ -376,41 +368,30 @@ const ComparativaDias = ({ data: dataHoy }) => {
         </div>
       )}
 
-      {/* Gráfico de barras comparativo */}
+      {/* Gráfico comparativo de % voluminoso por hora — mismo estilo que Dashboard Voluminoso */}
       {todosDias.length > 0 ? (
-        <div className="bg-[#111827]/20 p-6 rounded-2xl border border-white/5">
-          <div className="flex items-center gap-4 mb-4">
-            <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
-            <div className="w-px h-8 bg-white/10" />
-            <div>
-              <h3 className="text-[12px] font-black text-white uppercase tracking-widest">Comparativa Total por Tipo</h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">Vehículos recibidos por día y tipo</p>
-            </div>
+        <div className="space-y-3">
+          {/* Selector de día */}
+          <div className="flex flex-wrap gap-2">
+            {todosDias.map((dia, idx) => (
+              <button
+                key={dia.fecha}
+                onClick={() => setDiaVoluminosoIdx(idx)}
+                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border ${
+                  diaVoluminosoIdx === idx
+                    ? 'bg-orange-500/20 border-orange-500/40 text-orange-400'
+                    : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {dia.esHoy ? `${dia.fecha} (Hoy)` : dia.fecha}
+              </button>
+            ))}
           </div>
 
-          <div className="h-80">
-            <ResponsiveContainer>
-              <ComposedChart data={datosBarras} margin={{ top: 20, right: 20, bottom: 60, left: 0 }}>
-                <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
-                <XAxis 
-                  dataKey="fecha" 
-                  angle={-45} 
-                  textAnchor="end" 
-                  height={80}
-                  tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }} 
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={30} />
-                <Tooltip contentStyle={chartTooltipStyle} />
-                <Legend 
-                  wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '20px' }}
-                  iconType="rect"
-                />
-                <Bar dataKey="Chasis" fill="#34d399" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Camioneta" fill="#ffab00" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Semi" fill="#60a5fa" radius={[4, 4, 0, 0]} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
+          {/* Componente idéntico al de Dashboard Voluminoso */}
+          <VoluminosoHourlyChart
+            volDataByHora={todosDias[diaVoluminosoIdx]?.data?.volDataByHora || []}
+          />
         </div>
       ) : (
         <div className="bg-[#111827]/20 p-12 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-4">
