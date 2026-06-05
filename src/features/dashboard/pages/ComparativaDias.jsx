@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Upload, X, Calendar } from 'lucide-react';
-import { ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, PieChart, Pie, Cell } from 'recharts';
+import { ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList, PieChart, Pie, Cell } from 'recharts';
 import Papa from 'papaparse';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -10,6 +10,29 @@ import VoluminosoHourlyChart from '../components/VoluminosoHourlyChart';
 dayjs.extend(customParseFormat);
 
 const PIE_COLORS = { Chasis: '#34d399', Camioneta: '#ffab00', Semi: '#60a5fa' };
+
+const LineBadgeLabel = (color) => ({ x, y, value }) => {
+  if (!value || value === 0) return null;
+  const label = String(value);
+  const padX = 3;
+  const padY = 2;
+  const fontSize = 8;
+  const textW = label.length * 5.2;
+  const badgeW = textW + padX * 2;
+  const badgeH = fontSize + padY * 2;
+  const badgeX = x - badgeW / 2;
+  const badgeY = y - badgeH - 5;
+  return (
+    <g>
+      <rect x={badgeX} y={badgeY} width={badgeW} height={badgeH}
+        fill="#0f172a" fillOpacity={0.92} stroke={color} strokeWidth={0.8} rx={3} ry={3} />
+      <text x={x} y={badgeY + padY + fontSize - 1}
+        textAnchor="middle" fill={color} fontSize={fontSize} fontWeight="900" letterSpacing="0.3">
+        {label}
+      </text>
+    </g>
+  );
+};
 
 const chartTooltipStyle = {
   backgroundColor: '#080c14',
@@ -159,9 +182,7 @@ const ComparativaDias = ({ data: dataHoy }) => {
   };
 
   // Preparar datos del día de hoy (solo si existen)
-  const fechaHoy = dataHoy?.kpis?.ultimaActualizacion 
-    ? dayjs(dataHoy.kpis.ultimaActualizacion, 'DD/MM/YYYY HH:mm:ss').format('DD/MM/YYYY')
-    : null;
+  const fechaHoy = dataHoy?.kpis ? dayjs().format('DD/MM/YYYY') : null;
 
   const totalesHoy = dataHoy?.vehiculosChartData ? 
     (dataHoy.vehiculosChartData || []).reduce((acc, h) => {
@@ -417,7 +438,7 @@ const ComparativaDias = ({ data: dataHoy }) => {
 
           <div className="h-80">
             <ResponsiveContainer>
-              <ComposedChart data={datosCurvas} margin={{ top: 20, right: 20, bottom: 20, left: 0 }}>
+              <ComposedChart data={datosCurvas} margin={{ top: 32, right: 20, bottom: 20, left: 0 }}>
                 <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
                 <XAxis 
                   dataKey="hora" 
@@ -431,17 +452,25 @@ const ComparativaDias = ({ data: dataHoy }) => {
                   wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }}
                   iconType="line"
                 />
-                {todosDias.map((dia, idx) => (
-                  <Line 
-                    key={dia.fecha}
-                    type="monotone" 
-                    dataKey={dia.fecha} 
-                    stroke={dia.esHoy ? '#22c55e' : coloresCurvas[idx % coloresCurvas.length]}
-                    strokeWidth={dia.esHoy ? 3 : 2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                ))}
+                {todosDias.map((dia, idx) => {
+                  const color = dia.esHoy ? '#22c55e' : coloresCurvas[idx % coloresCurvas.length];
+                  return (
+                    <Line
+                      key={dia.fecha}
+                      type="monotone"
+                      dataKey={dia.fecha}
+                      stroke={color}
+                      strokeWidth={dia.esHoy ? 3 : 2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                    >
+                      <LabelList
+                        dataKey={dia.fecha}
+                        content={LineBadgeLabel(color)}
+                      />
+                    </Line>
+                  );
+                })}
               </ComposedChart>
             </ResponsiveContainer>
           </div>
