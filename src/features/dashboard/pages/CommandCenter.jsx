@@ -115,10 +115,16 @@ const CierreInhubModal = ({ data }) => {
   const [open, setOpen] = useState(false);
   if (!data) return null;
 
-  const proyectado = data.kpis?.proyectado;
-  const arribado   = data.kpis?.arribado;
-  const bipeado    = data.kpis?.bipeado;
+  const kpis = data.kpis || {};
   const now = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+  const filas = [
+    { label: 'Proyectado',        value: kpis.proyectado,      color: 'text-slate-300',   sub: null },
+    { label: 'Arribado',          value: kpis.arribado,        color: 'text-blue-400',    sub: kpis.pArribado != null ? `${kpis.pArribado}%` : null, subColor: 'text-blue-400' },
+    { label: 'Bipeado',           value: kpis.bipeado,         color: 'text-emerald-400', sub: kpis.pBipeo != null ? `${kpis.pBipeo}%` : null, subColor: 'text-emerald-400' },
+    { label: 'Arribado − Bipeado',value: kpis.arribadoBipeado, color: 'text-amber-400',   sub: null },
+    { label: 'Descarga x Hora',   value: kpis.descargaHora,    color: 'text-orange-400',  sub: null },
+  ];
 
   return (
     <>
@@ -131,6 +137,8 @@ const CierreInhubModal = ({ data }) => {
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
           <div className="bg-[#080c14] border border-white/10 rounded-2xl w-full max-w-sm animate-in fade-in zoom-in-95 duration-200">
+
+            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-4">
                 <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-16 w-auto opacity-90" />
@@ -145,18 +153,22 @@ const CierreInhubModal = ({ data }) => {
                 Cerrar
               </button>
             </div>
+
+            {/* KPIs */}
             <div className="p-6 space-y-3">
-              {[
-                { label: 'Proyectado', value: proyectado, color: 'text-slate-300'   },
-                { label: 'Arribado',   value: arribado,   color: 'text-blue-400'    },
-                { label: 'Bipeado',    value: bipeado,    color: 'text-emerald-400' },
-              ].map(({ label, value, color }) => (
+              {filas.map(({ label, value, color, sub, subColor }) => (
                 <div key={label} className="flex justify-between items-center bg-[#111827]/60 border border-white/5 rounded-xl px-4 py-3">
-                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</span>
+                  <div>
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
+                    {sub && (
+                      <p className={`text-[11px] font-black ${subColor} mt-0.5`}>{sub}</p>
+                    )}
+                  </div>
                   <span className={`text-lg font-black ${color}`}>{value ?? '-'}</span>
                 </div>
               ))}
             </div>
+
           </div>
         </div>
       )}
