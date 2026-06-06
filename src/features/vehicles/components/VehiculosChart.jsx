@@ -4,9 +4,10 @@ import {
   Tooltip, ResponsiveContainer, CartesianGrid, LabelList,
   PieChart, Pie, Cell,
 } from 'recharts';
-import { ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, ImagePlus } from 'lucide-react';
 import { PLAN_HOURS, emptyPlan, mergePlanConReal } from '../../../core/vehiculosPlan.js';
 import { BarChart, Bar, Legend } from 'recharts';
+import { usePlanOCR } from '../../../app/hooks/usePlanOCR.js';
 /* ─── Primitivos de gráfico ─────────────────────────────────────── */
 
 const CustomDot = ({ cx, cy, stroke }) => (
@@ -306,12 +307,29 @@ const PlanModal = ({ open, initialPlan, onClose, onSave }) => {
     })
   );
 
+  const { processImage, loading: ocrLoading, error: ocrError } = usePlanOCR();
+
   if (!open) return null;
 
   const update = (i, field, val) => {
     const copy = [...rows];
     copy[i][field] = val;
     setRows(copy);
+  };
+
+  const handleImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const result = await processImage(file);
+    if (result) {
+      setRows(result.map(r => ({
+        hora:      r.hora,
+        camioneta: r.camioneta || '',
+        chasis:    r.chasis    || '',
+        semi:      r.semi      || '',
+      })));
+    }
+    e.target.value = '';
   };
 
   const save = () => {
@@ -331,10 +349,44 @@ const PlanModal = ({ open, initialPlan, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
       <div className="bg-[#0f172a] p-6 rounded-2xl w-full max-w-lg border border-white/10 flex flex-col gap-4">
 
-        <div>
-          <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Cargar Plan de Vehículos</h2>
-          <p className="text-[10px] text-slate-500 mt-1">Ingresá el planificado de Meli por tipo y hora</p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Cargar Plan de Vehículos</h2>
+            <p className="text-[10px] text-slate-500 mt-1">Ingresá el planificado de Meli por tipo y hora</p>
+          </div>
+          {/* Botón cargar desde imagen */}
+          <label className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest cursor-pointer transition-all ${
+            ocrLoading
+              ? 'bg-amber-500/10 border-amber-500/20 text-amber-400 cursor-wait'
+              : 'bg-emerald-600/20 hover:bg-emerald-600/30 border-emerald-500/20 text-emerald-400'
+          }`}>
+            <ImagePlus size={14} />
+            {ocrLoading ? 'Leyendo...' : 'Leer Imagen'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={ocrLoading}
+              onChange={handleImage}
+            />
+          </label>
         </div>
+
+        {/* Error OCR */}
+        {ocrError && (
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-[9px] font-black text-red-400">{ocrError}</p>
+          </div>
+        )}
+
+        {/* Indicador de carga */}
+        {ocrLoading && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <p className="text-[9px] font-black text-amber-400 uppercase tracking-widest">
+              Procesando imagen con OCR... esto puede tardar unos segundos
+            </p>
+          </div>
+        )}
 
         {/* Header columnas */}
         <div className="grid grid-cols-4 gap-2 text-[9px] font-black uppercase tracking-widest text-slate-500 px-1">
@@ -353,7 +405,6 @@ const PlanModal = ({ open, initialPlan, onClose, onSave }) => {
                 onChange={e => update(i, 'camioneta', e.target.value)} />
               <input type="number" min="0" value={r.chasis} className={inputCls}
                 onChange={e => update(i, 'chasis', e.target.value)} />
-
               <input type="number" min="0" value={r.semi} className={inputCls}
                 onChange={e => update(i, 'semi', e.target.value)} />
             </div>
