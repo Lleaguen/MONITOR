@@ -11,28 +11,35 @@ dayjs.extend(customParseFormat);
 
 const PIE_COLORS = { Chasis: '#34d399', Camioneta: '#ffab00', Semi: '#60a5fa' };
 
-const LineBadgeLabel = (color) => ({ x, y, value }) => {
+// Badge SVG para labels de línea
+const LineBadgeLabel = (color, offsetY = 0) => ({ x, y, value }) => {
   if (!value || value === 0) return null;
   const label = String(value);
-  const padX = 3;
-  const padY = 2;
-  const fontSize = 8;
-  const textW = label.length * 5.2;
+  const padX = 5;
+  const fontSize = 10;
+  const badgeH = 16;
+  const textW = label.length * 6.5;
   const badgeW = textW + padX * 2;
-  const badgeH = fontSize + padY * 2;
-  const badgeX = x - badgeW / 2;
-  const badgeY = y - badgeH - 5;
+  const badgeY = y - badgeH - 6 - offsetY;
   return (
     <g>
-      <rect x={badgeX} y={badgeY} width={badgeW} height={badgeH}
-        fill="#0f172a" fillOpacity={0.92} stroke={color} strokeWidth={0.8} rx={3} ry={3} />
-      <text x={x} y={badgeY + padY + fontSize - 1}
+      <line x1={x} y1={y} x2={x} y2={badgeY + badgeH}
+        stroke={color} strokeWidth={0.8} strokeDasharray="2 2" strokeOpacity={0.4} />
+      <rect x={x - badgeW / 2} y={badgeY} width={badgeW} height={badgeH}
+        fill="#0f172a" fillOpacity={0.95} stroke={color} strokeWidth={1.2} rx={4} ry={4} />
+      <text x={x} y={badgeY + badgeH - 4}
         textAnchor="middle" fill={color} fontSize={fontSize} fontWeight="900" letterSpacing="0.3">
         {label}
       </text>
     </g>
   );
 };
+
+// Calcula offsets verticales para evitar solapamiento entre líneas de la misma hora.
+// Distribuye los badges escalonados: 0, 22, 44, 66... px hacia arriba.
+const BADGE_STEP = 22;
+const calcOffsets = (nDias) =>
+  Array.from({ length: nDias }, (_, i) => i * BADGE_STEP);
 
 const chartTooltipStyle = {
   backgroundColor: '#080c14',
@@ -201,16 +208,22 @@ const ComparativaDias = ({ data: dataHoy }) => {
 
   // Datos para curvas comparativas por hora (vehículos)
   const datosCurvas = [];
+  // Datos para curvas comparativas por hora (piezas ingresadas = arribo)
+  const datosPiezas = [];
   const horas = Array.from({ length: 15 }, (_, i) => `${String(i + 9).padStart(2, '0')}:00`);
   
   horas.forEach(hora => {
-    const punto = { hora };
+    const puntoVeh   = { hora };
+    const puntoPiezas = { hora };
     todosDias.forEach(dia => {
-      const horaData = (dia.data?.vehiculosChartData || []).find(h => h.hora === hora);
-      const total = (horaData?.chasis || 0) + (horaData?.camioneta || 0) + (horaData?.semi || 0);
-      punto[dia.fecha] = total;
+      const horaVeh = (dia.data?.vehiculosChartData || []).find(h => h.hora === hora);
+      puntoVeh[dia.fecha] = (horaVeh?.chasis || 0) + (horaVeh?.camioneta || 0) + (horaVeh?.semi || 0);
+
+      const horaChart = (dia.data?.chartData || []).find(h => h.hora === hora);
+      puntoPiezas[dia.fecha] = horaChart?.arribo || 0;
     });
-    datosCurvas.push(punto);
+    datosCurvas.push(puntoVeh);
+    datosPiezas.push(puntoPiezas);
   });
 
   const coloresCurvas = ['#22c55e', '#60a5fa', '#f97316', '#a78bfa', '#fbbf24', '#ec4899'];
@@ -436,9 +449,9 @@ const ComparativaDias = ({ data: dataHoy }) => {
             </div>
           </div>
 
-          <div className="h-80">
+          <div className="h-96">
             <ResponsiveContainer>
-              <ComposedChart data={datosCurvas} margin={{ top: 32, right: 20, bottom: 20, left: 0 }}>
+              <ComposedChart data={datosCurvas} margin={{ top: 90, right: 20, bottom: 20, left: 0 }}>
                 <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
                 <XAxis 
                   dataKey="hora" 
@@ -454,6 +467,7 @@ const ComparativaDias = ({ data: dataHoy }) => {
                 />
                 {todosDias.map((dia, idx) => {
                   const color = dia.esHoy ? '#22c55e' : coloresCurvas[idx % coloresCurvas.length];
+                  const offsets = calcOffsets(todosDias.length);
                   return (
                     <Line
                       key={dia.fecha}
@@ -466,7 +480,61 @@ const ComparativaDias = ({ data: dataHoy }) => {
                     >
                       <LabelList
                         dataKey={dia.fecha}
-                        content={LineBadgeLabel(color)}
+                        content={LineBadgeLabel(color, offsets[idx])}
+                      />
+                    </Line>
+                  );
+                })}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Gráfico de piezas ingresadas por hora */}
+      {todosDias.length > 0 && (
+        <div className="bg-[#111827]/20 p-6 rounded-2xl border border-white/5">
+          <div className="flex items-center gap-4 mb-4">
+            <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
+            <div className="w-px h-8 bg-white/10" />
+            <div>
+              <h3 className="text-[12px] font-black text-white uppercase tracking-widest">Piezas Ingresadas por Hora</h3>
+              <p className="text-[10px] text-slate-500 mt-0.5">Arribo de piezas por hora en cada día</p>
+            </div>
+          </div>
+
+          <div className="h-96">
+            <ResponsiveContainer>
+              <ComposedChart data={datosPiezas} margin={{ top: 90, right: 20, bottom: 20, left: 0 }}>
+                <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
+                <XAxis
+                  dataKey="hora"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }}
+                />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={35} />
+                <Tooltip contentStyle={chartTooltipStyle} />
+                <Legend
+                  wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }}
+                  iconType="line"
+                />
+                {todosDias.map((dia, idx) => {
+                  const color = dia.esHoy ? '#ef4444' : coloresCurvas[idx % coloresCurvas.length];
+                  const offsets = calcOffsets(todosDias.length);
+                  return (
+                    <Line
+                      key={dia.fecha}
+                      type="monotone"
+                      dataKey={dia.fecha}
+                      stroke={color}
+                      strokeWidth={dia.esHoy ? 3 : 2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                    >
+                      <LabelList
+                        dataKey={dia.fecha}
+                        content={LineBadgeLabel(color, offsets[idx])}
                       />
                     </Line>
                   );
