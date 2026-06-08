@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Upload, X, Calendar } from 'lucide-react';
-import { ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList, PieChart, Pie, Cell } from 'recharts';
+import { Upload, X, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ComposedChart, BarChart, Bar, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LabelList, PieChart, Pie, Cell } from 'recharts';
 import Papa from 'papaparse';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -41,6 +41,91 @@ const BADGE_STEP = 22;
 const calcOffsets = (nDias) =>
   Array.from({ length: nDias }, (_, i) => i * BADGE_STEP);
 
+/* ── Carrusel genérico (curvas + barras) ─────────────────────────────── */
+const ComparativaCarrusel = ({ titulo, subtitulo, datos, todosDias, coloresCurvas, esHoyColor, yWidth = 30 }) => {
+  const [slide, setSlide] = useState(0);
+  const offsets = calcOffsets(todosDias.length);
+
+  return (
+    <div className="bg-[#111827]/20 p-6 rounded-2xl border border-white/5">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
+          <div className="w-px h-8 bg-white/10" />
+          <div>
+            <h3 className="text-[12px] font-black text-white uppercase tracking-widest">{titulo}</h3>
+            <p className="text-[10px] text-slate-500 mt-0.5">
+              {slide === 0 ? `Curvas — ${subtitulo}` : `Barras — ${subtitulo}`}
+            </p>
+          </div>
+        </div>
+        {/* Controles carrusel */}
+        <div className="flex items-center gap-2">
+          <button onClick={() => setSlide(0)}
+            className={`w-2 h-2 rounded-full transition-all ${slide === 0 ? 'bg-white' : 'bg-white/20'}`} />
+          <button onClick={() => setSlide(1)}
+            className={`w-2 h-2 rounded-full transition-all ${slide === 1 ? 'bg-white' : 'bg-white/20'}`} />
+          <button onClick={() => setSlide(s => (s + 1) % 2)}
+            className="ml-2 w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all">
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Slide 0 — Curvas */}
+      {slide === 0 && (
+        <div className="h-96">
+          <ResponsiveContainer>
+            <ComposedChart data={datos} margin={{ top: 90, right: 20, bottom: 20, left: 0 }}>
+              <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
+              <XAxis dataKey="hora" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={yWidth} />
+              <Tooltip contentStyle={chartTooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} iconType="line" />
+              {todosDias.map((dia, idx) => {
+                const color = dia.esHoy ? esHoyColor : coloresCurvas[idx % coloresCurvas.length];
+                return (
+                  <Line key={dia.fecha} type="monotone" dataKey={dia.fecha}
+                    stroke={color} strokeWidth={dia.esHoy ? 3 : 2} dot={{ r: 3 }} activeDot={{ r: 5 }}>
+                    <LabelList dataKey={dia.fecha} content={LineBadgeLabel(color, offsets[idx])} />
+                  </Line>
+                );
+              })}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Slide 1 — Barras */}
+      {slide === 1 && (
+        <div className="h-96">
+          <ResponsiveContainer>
+            <BarChart data={datos} barCategoryGap="30%" margin={{ top: 24, right: 20, bottom: 20, left: 0 }}>
+              <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
+              <XAxis dataKey="hora" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={yWidth} />
+              <Tooltip contentStyle={chartTooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} iconType="rect" />
+              {todosDias.map((dia, idx) => {
+                const color = dia.esHoy ? esHoyColor : coloresCurvas[idx % coloresCurvas.length];
+                return (
+                  <Bar key={dia.fecha} dataKey={dia.fecha} name={dia.fecha}
+                    fill={color} fillOpacity={0.85} radius={[3, 3, 0, 0]}>
+                    <LabelList dataKey={dia.fecha} position="top"
+                      style={{ fontSize: 8, fontWeight: 900, fill: color }}
+                      formatter={v => v > 0 ? v : ''} />
+                  </Bar>
+                );
+              })}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const chartTooltipStyle = {
   backgroundColor: '#080c14',
   border: 'none',
@@ -48,12 +133,114 @@ const chartTooltipStyle = {
   fontSize: '11px',
 };
 
+/* ── Carrusel de Voluminoso: día individual + comparativa ────────────── */
+const VoluminosoComparativaCarrusel = ({ todosDias, datosVoluminosoPorHora, coloresCurvas }) => {
+  const [slide, setSlide]   = useState(0);
+  const [diaIdx, setDiaIdx] = useState(0);
+
+  return (
+    <div className="space-y-3">
+      {/* Slide 0: VoluminosoHourlyChart del día seleccionado */}
+      {slide === 0 && (
+        <div className="space-y-3">
+          {/* Header con selector de día y controles */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
+              {todosDias.map((dia, idx) => (
+                <button key={dia.fecha} onClick={() => setDiaIdx(idx)}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    diaIdx === idx
+                      ? 'bg-orange-500/20 border-orange-500/40 text-orange-400'
+                      : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
+                  }`}>
+                  {dia.esHoy ? `${dia.fecha} (Hoy)` : dia.fecha}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Comparativa →</span>
+              <button onClick={() => setSlide(1)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-orange-500/20 text-slate-400 hover:text-orange-400 transition-all">
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+          <VoluminosoHourlyChart volDataByHora={todosDias[diaIdx]?.data?.volDataByHora || []} />
+        </div>
+      )}
+
+      {/* Slide 1: Barras comparativas de % voluminoso por hora */}
+      {slide === 1 && (
+        <div className="bg-[#111827]/10 rounded-2xl border border-white/5 p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
+              <div className="w-px h-8 bg-white/10" />
+              <div>
+                <h3 className="text-[12px] font-black text-white uppercase tracking-widest">
+                  Comparativa % Voluminoso por Hora
+                </h3>
+                <p className="text-[10px] text-slate-500 mt-0.5">Porcentaje de voluminoso por hora en cada día</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setSlide(0)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 hover:bg-orange-500/20 text-slate-400 hover:text-orange-400 transition-all">
+                <ChevronLeft size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Leyenda */}
+          <div className="flex flex-wrap gap-4 mb-3 text-[9px] font-black tracking-widest">
+            {todosDias.map((dia, idx) => {
+              const color = dia.esHoy ? '#f97316' : coloresCurvas[idx % coloresCurvas.length];
+              return (
+                <span key={dia.fecha} className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color, opacity: 0.85 }} />
+                  {dia.esHoy ? `${dia.fecha} (Hoy)` : dia.fecha}
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Gráfico de barras */}
+          <div className="h-72">
+            <ResponsiveContainer>
+              <BarChart data={datosVoluminosoPorHora} barCategoryGap="25%" margin={{ top: 20, right: 10, bottom: 5, left: 0 }}>
+                <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
+                <XAxis dataKey="hora" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 8, fontWeight: 700 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={28}
+                  domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                <Tooltip contentStyle={chartTooltipStyle} formatter={(v, name) => [`${v}%`, name]} />
+                {todosDias.map((dia, idx) => {
+                  const color = dia.esHoy ? '#f97316' : coloresCurvas[idx % coloresCurvas.length];
+                  return (
+                    <Bar key={dia.fecha} dataKey={dia.fecha} name={dia.fecha}
+                      fill={color} fillOpacity={0.85} radius={[2, 2, 0, 0]}>
+                      <LabelList dataKey={dia.fecha} position="top"
+                        style={{ fontSize: 8, fontWeight: 900, fill: color }}
+                        formatter={v => v > 0 ? `${v}%` : ''} />
+                    </Bar>
+                  );
+                })}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
 const ComparativaDias = ({ data: dataHoy }) => {
   const [diasCargados, setDiasCargados] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState({ csv: null, excel: null, proyectado: 239000 });
   const [showProyectadoModal, setShowProyectadoModal] = useState(false);
-  const [diaVoluminosoIdx, setDiaVoluminosoIdx] = useState(0);
+  const [showResumenGeneral, setShowResumenGeneral] = useState(false);
 
   // Extraer fecha del CSV
   const getFechaFromCSV = (csvData) => {
@@ -210,20 +397,32 @@ const ComparativaDias = ({ data: dataHoy }) => {
   const datosCurvas = [];
   // Datos para curvas comparativas por hora (piezas ingresadas = arribo)
   const datosPiezas = [];
+  // Datos para comparativa % voluminoso por hora
+  const datosVoluminosoPorHora = [];
   const horas = Array.from({ length: 15 }, (_, i) => `${String(i + 9).padStart(2, '0')}:00`);
-  
+
   horas.forEach(hora => {
-    const puntoVeh   = { hora };
+    const puntoVeh    = { hora };
     const puntoPiezas = { hora };
+    const puntoVol    = { hora };
     todosDias.forEach(dia => {
       const horaVeh = (dia.data?.vehiculosChartData || []).find(h => h.hora === hora);
       puntoVeh[dia.fecha] = (horaVeh?.chasis || 0) + (horaVeh?.camioneta || 0) + (horaVeh?.semi || 0);
 
       const horaChart = (dia.data?.chartData || []).find(h => h.hora === hora);
       puntoPiezas[dia.fecha] = horaChart?.arribo || 0;
+
+      const horaVolData = (dia.data?.volDataByHora || []).find(h => h.hora === hora);
+      if (horaVolData) {
+        const total = (horaVolData.voluminoso || 0) + (horaVolData.paqueteria || 0);
+        puntoVol[dia.fecha] = total > 0 ? Math.round((horaVolData.voluminoso / total) * 100) : 0;
+      } else {
+        puntoVol[dia.fecha] = 0;
+      }
     });
     datosCurvas.push(puntoVeh);
     datosPiezas.push(puntoPiezas);
+    datosVoluminosoPorHora.push(puntoVol);
   });
 
   const coloresCurvas = ['#22c55e', '#60a5fa', '#f97316', '#a78bfa', '#fbbf24', '#ec4899'];
@@ -243,6 +442,15 @@ const ComparativaDias = ({ data: dataHoy }) => {
           </div>
 
           <div className="flex flex-col gap-2">
+            {/* Botón Resumen General — solo si hay días */}
+            {todosDias.length > 0 && (
+              <button
+                onClick={() => setShowResumenGeneral(true)}
+                className="flex items-center gap-2 px-4 py-3 rounded-xl border bg-violet-600/20 hover:bg-violet-600/30 border-violet-500/20 text-violet-400 text-[10px] font-black uppercase tracking-widest transition-all"
+              >
+                Resumen General
+              </button>
+            )}
             {/* Botón CSV */}
             <label className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${
               pendingFiles.csv 
@@ -402,31 +610,13 @@ const ComparativaDias = ({ data: dataHoy }) => {
         </div>
       )}
 
-      {/* Gráfico comparativo de % voluminoso por hora — mismo estilo que Dashboard Voluminoso */}
+      {/* ── Voluminoso por Hora ── */}
       {todosDias.length > 0 ? (
-        <div className="space-y-3">
-          {/* Selector de día */}
-          <div className="flex flex-wrap gap-2">
-            {todosDias.map((dia, idx) => (
-              <button
-                key={dia.fecha}
-                onClick={() => setDiaVoluminosoIdx(idx)}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border ${
-                  diaVoluminosoIdx === idx
-                    ? 'bg-orange-500/20 border-orange-500/40 text-orange-400'
-                    : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                {dia.esHoy ? `${dia.fecha} (Hoy)` : dia.fecha}
-              </button>
-            ))}
-          </div>
-
-          {/* Componente idéntico al de Dashboard Voluminoso */}
-          <VoluminosoHourlyChart
-            volDataByHora={todosDias[diaVoluminosoIdx]?.data?.volDataByHora || []}
-          />
-        </div>
+        <VoluminosoComparativaCarrusel
+          todosDias={todosDias}
+          datosVoluminosoPorHora={datosVoluminosoPorHora}
+          coloresCurvas={coloresCurvas}
+        />
       ) : (
         <div className="bg-[#111827]/20 p-12 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-4">
           <Upload size={48} className="text-slate-600" />
@@ -437,112 +627,30 @@ const ComparativaDias = ({ data: dataHoy }) => {
         </div>
       )}
 
-      {/* Gráfico de curvas comparativas */}
+      {/* ── Vehículos por Hora ── */}
       {todosDias.length > 0 && (
-        <div className="bg-[#111827]/20 p-6 rounded-2xl border border-white/5">
-          <div className="flex items-center gap-4 mb-4">
-            <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
-            <div className="w-px h-8 bg-white/10" />
-            <div>
-              <h3 className="text-[12px] font-black text-white uppercase tracking-widest">Curvas Comparativas por Hora</h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">Arribo total de vehículos por hora en cada día</p>
-            </div>
-          </div>
-
-          <div className="h-96">
-            <ResponsiveContainer>
-              <ComposedChart data={datosCurvas} margin={{ top: 90, right: 20, bottom: 20, left: 0 }}>
-                <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
-                <XAxis 
-                  dataKey="hora" 
-                  axisLine={false} 
-                  tickLine={false}
-                  tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }} 
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={30} />
-                <Tooltip contentStyle={chartTooltipStyle} />
-                <Legend 
-                  wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }}
-                  iconType="line"
-                />
-                {todosDias.map((dia, idx) => {
-                  const color = dia.esHoy ? '#22c55e' : coloresCurvas[idx % coloresCurvas.length];
-                  const offsets = calcOffsets(todosDias.length);
-                  return (
-                    <Line
-                      key={dia.fecha}
-                      type="monotone"
-                      dataKey={dia.fecha}
-                      stroke={color}
-                      strokeWidth={dia.esHoy ? 3 : 2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
-                    >
-                      <LabelList
-                        dataKey={dia.fecha}
-                        content={LineBadgeLabel(color, offsets[idx])}
-                      />
-                    </Line>
-                  );
-                })}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <ComparativaCarrusel
+          titulo="Vehículos por Hora"
+          subtitulo="arribo de vehículos por hora en cada día"
+          datos={datosCurvas}
+          todosDias={todosDias}
+          coloresCurvas={coloresCurvas}
+          esHoyColor="#22c55e"
+          yWidth={30}
+        />
       )}
 
-      {/* Gráfico de piezas ingresadas por hora */}
+      {/* ── Piezas Ingresadas por Hora ── */}
       {todosDias.length > 0 && (
-        <div className="bg-[#111827]/20 p-6 rounded-2xl border border-white/5">
-          <div className="flex items-center gap-4 mb-4">
-            <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
-            <div className="w-px h-8 bg-white/10" />
-            <div>
-              <h3 className="text-[12px] font-black text-white uppercase tracking-widest">Piezas Ingresadas por Hora</h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">Arribo de piezas por hora en cada día</p>
-            </div>
-          </div>
-
-          <div className="h-96">
-            <ResponsiveContainer>
-              <ComposedChart data={datosPiezas} margin={{ top: 90, right: 20, bottom: 20, left: 0 }}>
-                <CartesianGrid vertical={false} stroke="#1e293b" strokeDasharray="4 4" />
-                <XAxis
-                  dataKey="hora"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#475569', fontSize: 9, fontWeight: 700 }}
-                />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#334155', fontSize: 9 }} width={35} />
-                <Tooltip contentStyle={chartTooltipStyle} />
-                <Legend
-                  wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }}
-                  iconType="line"
-                />
-                {todosDias.map((dia, idx) => {
-                  const color = dia.esHoy ? '#ef4444' : coloresCurvas[idx % coloresCurvas.length];
-                  const offsets = calcOffsets(todosDias.length);
-                  return (
-                    <Line
-                      key={dia.fecha}
-                      type="monotone"
-                      dataKey={dia.fecha}
-                      stroke={color}
-                      strokeWidth={dia.esHoy ? 3 : 2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
-                    >
-                      <LabelList
-                        dataKey={dia.fecha}
-                        content={LineBadgeLabel(color, offsets[idx])}
-                      />
-                    </Line>
-                  );
-                })}
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <ComparativaCarrusel
+          titulo="Piezas Ingresadas por Hora"
+          subtitulo="arribo de piezas por hora en cada día"
+          datos={datosPiezas}
+          todosDias={todosDias}
+          coloresCurvas={coloresCurvas}
+          esHoyColor="#ef4444"
+          yWidth={35}
+        />
       )}
 
       {/* Distribución por tipo - cada día */}
@@ -626,6 +734,94 @@ const ComparativaDias = ({ data: dataHoy }) => {
           );
         })}
       </div>
+      )}
+
+      {/* Modal Resumen General */}
+      {showResumenGeneral && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-[#080c14] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div className="flex items-center gap-4">
+                <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
+                <div className="w-px h-6 bg-white/10" />
+                <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Resumen General</h2>
+              </div>
+              <button onClick={() => setShowResumenGeneral(false)}
+                className="text-slate-500 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Tabla */}
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-80px)]">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[9px] font-black text-slate-600 uppercase tracking-[0.15em] border-b border-white/10">
+                    <th className="px-3 py-3">Día</th>
+                    <th className="py-3 text-right px-2">Proyectado</th>
+                    <th className="py-3 text-right px-2">Piezas</th>
+                    <th className="py-3 text-right px-2 text-orange-400">Voluminoso</th>
+                    <th className="py-3 text-right px-2 text-orange-400">% Vol.</th>
+                    <th className="py-3 text-right px-2 text-emerald-400">Chasis</th>
+                    <th className="py-3 text-right px-2 text-amber-400">Camioneta</th>
+                    <th className="py-3 text-right px-2 text-blue-400">Semi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {todosDias.map(dia => {
+                    // Totales de piezas y voluminoso
+                    const volData = dia.data?.volDataByHora || [];
+                    const totalVol  = volData.reduce((s, h) => s + (h.voluminoso || 0), 0);
+                    const totalPaq  = volData.reduce((s, h) => s + (h.paqueteria || 0), 0);
+                    const totalPiezas = totalVol + totalPaq;
+                    // Usar totalRecibidoGlobal si está disponible
+                    const totalGlobal = dia.data?.volData?.totalRecibidoGlobal ?? totalPiezas;
+                    const totalVolGlobal = dia.data?.volData?.totalVoluminosoGlobal ?? totalVol;
+                    const pctVol = totalGlobal > 0 ? Math.round((totalVolGlobal / totalGlobal) * 100) : 0;
+
+                    // Totales de vehículos
+                    const veh = dia.totales || { chasis: 0, camioneta: 0, semi: 0 };
+                    const totalVeh = veh.chasis + veh.camioneta + veh.semi;
+
+                    return (
+                      <tr key={dia.fecha}
+                        className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                        <td className="px-3 py-3">
+                          <div className="text-[10px] font-black text-white">{dia.fecha}</div>
+                          {dia.esHoy && (
+                            <div className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Hoy</div>
+                          )}
+                        </td>
+                        <td className="py-3 text-right px-2 text-[10px] font-black text-slate-400">
+                          {dia.proyectado?.toLocaleString() ?? '—'}
+                        </td>
+                        <td className="py-3 text-right px-2 text-[10px] font-black text-slate-300">
+                          {totalGlobal.toLocaleString()}
+                        </td>
+                        <td className="py-3 text-right px-2 text-[10px] font-black text-orange-400">
+                          {totalVolGlobal.toLocaleString()}
+                        </td>
+                        <td className="py-3 text-right px-2 text-[10px] font-black text-orange-400">
+                          {pctVol}%
+                        </td>
+                        <td className="py-3 text-right px-2 text-[10px] font-black text-emerald-400">
+                          {veh.chasis}
+                        </td>
+                        <td className="py-3 text-right px-2 text-[10px] font-black text-amber-400">
+                          {veh.camioneta}
+                        </td>
+                        <td className="py-3 text-right px-2 text-[10px] font-black text-blue-400">
+                          {veh.semi}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
