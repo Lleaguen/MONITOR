@@ -81,6 +81,8 @@ const VehiculosTipoChart = ({ data }) => {
 /* ─── Gráfico 2: Total real vs plan ─────────────────────────────── */
 
 const VehiculosTotalChart = ({ data }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [modalTab, setModalTab]   = useState(0);
   const filtered = data.filter(d => d.realTotal > 0 || d.planTotal > 0);
 
   return (
@@ -90,9 +92,17 @@ const VehiculosTotalChart = ({ data }) => {
           <h3 className="text-[11px] font-black text-white uppercase tracking-widest">Total vs Planificado</h3>
           <p className="text-[10px] text-slate-500 mt-0.5">Vehículos reales vs plan por hora</p>
         </div>
-        <div className="flex gap-4 text-[9px] font-black tracking-widest text-slate-400">
-          <span className="flex items-center gap-2"><span className="w-3 h-[2px] bg-emerald-400 inline-block rounded-full" /> CIU</span>
-          <span className="flex items-center gap-2"><span className="w-3 h-[2px] bg-violet-400 inline-block rounded-full" /> MELI</span>
+        <div className="flex items-center gap-4">
+          <div className="flex gap-4 text-[9px] font-black tracking-widest text-slate-400">
+            <span className="flex items-center gap-2"><span className="w-3 h-[2px] bg-emerald-400 inline-block rounded-full" /> CIU</span>
+            <span className="flex items-center gap-2"><span className="w-3 h-[2px] bg-violet-400 inline-block rounded-full" /> MELI</span>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-3 py-1.5 rounded-lg bg-violet-600/20 hover:bg-violet-600/30 border border-violet-500/20 text-violet-400 text-[9px] font-black uppercase tracking-widest transition-all"
+          >
+            Ver Diferencias
+          </button>
         </div>
       </div>
       <div className="h-64">
@@ -129,6 +139,167 @@ const VehiculosTotalChart = ({ data }) => {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Modal diferencias por hora */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+          <div className="bg-[#080c14] border border-white/10 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div className="flex items-center gap-4">
+                <img src={`${process.env.PUBLIC_URL}/Ocasa.png`} alt="" className="h-12 w-auto opacity-90" />
+                <div className="w-px h-6 bg-white/10" />
+                <div>
+                  <h2 className="text-[11px] font-black text-white uppercase tracking-widest">Diferencias</h2>
+                  <p className="text-[9px] text-slate-500 mt-0.5">Real (CIU) vs Plan (MELI)</p>
+                </div>
+              </div>
+              <button onClick={() => setShowModal(false)}
+                className="text-slate-500 hover:text-white transition-colors text-lg font-black">✕</button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-white/10">
+              {['Por Hora', 'Por Tipo'].map((tab, i) => (
+                <button key={tab} onClick={() => setModalTab(i)}
+                  className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all ${
+                    modalTab === i
+                      ? 'text-white border-b-2 border-violet-400'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}>
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab 0: Por Hora */}
+            {modalTab === 0 && (
+              <div className="overflow-y-auto max-h-[calc(80vh-130px)]">
+                <table className="w-full text-left">
+                  <thead className="sticky top-0 bg-[#080c14]">
+                    <tr className="text-[9px] font-black text-slate-600 uppercase tracking-[0.15em] border-b border-white/10">
+                      <th className="px-4 py-3">Hora</th>
+                      <th className="py-3 text-right px-3 text-emerald-400">Real</th>
+                      <th className="py-3 text-right px-3 text-violet-400">Plan</th>
+                      <th className="py-3 text-right px-4">Dif.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(row => {
+                      const real = row.realTotal || 0;
+                      const plan = row.planTotal || 0;
+                      const dif  = real - plan;
+                      return (
+                        <tr key={row.hora} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                          <td className="px-4 py-2.5 text-[10px] font-black text-blue-400">{row.hora}</td>
+                          <td className="py-2.5 text-right px-3 text-[10px] font-black text-emerald-400">{real}</td>
+                          <td className="py-2.5 text-right px-3 text-[10px] font-black text-violet-400">{plan}</td>
+                          <td className={`py-2.5 text-right px-4 text-[10px] font-black ${dif > 0 ? 'text-emerald-400' : dif < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                            {dif > 0 ? `+${dif}` : dif === 0 ? '—' : dif}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    {(() => {
+                      const totalReal = filtered.reduce((s, r) => s + (r.realTotal || 0), 0);
+                      const totalPlan = filtered.reduce((s, r) => s + (r.planTotal || 0), 0);
+                      const d = totalReal - totalPlan;
+                      return (
+                        <tr className="border-t border-white/10 bg-white/[0.02]">
+                          <td className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Total</td>
+                          <td className="py-3 text-right px-3 text-[11px] font-black text-emerald-400">{totalReal}</td>
+                          <td className="py-3 text-right px-3 text-[11px] font-black text-violet-400">{totalPlan}</td>
+                          <td className={`py-3 text-right px-4 text-[11px] font-black ${d > 0 ? 'text-emerald-400' : d < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                            {d > 0 ? `+${d}` : d === 0 ? '—' : d}
+                          </td>
+                        </tr>
+                      );
+                    })()}
+                  </tfoot>
+                </table>
+              </div>
+            )}
+
+            {/* Tab 1: Por Tipo */}
+            {modalTab === 1 && (() => {
+              const tipos = [
+                { label: 'Chasis',    real: 'chasis',    plan: 'planChasis',    color: 'text-emerald-400' },
+                { label: 'Camioneta', real: 'camioneta', plan: 'planCamioneta', color: 'text-amber-400'   },
+                { label: 'Semi',      real: 'semi',       plan: 'planSemi',      color: 'text-blue-400'   },
+              ];
+              return (
+                <div className="overflow-y-auto max-h-[calc(80vh-130px)]">
+                  <table className="w-full text-left">
+                    <thead className="sticky top-0 bg-[#080c14]">
+                      <tr className="text-[9px] font-black text-slate-600 uppercase tracking-[0.15em] border-b border-white/10">
+                        <th className="px-4 py-3">Hora</th>
+                        {tipos.map(t => (
+                          <th key={t.label} colSpan={3}
+                            className={`py-3 text-center px-2 ${t.color}`}>
+                            {t.label}
+                          </th>
+                        ))}
+                      </tr>
+                      <tr className="text-[8px] font-black text-slate-600 uppercase tracking-widest border-b border-white/10">
+                        <th className="px-4 py-1.5" />
+                        {tipos.map(t => (
+                          <>
+                            <th key={`${t.label}-r`} className="py-1.5 text-right px-1 text-emerald-600">R</th>
+                            <th key={`${t.label}-p`} className="py-1.5 text-right px-1 text-violet-600">P</th>
+                            <th key={`${t.label}-d`} className="py-1.5 text-right px-2 text-slate-600">Dif</th>
+                          </>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map(row => (
+                        <tr key={row.hora} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                          <td className="px-4 py-2 text-[10px] font-black text-blue-400">{row.hora}</td>
+                          {tipos.map(t => {
+                            const r = row[t.real]  || 0;
+                            const p = row[t.plan]  || 0;
+                            const d = r - p;
+                            return (
+                              <>
+                                <td key={`${row.hora}-${t.label}-r`} className={`py-2 text-right px-1 text-[10px] font-black ${t.color}`}>{r || '—'}</td>
+                                <td key={`${row.hora}-${t.label}-p`} className="py-2 text-right px-1 text-[10px] font-black text-violet-400">{p || '—'}</td>
+                                <td key={`${row.hora}-${t.label}-d`} className={`py-2 text-right px-2 text-[10px] font-black ${d > 0 ? 'text-emerald-400' : d < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                                  {r === 0 && p === 0 ? '—' : d > 0 ? `+${d}` : d}
+                                </td>
+                              </>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t border-white/10 bg-white/[0.02]">
+                        <td className="px-4 py-3 text-[9px] font-black text-slate-500 uppercase tracking-widest">Total</td>
+                        {tipos.map(t => {
+                          const totalR = filtered.reduce((s, r) => s + (r[t.real] || 0), 0);
+                          const totalP = filtered.reduce((s, r) => s + (r[t.plan] || 0), 0);
+                          const d = totalR - totalP;
+                          return (
+                            <>
+                              <td key={`tot-${t.label}-r`} className={`py-3 text-right px-1 text-[11px] font-black ${t.color}`}>{totalR}</td>
+                              <td key={`tot-${t.label}-p`} className="py-3 text-right px-1 text-[11px] font-black text-violet-400">{totalP}</td>
+                              <td key={`tot-${t.label}-d`} className={`py-3 text-right px-2 text-[11px] font-black ${d > 0 ? 'text-emerald-400' : d < 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                                {d > 0 ? `+${d}` : d === 0 ? '—' : d}
+                              </td>
+                            </>
+                          );
+                        })}
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
