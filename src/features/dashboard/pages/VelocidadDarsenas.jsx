@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import PageWrapper from '../../../shared/components/PageWrapper.jsx';
 import StatCard from '../../../shared/components/StatCard.jsx';
 import { VELOCIDAD_OBJETIVO } from '../../../core/processors/darsenaProcessor.js';
+import DarsenasAhora from '../components/DarsenasAhora.jsx';
 
 const TIPO_COLORS = {
   chasis:    { text: 'text-emerald-400', bg: 'bg-emerald-500/10', label: 'Chasis'    },
@@ -132,6 +133,7 @@ const DarsenaRow = ({ d }) => {
 const TIPOS = ['todos', 'chasis', 'camioneta', 'semi', 'otro'];
 
 const VelocidadDarsenas = ({ data }) => {
+  const [vista, setVista] = useState('ahora'); // 'ahora' | 'promedio'
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [soloActivas, setSoloActivas] = useState(false);
 
@@ -150,6 +152,35 @@ const VelocidadDarsenas = ({ data }) => {
 
   return (
     <PageWrapper>
+      {/* Tabs de vista */}
+      <div className="flex gap-1 p-1 bg-[#111827]/60 border border-white/5 rounded-xl w-fit">
+        <button
+          onClick={() => setVista('ahora')}
+          className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+            vista === 'ahora'
+              ? 'bg-blue-600 text-white shadow'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Ahora
+        </button>
+        <button
+          onClick={() => setVista('promedio')}
+          className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+            vista === 'promedio'
+              ? 'bg-blue-600 text-white shadow'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Promedial
+        </button>
+      </div>
+
+      {/* Vista Ahora */}
+      {vista === 'ahora' && <DarsenasAhora data={data} />}
+
+      {/* Vista Promedial */}
+      {vista === 'promedio' && (<>
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard label="Dársenas activas" value={activas}                    color="emerald" />
@@ -218,6 +249,7 @@ const VelocidadDarsenas = ({ data }) => {
           </div>
         )}
       </div>
+      </>)}
     </PageWrapper>
   );
 };

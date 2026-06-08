@@ -4,7 +4,7 @@ import { normalizarPatente, getTipoPorDoca } from './helpers.js';
 
 dayjs.extend(customParseFormat);
 
-// Umbral de velocidad "decente": 600 piezas/hora = 10 piezas/min
+// Umbral de velocidad "decente": 600 piezas/hora = 10 piezas/min (12 pzas/min)
 export const VELOCIDAD_OBJETIVO = 600;
 
 // Dársenas válidas para mostrar en velocidad de dársenas:
@@ -131,6 +131,155 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
       primerBipeo: dayjs(entry.primerBipeo).format('HH:mm'),
       ultimoBipeo: dayjs(entry.ultimoBipeo).format('HH:mm'),
       patentes,
+    });
+  });
+
+  // Ordenar: activas primero, luego por número de doca
+  return result.sort((a, b) => {
+    if (a.activa !== b.activa) return b.activa - a.activa;
+    return a.docaNum - b.docaNum;
+  });
+};
+
+/**
+ * buildDarsenasAhora — calcula el estado en tiempo real de cada dársena activa.
+ *
+ * Para cada dársena con bipeos en los últimos 10 minutos:
+ *   - Detecta el Inbound ID activo (el más reciente con bipeos en los últimos 30 min)
+ *   - Cuenta piezas bipeadas de ese Inbound ID específico
+ *   - Calcula piezas/hr de la descarga activa (últimos 60 min)
+ *   - Calcula % voluminoso del inbound activo
+ *   - Determina si está OK o lenta
+ *
+ * @param {Array}  csvData       - Filas del TMS
+ * @param {Array}  easyDocking   - Filas del ED (para cantidad anunciada)
+ * @param {number} ultimaTs      - Timestamp del último bipeo (referencia temporal)
+ * @returns {Array} darsenas con info del inbound activo
+ */
+export const buildDarsenasAhora = (csvData, easyDocking, ultimaTs) => {
+  const DIEZ_MIN_MS   = 10 * 60 * 1000;
+  const TREINTA_MIN_MS = 30 * 60 * 1000;
+  const UNA_HORA_MS   = 60 * 60 * 1000;
+
+  // Agrupar por dársena → por Inbound ID
+  const porDoca = new Map();
+
+  csvData.forEach(d => {
+    if (!d['Shipment ID']) return;
+    const doca = String(d['Inbound Dock ID'] || '').trim();
+    if (!doca) return;
+    const docaNum = parseInt(doca.replace(/\D/g, ''), 10);
+    if (isNaN(docaNum) || !DOCAS_VALIDAS(docaNum)) return;
+    const raw = d['Inbound Date Included'];
+    if (!raw) return;
+    const f = dayjs(raw, 'DD/MM/YYYY HH:mm:ss');
+    if (!f.isValid()) return;
+    const ts = f.valueOf();
+
+    const inboundId = String(d['Inbound ID'] || '').trim();
+    const patente   = normalizarPatente(d['Truck ID']);
+
+    const dimH = parseFloat(d['Height'] || 0);
+    const dimL = parseFloat(d['Length'] || 0);
+    const dimW = parseFloat(d['Width']  || 0);
+    const peso = parseFloat(d['Weight'] || 0);
+    const esVoluminoso = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
+
+    if (!porDoca.has(doca)) {
+      porDoca.set(doca, {
+        doca,
+        tipo: getTipoFromDoca(doca),
+        inbounds: new Map(),
+      });
+    }
+
+    const docaEntry = porDoca.get(doca);
+
+    if (!docaEntry.inbounds.has(inboundId)) {
+      docaEntry.inbounds.set(inboundId, {
+        inboundId,
+        patente,
+        piezas: 0,
+        voluminoso: 0,
+        primerBipeo: ts,
+        ultimoBipeo: ts,
+        bipeoTs: [],
+      });
+    }
+
+    const inb = docaEntry.inbounds.get(inboundId);
+    inb.piezas++;
+    if (esVoluminoso) inb.voluminoso++;
+    inb.bipeoTs.push(ts);
+    if (ts < inb.primerBipeo) inb.primerBipeo = ts;
+    if (ts > inb.ultimoBipeo) inb.ultimoBipeo = ts;
+  });
+
+  // Construir mapa de cantidades anunciadas en ED por Inbound ID
+  // ED tiene columna "Inbound ID" o similar — usamos "Cant. Paquetes" o "CANT. PAQUETES"
+  const cantAnunciadaMap = new Map();
+  if (Array.isArray(easyDocking)) {
+    easyDocking.forEach(row => {
+      // Intentar varias claves posibles del ED
+      const keys = Object.keys(row);
+      const inboundKey = keys.find(k => /inbound.*id/i.test(k)) || keys.find(k => /^id$/i.test(k));
+      const cantKey    = keys.find(k => /cant.*paq/i.test(k) || /paquete/i.test(k) || /^cantidad$/i.test(k));
+      if (!inboundKey || !cantKey) return;
+      const id   = String(row[inboundKey] || '').trim();
+      const cant = parseInt(row[cantKey], 10);
+      if (id && !isNaN(cant)) cantAnunciadaMap.set(id, cant);
+    });
+  }
+
+  const result = [];
+
+  porDoca.forEach(docaEntry => {
+    // Encontrar el inbound activo: el que tuvo bipeos más recientemente (últimos 30 min)
+    let inboundActivo = null;
+    let maxUltimoBipeo = 0;
+
+    docaEntry.inbounds.forEach(inb => {
+      if (inb.ultimoBipeo > maxUltimoBipeo) {
+        maxUltimoBipeo = inb.ultimoBipeo;
+        inboundActivo  = inb;
+      }
+    });
+
+    if (!inboundActivo) return;
+
+    const darsenaActiva = (ultimaTs - inboundActivo.ultimoBipeo) <= DIEZ_MIN_MS;
+
+    // Piezas bipeadas en la última hora (del inbound activo)
+    const piezasUltimaHora = inboundActivo.bipeoTs.filter(ts => (ultimaTs - ts) <= UNA_HORA_MS).length;
+
+    // Velocidad: piezas/hr usando el rango real del inbound
+    const minutosInbound = Math.max((inboundActivo.ultimoBipeo - inboundActivo.primerBipeo) / 60000, 1);
+    const velocidadInbound = Math.round((inboundActivo.piezas / minutosInbound) * 60);
+
+    // % voluminoso del inbound activo
+    const pctVoluminoso = inboundActivo.piezas > 0
+      ? Math.round((inboundActivo.voluminoso / inboundActivo.piezas) * 100)
+      : 0;
+
+    // Cantidad anunciada en ED
+    const cantAnunciada = cantAnunciadaMap.get(inboundActivo.inboundId) ?? null;
+
+    result.push({
+      doca: docaEntry.doca,
+      docaNum: parseInt(docaEntry.doca.replace(/\D/g, ''), 10) || 0,
+      tipo: docaEntry.tipo,
+      activa: darsenaActiva,
+      inboundId: inboundActivo.inboundId,
+      patente: inboundActivo.patente,
+      piezasBipeadas: inboundActivo.piezas,
+      cantAnunciada,
+      pctVoluminoso,
+      piezasUltimaHora,
+      velocidadActual: velocidadInbound,
+      ok: velocidadInbound >= VELOCIDAD_OBJETIVO,
+      horaInicio: dayjs(inboundActivo.primerBipeo).format('HH:mm'),
+      ultimoBipeo: dayjs(inboundActivo.ultimoBipeo).format('HH:mm'),
+      totalInbounds: docaEntry.inbounds.size,
     });
   });
 

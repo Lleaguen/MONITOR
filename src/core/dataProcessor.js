@@ -6,7 +6,7 @@ import { buildPatentesTMS, buildMatchEDaTMS, buildDarsenasActivas,
 import { buildTMSData, buildKpis, buildChartData }             from './processors/kpisProcessor.js';
 import { buildHUData }                                         from './processors/huProcessor.js';
 import { buildVolData, buildSuperBigger, buildArrivalChasis }  from './processors/voluminosoProcessor.js';
-import { buildDarsenaStats }                                     from './processors/darsenaProcessor.js';
+import { buildDarsenaStats, buildDarsenasAhora }                  from './processors/darsenaProcessor.js';
 import { buildHUVelocidadData }                                from './processors/huVelocidadProcessor.js';
 
 dayjs.extend(customParseFormat);
@@ -120,6 +120,7 @@ export const processCombinedData = (
   const arrivalCamioneta = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'camioneta');
   const arrivalSemi      = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'semi');
   const darsenaStats     = buildDarsenaStats(csvData, ultimaTs);
+  const darsenasAhora    = buildDarsenasAhora(csvData, easyDockingClean, ultimaTs);
 
   // 11. Velocidad de HU (pulso de descarga)
   const huVelocidadData = buildHUVelocidadData(csvData, horaInicioHU, zonaCPTOverrides);
@@ -141,6 +142,7 @@ export const processCombinedData = (
     arrivalCamioneta,
     arrivalSemi,
     darsenaStats,
+    darsenasAhora,
     superBiggerList,
     biggerList,
     superBiggerChartData,
