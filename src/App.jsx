@@ -32,6 +32,15 @@ function App() {
   const [serverError, setServerError] = useState(false);
   const [activeTab, setActiveTab] = useState('command');
 
+  const [selectedSite, setSelectedSite] = useState(() => {
+    try { return localStorage.getItem('selectedSite') || 'CIU'; } catch { return 'CIU'; }
+  });
+
+  const handleSiteChange = (site) => {
+    setSelectedSite(site);
+    try { localStorage.setItem('selectedSite', site); } catch {}
+  };
+
   const [config, setConfig] = useState({
     proyectado: 239000,
     objetivoHU: 75,
@@ -61,6 +70,7 @@ function App() {
     config,
     zonaCPTOverrides,
     planVehiculos,
+    selectedSite,
     appMode,
     setDashboardData,
     setSyncState,
@@ -150,6 +160,8 @@ function App() {
     return (
       <ModeSelector
         lastUpdate={serverLastUpdate}
+        selectedSite={selectedSite}
+        onSiteChange={handleSiteChange}
         onViewDashboard={handleViewDashboard}
         onLoadFiles={() => setAppMode('file-uploader')}
       />
@@ -198,6 +210,7 @@ function App() {
           lastUpdate={dashboardData?.kpis?.ultimaActualizacion}
           syncStatus={!isViewer ? { state: syncState, time: syncTime } : undefined}
           viewerLastUpdate={isViewer ? serverLastUpdate : undefined}
+          selectedSite={selectedSite}
         />
         <div className="p-4 md:p-6 lg:p-10 flex-1">
           {activeTab === 'command' ? (

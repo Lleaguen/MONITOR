@@ -1,10 +1,12 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
-import { getCPTdeZona, CPT_ORDEN } from './zonaCPT.js';
+import { getCPTdeZona, CPT_ORDEN, ZONA_CPT, ZONA_CPT_EEV, CPT_ORDEN_EEV } from './zonaCPT.js';
 
 dayjs.extend(customParseFormat);
 
-export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU = 14, zonaCPTOverrides = {}) => {
+export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU = 14, zonaCPTOverrides = {}, site = 'CIU') => {
+  const zonaCPTMap = site === 'EEV' ? ZONA_CPT_EEV : ZONA_CPT;
+  const cptOrden   = site === 'EEV' ? CPT_ORDEN_EEV : CPT_ORDEN;
   /*
    * ─── FILTROS APLICADOS (para coincidir con el monitor Excel) ───────────────
    *
@@ -22,7 +24,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
    */
   const cptData = {};
   const ultimaActividadUsuario = new Map();
-  CPT_ORDEN.forEach(c => { cptData[c] = { zonas: {}, usuariosSetCPT: new Set() }; });
+  cptOrden.forEach(c => { cptData[c] = { zonas: {}, usuariosSetCPT: new Set() }; });
 
   const getOrCreateCPT = (cpt) => {
     if (!cptData[cpt]) cptData[cpt] = { zonas: {}, usuariosSetCPT: new Set() };
@@ -57,7 +59,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     // Normalizar: quitar guiones bajos al final (PCK390_ → PCK390)
     const zona = zonaUpper.replace(/_+$/, "");
 
-    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona, zonaCPTMap);
     if (!cpt) return;
 
     const cptEntry = getOrCreateCPT(cpt);
@@ -126,8 +128,8 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
   );
 
   const todosLosCPTs = [
-    ...CPT_ORDEN.filter(c => cptData[c]),
-    ...Object.keys(cptData).filter(c => !CPT_ORDEN.includes(c)).sort(),
+    ...cptOrden.filter(c => cptData[c]),
+    ...Object.keys(cptData).filter(c => !cptOrden.includes(c)).sort(),
   ];
 
   const tableData = todosLosCPTs

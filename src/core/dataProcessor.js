@@ -27,6 +27,7 @@ dayjs.extend(customParseFormat);
  *   @param {number} config.horaInicioBipeos   - Desde qué hora contar bipeos del TMS (default: 9)
  *   @param {number} config.horaInicioHU       - Desde qué hora contar bipeos de HU (default: 10)
  *   @param {Object} config.zonaCPTOverrides   - Overrides manuales { ZONA: 'CPT' }
+ *   @param {string} config.site               - Site activo: 'CIU' (default) | 'EEV'
  *
  * @returns {Object} dashboardData con todas las métricas del turno
  *
@@ -49,6 +50,7 @@ export const processCombinedData = (
     horaInicioBipeos    = 9,   // desde qué hora contar bipeos del TMS
     horaInicioHU        = 10,  // desde qué hora contar bipeos de HU (dispatch)
     zonaCPTOverrides    = {},  // { ZONA: 'CPT' } — overrides manuales
+    site                = 'CIU', // site activo: 'CIU' | 'EEV'
   } = config;
 
   // 1. Easy Docking
@@ -112,7 +114,7 @@ export const processCombinedData = (
   const { chartData, vehiculosChartData } = buildChartData(easyDockingClean, bipeoPorHora, horaInicioArribos, volDataByHora);
 
   // 9. HU / CutOff
-  const { tableData, totalesHU, huStats } = buildHUData(csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU, zonaCPTOverrides);
+  const { tableData, totalesHU, huStats } = buildHUData(csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU, zonaCPTOverrides, site);
 
   // 10. Super Bigger + Arrivals Chasis
   const { superBiggerList, biggerList, superBiggerChartData, biggerChartData } = buildSuperBigger(csvData);

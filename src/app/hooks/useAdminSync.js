@@ -21,6 +21,7 @@ export const useAdminSync = ({
   config,
   zonaCPTOverrides,
   planVehiculos,
+  selectedSite = 'CIU',
   appMode,
   setDashboardData,
   setSyncState,
@@ -35,7 +36,8 @@ export const useAdminSync = ({
     console.log('🔄 useAdminSync - Recalculando con:', {
       csvFilas: rawFiles.csv?.length,
       excelFilas: rawFiles.excel?.length,
-      config
+      config,
+      site: selectedSite,
     });
     const data = processCombinedData(
       rawFiles.csv, rawFiles.excel,
@@ -45,14 +47,15 @@ export const useAdminSync = ({
         horaInicioBipeos:  config.horaInicioBipeos,
         horaInicioHU:      config.horaInicioHU,
         zonaCPTOverrides,
+        site: selectedSite,
       }
     );
     console.log('✅ useAdminSync - Datos procesados:', {
       totalPiezas: data.kpis?.bipeado,
       volDataByHora: data.volDataByHora?.length,
-      huVelocidadData: data.huVelocidadData ? 'presente' : 'faltante'
+      huVelocidadData: data.huVelocidadData ? 'presente' : 'faltante',
     });
-    const dataWithPlan = { ...data, planVehiculos };
+    const dataWithPlan = { ...data, planVehiculos, site: selectedSite };
     setDashboardData(dataWithPlan);
     setSyncState('syncing');
     pushSnapshot(dataWithPlan)
@@ -62,13 +65,15 @@ export const useAdminSync = ({
     config.proyectado, config.objetivoHU, config.productividadHU,
     config.horaInicioArribos, config.horaInicioBipeos, config.horaInicioHU,
     zonaCPTOverrides,
+    selectedSite,
   ]); // rawFiles, planVehiculos y setters son refs estables
 
   // ── handleDataLoad ──────────────────────────────────────────────────────────
   const handleDataLoad = async (csv, excel) => {
     console.log('📥 handleDataLoad - Cargando archivos:', {
       csvFilas: csv?.length,
-      excelFilas: excel?.length
+      excelFilas: excel?.length,
+      site: selectedSite,
     });
     setRawFiles({ csv, excel });
     const data = processCombinedData(
@@ -79,14 +84,15 @@ export const useAdminSync = ({
         horaInicioBipeos:  config.horaInicioBipeos,
         horaInicioHU:      config.horaInicioHU,
         zonaCPTOverrides,
+        site: selectedSite,
       }
     );
     console.log('✅ handleDataLoad - Datos procesados:', {
       totalPiezas: data.kpis?.bipeado,
       volDataByHora: data.volDataByHora?.length,
-      huVelocidadData: data.huVelocidadData ? 'presente' : 'faltante'
+      huVelocidadData: data.huVelocidadData ? 'presente' : 'faltante',
     });
-    const dataWithPlan = { ...data, planVehiculos };
+    const dataWithPlan = { ...data, planVehiculos, site: selectedSite };
     setDashboardData(dataWithPlan);
     setAppMode('dashboard-admin');
     setActiveTab('command');
@@ -112,9 +118,10 @@ export const useAdminSync = ({
         horaInicioBipeos:  config.horaInicioBipeos,
         horaInicioHU:      config.horaInicioHU,
         zonaCPTOverrides,
+        site: selectedSite,
       }
     );
-    const dataWithPlan = { ...data, planVehiculos: nuevoPlan };
+    const dataWithPlan = { ...data, planVehiculos: nuevoPlan, site: selectedSite };
     setDashboardData(dataWithPlan);
     setSyncState('syncing');
     // Guardar plan por separado en el servidor para que persista

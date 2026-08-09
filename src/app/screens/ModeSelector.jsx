@@ -1,7 +1,22 @@
 import React, { useState } from 'react';
-import { Monitor, UploadCloud, Lock } from 'lucide-react';
+import { Monitor, UploadCloud, Lock, MapPin, Check } from 'lucide-react';
 
 const ADMIN_PIN = process.env.REACT_APP_ADMIN_PIN || '1234';
+
+const SITES = [
+  {
+    code: 'CIU',
+    name: 'Soldati',
+    sub: 'Ciudad Universitaria',
+    color: 'blue',
+  },
+  {
+    code: 'EEV',
+    name: 'Echeverría',
+    sub: 'Esteban Echeverría',
+    color: 'violet',
+  },
+];
 
 const formatTime = (iso) => {
   if (!iso) return null;
@@ -12,7 +27,7 @@ const formatTime = (iso) => {
   }
 };
 
-const ModeSelector = ({ lastUpdate, onViewDashboard, onLoadFiles }) => {
+const ModeSelector = ({ lastUpdate, selectedSite, onSiteChange, onViewDashboard, onLoadFiles }) => {
   const formattedTime = formatTime(lastUpdate);
   const [showPin, setShowPin] = useState(false);
   const [pin, setPin] = useState('');
@@ -35,6 +50,8 @@ const ModeSelector = ({ lastUpdate, onViewDashboard, onLoadFiles }) => {
     }
   };
 
+  const activeSite = SITES.find(s => s.code === selectedSite) ?? SITES[0];
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#080c14] text-white p-4 font-sans">
       <div className="w-full max-w-md flex flex-col items-center gap-8">
@@ -50,6 +67,62 @@ const ModeSelector = ({ lastUpdate, onViewDashboard, onLoadFiles }) => {
               {formattedTime ?? 'Sin datos previos'}
             </span>
           </p>
+        </div>
+
+        {/* ── Selector de Site ── */}
+        <div className="w-full flex flex-col gap-2">
+          <div className="flex items-center gap-2 mb-1">
+            <MapPin size={11} className="text-slate-500" />
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+              Seleccioná el site
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {SITES.map((site) => {
+              const isActive = selectedSite === site.code;
+              const colorMap = {
+                blue:   { ring: 'border-blue-500/60',   bg: 'bg-blue-600/10',   dot: 'bg-blue-500',   text: 'text-blue-400'   },
+                violet: { ring: 'border-violet-500/60', bg: 'bg-violet-600/10', dot: 'bg-violet-500', text: 'text-violet-400' },
+              };
+              const c = colorMap[site.color];
+              return (
+                <button
+                  key={site.code}
+                  onClick={() => onSiteChange(site.code)}
+                  className={`
+                    relative flex flex-col items-start gap-1.5 p-4 rounded-2xl border transition-all text-left
+                    ${isActive
+                      ? `${c.ring} ${c.bg}`
+                      : 'border-white/5 bg-[#111827]/40 hover:border-white/10 hover:bg-[#111827]/70'
+                    }
+                  `}
+                >
+                  {/* check indicator */}
+                  <div className={`
+                    absolute top-3 right-3 w-4 h-4 rounded-full flex items-center justify-center transition-all
+                    ${isActive ? `${c.dot}` : 'border border-white/10 bg-transparent'}
+                  `}>
+                    {isActive && <Check size={9} className="text-white" strokeWidth={3} />}
+                  </div>
+
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? c.text : 'text-slate-400'}`}>
+                    {site.code}
+                  </span>
+                  <span className="text-[13px] font-black text-white leading-tight">{site.name}</span>
+                  <span className="text-[9px] text-slate-500 font-medium">{site.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Divisor ── */}
+        <div className="w-full flex items-center gap-3">
+          <div className="flex-1 h-px bg-white/5" />
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">
+            {activeSite.name} ({activeSite.code})
+          </span>
+          <div className="flex-1 h-px bg-white/5" />
         </div>
 
         {/* PIN modal */}
