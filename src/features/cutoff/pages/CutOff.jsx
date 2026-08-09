@@ -4,6 +4,25 @@ import StatCard from '../../../shared/components/StatCard';
 import ProgressBar from '../../../shared/components/ProgressBar';
 import PageWrapper from '../../../shared/components/PageWrapper';
 
+// ── Paleta de colores por CPT según site ─────────────────────────────────────
+//
+// EEV: colores de la imagen (Rojo/Rosa/Amarillo/Azul/Verde)
+// CIU: escala de grises/azules neutros (sin color especial por CPT)
+//
+const CPT_META_EEV = {
+  '0:00': { label: 'ROJO',     hora: '00:00',          text: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20',    dot: 'bg-red-500'    },
+  '1:00': { label: 'ROSA',     hora: '01:00',          text: 'text-pink-400',   bg: 'bg-pink-500/10',   border: 'border-pink-500/20',   dot: 'bg-pink-500'   },
+  '2:00': { label: 'AMARILLO', hora: '02:00 — 03:00',  text: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', dot: 'bg-yellow-400' },
+  '4:00': { label: 'AZUL',     hora: '04:00 — 05:00',  text: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   dot: 'bg-blue-500'   },
+  '6:00': { label: 'VERDE',    hora: '06:00 — 08:00',  text: 'text-emerald-400',bg: 'bg-emerald-500/10',border: 'border-emerald-500/20',dot: 'bg-emerald-500'},
+};
+
+const getCPTMeta = (cpt, site) => {
+  if (site === 'EEV' && CPT_META_EEV[cpt]) return CPT_META_EEV[cpt];
+  // CIU: azul genérico para todos los CPTs
+  return { label: null, hora: cpt, text: 'text-blue-400', bg: 'bg-blue-500/5', border: 'border-white/10', dot: null };
+};
+
 // ── Fila de zona dentro de un CPT ──
 const ZonaRow = ({ z, objetivo }) => {
   const controlOk = z.pendiente === 0;
@@ -30,18 +49,39 @@ const ZonaRow = ({ z, objetivo }) => {
 };
 
 // ── Bloque de un CPT ──
-const CPTBlock = ({ cpt, zonas, totCPT, objetivo }) => {
+const CPTBlock = ({ cpt, zonas, totCPT, objetivo, site }) => {
   const [open, setOpen] = useState(true);
   const bueno = totCPT.avance >= objetivo;
+  const meta = getCPTMeta(cpt, site);
 
   return (
     <>
-      <tr className="border-b border-white/10 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setOpen(o => !o)}>
+      <tr
+        className={`border-b border-white/10 cursor-pointer transition-colors hover:bg-white/[0.03]`}
+        onClick={() => setOpen(o => !o)}
+      >
         <td className="px-4 py-3" colSpan={10}>
           <div className="flex items-center gap-3">
             <div className="text-slate-500">{open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</div>
-            <span className="text-[11px] font-black text-blue-400 italic tracking-widest">CPT {cpt}</span>
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest ml-2">
+
+            {/* Dot de color del turno (solo EEV) */}
+            {meta.dot && (
+              <span className={`w-2 h-2 rounded-full shrink-0 ${meta.dot}`} />
+            )}
+
+            {/* CPT hora */}
+            <span className={`text-[11px] font-black italic tracking-widest ${meta.text}`}>
+              CPT {cpt}
+            </span>
+
+            {/* Badge color + horario (solo EEV) */}
+            {meta.label && (
+              <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${meta.bg} ${meta.border} ${meta.text}`}>
+                {meta.label} · {meta.hora}
+              </span>
+            )}
+
+            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
               {zonas.length} zona{zonas.length !== 1 ? 's' : ''}
             </span>
             <div className="ml-auto flex items-center gap-6 text-[9px] font-black">
@@ -74,7 +114,7 @@ const CPTBlock = ({ cpt, zonas, totCPT, objetivo }) => {
 };
 
 // ── Modal Cierre de HU ──
-const CierreModal = ({ data, onClose }) => {
+const CierreModal = ({ data, site, onClose }) => {
   const { tableData = [], totalesHU = {}, huStats = {} } = data;
   const tot = {
     etiquetado:    totalesHU.etiquetado    || 0,
@@ -160,9 +200,20 @@ const CierreModal = ({ data, onClose }) => {
                 {tableData.map(({ cpt, totCPT }) => {
                   const bueno = totCPT.avance >= objetivo;
                   const ctrl  = totCPT.pendiente === 0;
+                  const meta  = getCPTMeta(cpt, site);
                   return (
                     <tr key={cpt} className="border-b border-white/[0.03] text-[9px] hover:bg-white/[0.02]">
-                      <td className="px-3 py-2 font-black text-blue-400 italic">{cpt}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1.5">
+                          {meta.dot && <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${meta.dot}`} />}
+                          <span className={`font-black italic ${meta.text}`}>{cpt}</span>
+                          {meta.label && (
+                            <span className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full ${meta.bg} ${meta.text}`}>
+                              {meta.label}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-2 text-right font-black text-slate-300">{totCPT.etiquetado.toLocaleString()}</td>
                       <td className="py-2 text-right text-slate-500">{totCPT.huAbierto > 0 ? totCPT.huAbierto.toLocaleString() : '-'}</td>
                       <td className="py-2 text-right font-black text-slate-300">{totCPT.huCerrado.toLocaleString()}</td>
@@ -207,7 +258,7 @@ const CierreModal = ({ data, onClose }) => {
 };
 
 // ── Página principal ──
-const CutOff = ({ data }) => {
+const CutOff = ({ data, site = 'CIU' }) => {
   if (!data) return null;
   const [cierreOpen, setCierreOpen] = useState(false);
   const { tableData = [], totalesHU = {}, huStats = {} } = data;
@@ -227,7 +278,7 @@ const CutOff = ({ data }) => {
 
   return (
     <PageWrapper>
-      {cierreOpen && <CierreModal data={data} onClose={() => setCierreOpen(false)} />}
+      {cierreOpen && <CierreModal data={data} site={site} onClose={() => setCierreOpen(false)} />}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Piezas" value={tot.etiquetado.toLocaleString()} />
@@ -278,7 +329,7 @@ const CutOff = ({ data }) => {
           </thead>
           <tbody>
             {tableData.map(({ cpt, zonas, totCPT }) => (
-              <CPTBlock key={cpt} cpt={cpt} zonas={zonas} totCPT={totCPT} objetivo={objetivo} />
+              <CPTBlock key={cpt} cpt={cpt} zonas={zonas} totCPT={totCPT} objetivo={objetivo} site={site} />
             ))}
           </tbody>
           <tfoot>

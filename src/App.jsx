@@ -216,7 +216,7 @@ function App() {
           {activeTab === 'command' ? (
             <CommandCenter data={dashboardData} planVehiculos={planVehiculos} onPlanChange={handlePlanChange} isViewer={isViewer} rawCsvData={rawFiles?.csvData} />
           ) : activeTab === 'cutoff' ? (
-            <CutOff data={dashboardData} />
+            <CutOff data={dashboardData} site={selectedSite} />
           ) : activeTab === 'vehiculos' ? (
             <VehiculosPlan data={dashboardData} planVehiculos={planVehiculos} />
           ) : activeTab === 'arribs' ? (
