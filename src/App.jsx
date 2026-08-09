@@ -117,10 +117,9 @@ function App() {
         const status = await fetchStatus();
         if (status?.hasData) {
           setServerLastUpdate(status.lastUpdate ?? null);
-          setAppMode('mode-selector');
-        } else {
-          setAppMode('file-uploader');
         }
+        // Siempre pasar por mode-selector para que el usuario elija el site
+        setAppMode('mode-selector');
       } catch {
         setServerError(true);
         setAppMode('file-uploader');
@@ -164,6 +163,7 @@ function App() {
         onSiteChange={handleSiteChange}
         onViewDashboard={handleViewDashboard}
         onLoadFiles={() => setAppMode('file-uploader')}
+        hasData={!!serverLastUpdate}
       />
     );
   }

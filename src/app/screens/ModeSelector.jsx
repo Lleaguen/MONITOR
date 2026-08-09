@@ -27,7 +27,7 @@ const formatTime = (iso) => {
   }
 };
 
-const ModeSelector = ({ lastUpdate, selectedSite, onSiteChange, onViewDashboard, onLoadFiles }) => {
+const ModeSelector = ({ lastUpdate, selectedSite, onSiteChange, onViewDashboard, onLoadFiles, hasData }) => {
   const formattedTime = formatTime(lastUpdate);
   const [showPin, setShowPin] = useState(false);
   const [pin, setPin] = useState('');
@@ -165,10 +165,15 @@ const ModeSelector = ({ lastUpdate, selectedSite, onSiteChange, onViewDashboard,
 
           {/* Ver Dashboard */}
           <button
-            onClick={onViewDashboard}
-            className="flex flex-col items-center gap-4 p-6 rounded-2xl border border-white/5 bg-[#111827]/50 hover:bg-blue-600/10 hover:border-blue-500/30 transition-all group"
+            onClick={hasData ? onViewDashboard : undefined}
+            disabled={!hasData}
+            className={`flex flex-col items-center gap-4 p-6 rounded-2xl border transition-all group
+              ${hasData
+                ? 'border-white/5 bg-[#111827]/50 hover:bg-blue-600/10 hover:border-blue-500/30 cursor-pointer'
+                : 'border-white/[0.03] bg-[#111827]/20 cursor-not-allowed opacity-40'
+              }`}
           >
-            <div className="p-3 bg-blue-600/10 rounded-full text-blue-500 group-hover:scale-110 transition-transform">
+            <div className={`p-3 rounded-full transition-transform ${hasData ? 'bg-blue-600/10 text-blue-500 group-hover:scale-110' : 'bg-slate-700/20 text-slate-600'}`}>
               <Monitor size={28} />
             </div>
             <div className="text-center">
@@ -176,7 +181,7 @@ const ModeSelector = ({ lastUpdate, selectedSite, onSiteChange, onViewDashboard,
                 Ver Dashboard
               </p>
               <p className="text-[10px] text-slate-500 font-medium">
-                Ver el turno en curso
+                {hasData ? 'Ver el turno en curso' : 'Sin datos — cargá archivos primero'}
               </p>
             </div>
           </button>
