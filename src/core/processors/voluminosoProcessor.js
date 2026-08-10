@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import { getTipoVehiculo, parsearHoraExactaED, parsearHoraED } from './helpers.js';
-import { getCPTdeZona } from './zonaCPT.js';
+import { getCPTdeZona, ZONA_CPT, ZONA_CPT_EEV } from './zonaCPT.js';
 
 dayjs.extend(customParseFormat);
 
@@ -16,7 +16,8 @@ dayjs.extend(customParseFormat);
  */
 
 // Voluminoso / Paquetería por zona
-export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 9, horaInicioHU = 10) => {
+export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 9, horaInicioHU = 10, site = 'CIU') => {
+  const zonaCPTMap = site === 'EEV' ? ZONA_CPT_EEV : ZONA_CPT;
   const volPorZona = {};
   const volPorHora = {};
   const volPorCPT  = {};
@@ -76,7 +77,7 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     if (zonaUpper === 'CK390') return;
     const zona = zonaUpper.replace(/_+$/, "");
 
-    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona, zonaCPTMap);
     if (!cpt) return;
     // ────────────────────────────────────────────────────────────────────────
 

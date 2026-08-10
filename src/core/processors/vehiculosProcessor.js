@@ -73,10 +73,8 @@ export const buildDarsenasActivas = (csvData, ultimaTs) => {
     if ((ultimaTs - ts) > DIEZ_MIN_MS) return;
     const num = parseInt(doca.replace(/\D/g, ""), 10);
     if (isNaN(num)) return;
-    if (num >= 20 && num <= 26) activas.semi.add(doca);
-    else if (num >= 27 && num <= 42) activas.chasis.add(doca);
-    else if (num >= 43 && num <= 75) activas.camioneta.add(doca);
-    else if (num >= 16 && num <= 19) activas.otro.add(doca);
+    if (num >= 80 && num <= 100) activas.chasis.add(doca);
+    else if (num >= 17 && num <= 25) activas.camioneta.add(doca);
   });
 
   return activas;

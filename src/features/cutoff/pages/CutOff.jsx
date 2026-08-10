@@ -6,21 +6,38 @@ import PageWrapper from '../../../shared/components/PageWrapper';
 
 // ── Paleta de colores por CPT según site ─────────────────────────────────────
 //
-// EEV: colores de la imagen (Rojo/Rosa/Amarillo/Azul/Verde)
-// CIU: escala de grises/azules neutros (sin color especial por CPT)
+// IMPORTANTE: las clases de Tailwind deben estar escritas completas para que
+// el purger las incluya en el build de producción.
 //
-const CPT_META_EEV = {
-  '0:00': { label: 'ROJO',     hora: '00:00',          text: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20',    dot: 'bg-red-500'    },
-  '1:00': { label: 'ROSA',     hora: '01:00',          text: 'text-pink-400',   bg: 'bg-pink-500/10',   border: 'border-pink-500/20',   dot: 'bg-pink-500'   },
-  '2:00': { label: 'AMARILLO', hora: '02:00 — 03:00',  text: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', dot: 'bg-yellow-400' },
-  '4:00': { label: 'AZUL',     hora: '04:00 — 05:00',  text: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20',   dot: 'bg-blue-500'   },
-  '6:00': { label: 'VERDE',    hora: '06:00 — 08:00',  text: 'text-emerald-400',bg: 'bg-emerald-500/10',border: 'border-emerald-500/20',dot: 'bg-emerald-500'},
+const CPT_META_CIU = {
+  '0:00': { label: 'ROJO',     hora: '00:00 — 01:00', text: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20',     dot: 'bg-red-500'     },
+  '1:00': { label: 'ROJO',     hora: '00:00 — 01:00', text: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20',     dot: 'bg-red-500'     },
+  '2:00': { label: 'AMARILLO', hora: '02:00 — 03:00', text: 'text-yellow-400',  bg: 'bg-yellow-500/10',  border: 'border-yellow-500/20',  dot: 'bg-yellow-400'  },
+  '3:00': { label: 'AMARILLO', hora: '02:00 — 03:00', text: 'text-yellow-400',  bg: 'bg-yellow-500/10',  border: 'border-yellow-500/20',  dot: 'bg-yellow-400'  },
+  '4:00': { label: 'AZUL',     hora: '04:00 — 05:00', text: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    dot: 'bg-blue-500'    },
+  '5:00': { label: 'AZUL',     hora: '04:00 — 05:00', text: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    dot: 'bg-blue-500'    },
+  '6:00': { label: 'VERDE',    hora: '06:00+',        text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+  '7:00': { label: 'VERDE',    hora: '06:00+',        text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+  '8:00': { label: 'VERDE',    hora: '06:00+',        text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+  '9:00': { label: 'VERDE',    hora: '06:00+',        text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+  '10:00':{ label: 'VERDE',    hora: '06:00+',        text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+  '11:00':{ label: 'VERDE',    hora: '06:00+',        text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+  '13:00':{ label: 'VERDE',    hora: '06:00+',        text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
 };
 
+const CPT_META_EEV = {
+  '0:00': { label: 'ROJO',     hora: '00:00',         text: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20',     dot: 'bg-red-500'     },
+  '1:00': { label: 'ROSA',     hora: '01:00',         text: 'text-pink-400',    bg: 'bg-pink-500/10',    border: 'border-pink-500/20',    dot: 'bg-pink-500'    },
+  '2:00': { label: 'AMARILLO', hora: '02:00 — 03:00', text: 'text-yellow-400',  bg: 'bg-yellow-500/10',  border: 'border-yellow-500/20',  dot: 'bg-yellow-400'  },
+  '4:00': { label: 'AZUL',     hora: '04:00 — 05:00', text: 'text-blue-400',    bg: 'bg-blue-500/10',    border: 'border-blue-500/20',    dot: 'bg-blue-500'    },
+  '6:00': { label: 'VERDE',    hora: '06:00 — 08:00', text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', dot: 'bg-emerald-500' },
+};
+
+const FALLBACK_META = { label: null, hora: '', text: 'text-slate-400', bg: 'bg-white/5', border: 'border-white/10', dot: null };
+
 const getCPTMeta = (cpt, site) => {
-  if (site === 'EEV' && CPT_META_EEV[cpt]) return CPT_META_EEV[cpt];
-  // CIU: azul genérico para todos los CPTs
-  return { label: null, hora: cpt, text: 'text-blue-400', bg: 'bg-blue-500/5', border: 'border-white/10', dot: null };
+  const map = site === 'EEV' ? CPT_META_EEV : CPT_META_CIU;
+  return map[cpt] ?? { ...FALLBACK_META, hora: cpt };
 };
 
 // ── Fila de zona dentro de un CPT ──

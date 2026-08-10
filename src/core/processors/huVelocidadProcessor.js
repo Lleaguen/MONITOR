@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
-import { getCPTdeZona } from './zonaCPT.js';
+import { getCPTdeZona, ZONA_CPT, ZONA_CPT_EEV } from './zonaCPT.js';
 
 dayjs.extend(customParseFormat);
 
@@ -15,7 +15,8 @@ dayjs.extend(customParseFormat);
  * @param {Object} zonaCPTOverrides  - Overrides manuales { ZONA: 'CPT' }
  * @returns {Object} { velocidadPorHora, velocidadPorCPT, stats }
  */
-export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverrides = {}) => {
+export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverrides = {}, site = 'CIU') => {
+  const zonaCPTMap = site === 'EEV' ? ZONA_CPT_EEV : ZONA_CPT;
   console.log('🚀 buildHUVelocidadData - Iniciando con:', {
     totalFilas: csvData?.length,
     horaInicioHU,
@@ -49,7 +50,7 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
     if (zonaUpper === 'CK390') return;
     const zona = zonaUpper.replace(/_+$/, "");
 
-    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona, zonaCPTMap);
     if (!cpt) return;
 
     const hubStatus = String(d['Hub Status'] || "").toLowerCase().trim();
@@ -121,7 +122,7 @@ export const buildHUVelocidadData = (csvData, horaInicioHU = 10, zonaCPTOverride
     if (zonaUpper === 'CK390') return;
     const zona = zonaUpper.replace(/_+$/, "");
 
-    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona);
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona, zonaCPTMap);
     if (!cpt) return;
 
     const hubStatus = String(d['Hub Status'] || "").toLowerCase().trim();

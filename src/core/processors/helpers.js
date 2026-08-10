@@ -43,18 +43,16 @@ export const getTipoVehiculo = (tipoRaw) => {
 export const getSectorDoca = (doca) => {
   const num = parseInt(String(doca || "").replace(/\D/g, ""), 10);
   if (isNaN(num)) return null;
-  if (num >= 20 && num <= 26) return 'semi_o_chasis';
-  if (num >= 27 && num <= 42) return 'chasis';
-  if (num >= 43 && num <= 75) return 'camioneta';
+  if (num >= 80 && num <= 100) return 'chasis';
+  if (num >= 17 && num <= 25)  return 'camioneta';
   return null;
 };
 
 export const getTipoPorDoca = (doca) => {
   const num = parseInt(String(doca || "").replace(/\D/g, ""), 10);
   if (isNaN(num)) return 'otro';
-  if (num >= 20 && num <= 26) return 'semi';
-  if (num >= 27 && num <= 42) return 'chasis';
-  if (num >= 43 && num <= 75) return 'camioneta';
+  if (num >= 80 && num <= 100) return 'chasis';
+  if (num >= 17 && num <= 25)  return 'camioneta';
   return 'otro';
 };
 

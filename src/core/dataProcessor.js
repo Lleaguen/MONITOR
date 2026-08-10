@@ -108,7 +108,7 @@ export const processCombinedData = (
   });
 
   // 7. Voluminoso (necesario antes de chartData)
-  const { volDataByZona, volDataByHora, volDataByCPT, totalRecibidoGlobal, totalVoluminosoGlobal, pctVoluminosoGlobal } = buildVolData(csvData, zonaCPTOverrides, horaInicioBipeos, horaInicioHU);
+  const { volDataByZona, volDataByHora, volDataByCPT, totalRecibidoGlobal, totalVoluminosoGlobal, pctVoluminosoGlobal } = buildVolData(csvData, zonaCPTOverrides, horaInicioBipeos, horaInicioHU, site);
 
   // 8. Chart data (incluye voluminoso por hora)
   const { chartData, vehiculosChartData } = buildChartData(easyDockingClean, bipeoPorHora, horaInicioArribos, volDataByHora);
@@ -125,7 +125,7 @@ export const processCombinedData = (
   const darsenasAhora    = buildDarsenasAhora(csvData, easyDockingClean, ultimaTs);
 
   // 11. Velocidad de HU (pulso de descarga)
-  const huVelocidadData = buildHUVelocidadData(csvData, horaInicioHU, zonaCPTOverrides);
+  const huVelocidadData = buildHUVelocidadData(csvData, horaInicioHU, zonaCPTOverrides, site);
 
   return {
     kpis,
