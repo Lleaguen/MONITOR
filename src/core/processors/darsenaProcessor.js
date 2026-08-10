@@ -1,21 +1,17 @@
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
-import { normalizarPatente, getTipoPorDoca } from './helpers.js';
+import { normalizarPatente, getTipoPorDoca, isDocaValida } from './helpers.js';
 
 dayjs.extend(customParseFormat);
 
 // Umbral de velocidad "decente": 600 piezas/hora = 10 piezas/min (12 pzas/min)
 export const VELOCIDAD_OBJETIVO = 600;
 
-// Dársenas válidas: 17-25 → camioneta, 80-100 → chasis
-const DOCAS_VALIDAS = (num) =>
-  (num >= 17 && num <= 25) ||
-  (num >= 80 && num <= 100);
-
-const getTipoFromDoca = (doca) => {
+// Dársenas válidas según site — delegado a helpers.js
+const getTipoFromDoca = (doca, site = 'CIU') => {
   const num = parseInt(String(doca || '').replace(/\D/g, ''), 10);
   if (isNaN(num)) return null;
-  return getTipoPorDoca(doca); // maneja 17-25 y 80-100
+  return getTipoPorDoca(doca, site) || null;
 };
 
 /**
@@ -30,7 +26,7 @@ const getTipoFromDoca = (doca) => {
  * @param {number} ultimaTs  - Timestamp del último bipeo (referencia temporal)
  * @returns {Array} darsenas — array de objetos por dársena
  */
-export const buildDarsenaStats = (csvData, ultimaTs) => {
+export const buildDarsenaStats = (csvData, ultimaTs, site = 'CIU') => {
   // Agrupar bipeos por dársena
   const porDoca = new Map();
 
@@ -39,7 +35,7 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
     const doca = String(d['Inbound Dock ID'] || '').trim();
     if (!doca) return;
     const docaNum = parseInt(doca.replace(/\D/g, ''), 10);
-    if (isNaN(docaNum) || !DOCAS_VALIDAS(docaNum)) return; // excluir dársenas ficticias
+    if (isNaN(docaNum) || !isDocaValida(docaNum, site)) return;
     const raw = d['Inbound Date Included'];
     if (!raw) return;
     const f = dayjs(raw, 'DD/MM/YYYY HH:mm:ss');
@@ -57,7 +53,7 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
     if (!porDoca.has(doca)) {
       porDoca.set(doca, {
         doca,
-        tipo: getTipoFromDoca(doca),
+        tipo: getTipoFromDoca(doca, site),
         piezas: 0,
         voluminoso: 0,
         primerBipeo: ts,
@@ -152,7 +148,7 @@ export const buildDarsenaStats = (csvData, ultimaTs) => {
  * @param {number} ultimaTs      - Timestamp del último bipeo (referencia temporal)
  * @returns {Array} darsenas con info del inbound activo
  */
-export const buildDarsenasAhora = (csvData, easyDocking, ultimaTs) => {
+export const buildDarsenasAhora = (csvData, easyDocking, ultimaTs, site = 'CIU') => {
   const DIEZ_MIN_MS   = 10 * 60 * 1000;
   const TREINTA_MIN_MS = 30 * 60 * 1000;
   const UNA_HORA_MS   = 60 * 60 * 1000;
@@ -165,7 +161,7 @@ export const buildDarsenasAhora = (csvData, easyDocking, ultimaTs) => {
     const doca = String(d['Inbound Dock ID'] || '').trim();
     if (!doca) return;
     const docaNum = parseInt(doca.replace(/\D/g, ''), 10);
-    if (isNaN(docaNum) || !DOCAS_VALIDAS(docaNum)) return;
+    if (isNaN(docaNum) || !isDocaValida(docaNum, site)) return;
     const raw = d['Inbound Date Included'];
     if (!raw) return;
     const f = dayjs(raw, 'DD/MM/YYYY HH:mm:ss');
@@ -184,7 +180,7 @@ export const buildDarsenasAhora = (csvData, easyDocking, ultimaTs) => {
     if (!porDoca.has(doca)) {
       porDoca.set(doca, {
         doca,
-        tipo: getTipoFromDoca(doca),
+        tipo: getTipoFromDoca(doca, site),
         inbounds: new Map(),
       });
     }

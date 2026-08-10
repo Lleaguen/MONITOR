@@ -92,7 +92,7 @@ export const processCombinedData = (
   const matchEDaTMS = buildMatchEDaTMS(easyDockingClean, patentesTMS);
 
   // 4. Vehículos en espera + dársenas
-  const darsenasActivas = buildDarsenasActivas(csvData, ultimaTs);
+  const darsenasActivas = buildDarsenasActivas(csvData, ultimaTs, site);
   const { conteoEspera, desviosDoca } = buildVehiculosEspera(
     easyDockingClean, matchEDaTMS, patentesTMS.map, darsenasActivas
   );
@@ -121,8 +121,8 @@ export const processCombinedData = (
   const arrivalChasis    = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'chasis');
   const arrivalCamioneta = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'camioneta');
   const arrivalSemi      = buildArrivalChasis(easyDockingClean, matchEDaTMS, 'semi');
-  const darsenaStats     = buildDarsenaStats(csvData, ultimaTs);
-  const darsenasAhora    = buildDarsenasAhora(csvData, easyDockingClean, ultimaTs);
+  const darsenaStats     = buildDarsenaStats(csvData, ultimaTs, site);
+  const darsenasAhora    = buildDarsenasAhora(csvData, easyDockingClean, ultimaTs, site);
 
   // 11. Velocidad de HU (pulso de descarga)
   const huVelocidadData = buildHUVelocidadData(csvData, horaInicioHU, zonaCPTOverrides, site);

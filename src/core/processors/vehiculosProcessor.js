@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat.js';
 import {
   normalizarPatente, coincidenConTolerancia,
-  getTipoVehiculo, getSectorDoca, extraerPatentesED
+  getTipoVehiculo, getSectorDoca, extraerPatentesED, getTipoPorDoca, isDocaValida
 } from './helpers.js';
 
 dayjs.extend(customParseFormat);
@@ -53,7 +53,7 @@ export const buildMatchEDaTMS = (easyDockingClean, patentesTMS) => {
 };
 
 // Dársenas activas por sector (bipeo en últimos 10 min)
-export const buildDarsenasActivas = (csvData, ultimaTs) => {
+export const buildDarsenasActivas = (csvData, ultimaTs, site = 'CIU') => {
   const DIEZ_MIN_MS = 10 * 60 * 1000;
   const ultimoBipeoPorDoca = new Map();
 
@@ -72,9 +72,9 @@ export const buildDarsenasActivas = (csvData, ultimaTs) => {
   ultimoBipeoPorDoca.forEach((ts, doca) => {
     if ((ultimaTs - ts) > DIEZ_MIN_MS) return;
     const num = parseInt(doca.replace(/\D/g, ""), 10);
-    if (isNaN(num)) return;
-    if (num >= 80 && num <= 100) activas.chasis.add(doca);
-    else if (num >= 17 && num <= 25) activas.camioneta.add(doca);
+    if (isNaN(num) || !isDocaValida(num, site)) return;
+    const tipo = getTipoPorDoca(doca, site);
+    if (tipo && activas[tipo]) activas[tipo].add(doca);
   });
 
   return activas;

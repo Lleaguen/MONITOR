@@ -40,21 +40,41 @@ export const getTipoVehiculo = (tipoRaw) => {
   return 'otro';
 };
 
-export const getSectorDoca = (doca) => {
-  const num = parseInt(String(doca || "").replace(/\D/g, ""), 10);
-  if (isNaN(num)) return null;
-  if (num >= 80 && num <= 100) return 'chasis';
-  if (num >= 17 && num <= 25)  return 'camioneta';
-  return null;
+// ── Rangos de dársenas por site ──────────────────────────────────────────────
+// CIU: semi 20-26, chasis 27-42, camioneta 43-75, otro 16-19
+// EEV: chasis 80-100, camioneta 17-25
+const RANGOS_CIU = [
+  { min: 16, max: 19,  tipo: 'otro'     },
+  { min: 20, max: 26,  tipo: 'semi'     },
+  { min: 27, max: 42,  tipo: 'chasis'   },
+  { min: 43, max: 75,  tipo: 'camioneta'},
+];
+const RANGOS_EEV = [
+  { min: 17, max: 25,  tipo: 'camioneta'},
+  { min: 80, max: 100, tipo: 'chasis'   },
+];
+
+const getTipoByNum = (num, site = 'CIU') => {
+  const rangos = site === 'EEV' ? RANGOS_EEV : RANGOS_CIU;
+  const rango = rangos.find(r => num >= r.min && num <= r.max);
+  return rango ? rango.tipo : null;
 };
 
-export const getTipoPorDoca = (doca) => {
+const isDocaValida = (num, site = 'CIU') => getTipoByNum(num, site) !== null;
+
+export const getSectorDoca = (doca, site = 'CIU') => {
+  const num = parseInt(String(doca || "").replace(/\D/g, ""), 10);
+  if (isNaN(num)) return null;
+  return getTipoByNum(num, site);
+};
+
+export const getTipoPorDoca = (doca, site = 'CIU') => {
   const num = parseInt(String(doca || "").replace(/\D/g, ""), 10);
   if (isNaN(num)) return 'otro';
-  if (num >= 80 && num <= 100) return 'chasis';
-  if (num >= 17 && num <= 25)  return 'camioneta';
-  return 'otro';
+  return getTipoByNum(num, site) ?? 'otro';
 };
+
+export { isDocaValida };
 
 export const extraerPatentesED = (campo) =>
   String(campo || "")
