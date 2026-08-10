@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const BASE_URL = process.env.REACT_APP_API_URL || 'https://monitor-c0bd.onrender.com';
 
 // Obtiene el site activo guardado en localStorage (fallback 'CIU')
 const getSite = () => {
