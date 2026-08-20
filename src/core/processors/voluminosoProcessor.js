@@ -15,6 +15,17 @@ dayjs.extend(customParseFormat);
  *   - Pendiente = no tiene Outbound Date Closed
  */
 
+// Rango de dársenas válidas para conteo de piezas
+const DARSENA_MIN = 16;
+const DARSENA_MAX = 75;
+
+const esDarsenaValida = (d) => {
+  const raw = String(d['Inbound Dock ID'] || '').trim();
+  if (!raw) return false;
+  const num = parseInt(raw, 10);
+  return !isNaN(num) && num >= DARSENA_MIN && num <= DARSENA_MAX;
+};
+
 // Voluminoso / Paquetería por zona
 export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 9, horaInicioHU = 10, site = 'CIU') => {
   const zonaCPTMap = site === 'EEV' ? ZONA_CPT_EEV : ZONA_CPT;
@@ -28,9 +39,11 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
   let totalVoluminosoGlobal = 0;
 
   // Deduplicar por Shipment ID — quedarse con la fila más reciente (mayor Inbound Date)
+  // Solo considerar filas de dársenas 16-75 desde el inicio
   const porShipment = new Map();
   csvData.forEach(d => {
     if (!d['Shipment ID']) return;
+    if (!esDarsenaValida(d)) return;  // filtrar por dársena antes de deduplicar
     const id = String(d['Shipment ID']).trim();
     const existing = porShipment.get(id);
     if (!existing) {
@@ -65,23 +78,10 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     const esVol = dimH >= 50 || dimL >= 50 || dimW >= 50 || peso > 20000;
     const estaCerrado = !!d['Outbound Date Closed'];
 
-    // Conteo global (todas las piezas recibidas, sin filtro de CPT)
+    // Conteo global y por hora — sin filtro de zona/CPT, igual que Power Query
     totalRecibidoGlobal++;
     if (esVol) totalVoluminosoGlobal++;
 
-    // ── Filtros de zona/CPT (mismos que huProcessor) ─────────────────────────
-    const zonaRaw = String(d['Labeling Zone'] || "").trim();
-    if (!zonaRaw || zonaRaw !== zonaRaw.toUpperCase()) return;
-    const zonaUpper = zonaRaw.toUpperCase();
-    if (/_[AB]$/.test(zonaUpper)) return;
-    if (zonaUpper === 'CK390') return;
-    const zona = zonaUpper.replace(/_+$/, "");
-
-    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona, zonaCPTMap);
-    if (!cpt) return;
-    // ────────────────────────────────────────────────────────────────────────
-
-    // ── Por hora de inbound ──────────────────────────────────────────────────
     const horaKey = `${String(fInbound.hour()).padStart(2, '0')}:00`;
     if (!volPorHora[horaKey]) {
       volPorHora[horaKey] = {
@@ -100,6 +100,18 @@ export const buildVolData = (csvData, zonaCPTOverrides = {}, horaInicioBipeos = 
     }
     if (estaCerrado) volPorHora[horaKey].procesado++;
     else             volPorHora[horaKey].pendiente++;
+
+    // ── Filtros de zona/CPT — solo para datos por zona y por CPT ─────────────
+    const zonaRaw = String(d['Labeling Zone'] || "").trim();
+    if (!zonaRaw || zonaRaw !== zonaRaw.toUpperCase()) return;
+    const zonaUpper = zonaRaw.toUpperCase();
+    if (/_[AB]$/.test(zonaUpper)) return;
+    if (zonaUpper === 'CK390') return;
+    const zona = zonaUpper.replace(/_+$/, "");
+
+    const cpt = zonaCPTOverrides[zona] ?? getCPTdeZona(zona, zonaCPTMap);
+    if (!cpt) return;
+    // ────────────────────────────────────────────────────────────────────────
 
     if (!volPorZona[zona]) volPorZona[zona] = { zona, cpt, paqueteria: 0, voluminoso: 0 };
     if (esVol) volPorZona[zona].voluminoso++;
@@ -148,6 +160,10 @@ export const buildSuperBigger = (csvData) => {
 
   csvData.forEach(d => {
     if (!d['Shipment ID']) return;
+
+    // Solo dársenas 16-75
+    if (!esDarsenaValida(d)) return;
+
     const dimH = parseFloat(d['Height'] || 0);
     const dimL = parseFloat(d['Length'] || 0);
     const dimW = parseFloat(d['Width']  || 0);
