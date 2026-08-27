@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Settings, ClipboardList, Package, Truck, Maximize2, BarChart2, Map, Gauge, Plus, Menu, X, PieChart, Calendar } from 'lucide-react';
+import { LayoutDashboard, Settings, ClipboardList, Package, Truck, Maximize2, BarChart2, Map, Gauge, Plus, Menu, X, PieChart, Calendar, Users } from 'lucide-react';
 
 const NavItem = ({ icon, text, active, onClick, expanded }) => (
   <div
@@ -79,6 +79,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
             { tab: 'voluminoso', icon: <Package size={18}/>,         text: 'Voluminoso' },
             { tab: 'voluminoso-dashboard', icon: <PieChart size={18}/>, text: 'Dashboard Voluminoso' },
             { tab: 'superbigger',icon: <Maximize2 size={18}/>,       text: 'Super Bigger' },
+            { tab: 'conectados', icon: <Users size={18}/>,            text: 'Conectados' },
             { tab: 'zonas',      icon: <Map size={18}/>,             text: 'Zonas CPT' },
             { tab: 'params',     icon: <Settings size={18}/>,        text: 'Parámetros' },
           ].map(({ tab, icon, text }) => (
@@ -130,6 +131,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
           <NavItem icon={<Package size={18}/>}        text="Voluminoso"          active={activeTab === 'voluminoso'}  onClick={() => handleNav('voluminoso')}  expanded={expanded} />
           <NavItem icon={<PieChart size={18}/>}       text="Dashboard Voluminoso" active={activeTab === 'voluminoso-dashboard'} onClick={() => handleNav('voluminoso-dashboard')} expanded={expanded} />
           <NavItem icon={<Maximize2 size={18}/>}      text="Super Bigger"        active={activeTab === 'superbigger'} onClick={() => handleNav('superbigger')} expanded={expanded} />
+          <NavItem icon={<Users size={18}/>}          text="Conectados"          active={activeTab === 'conectados'}  onClick={() => handleNav('conectados')}  expanded={expanded} />
           <NavItem icon={<Map size={18}/>}            text="Zonas CPT"           active={activeTab === 'zonas'}       onClick={() => handleNav('zonas')}       expanded={expanded} />
           <NavItem icon={<Settings size={18}/>}       text="Parámetros"          active={activeTab === 'params'}      onClick={() => handleNav('params')}      expanded={expanded} />
         </nav>

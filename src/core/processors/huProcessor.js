@@ -109,7 +109,8 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     }
   });
 
-  const CINCO_MIN_MS = 5 * 60 * 1000;
+  const CINCO_MIN_MS  = 5  * 60 * 1000;
+  const DIEZ_MIN_MS   = 10 * 60 * 1000;
   const refMs = ultimaTs > 0 ? ultimaTs : Date.now();
 
   Object.keys(cptData).forEach(c => { cptData[c].usuariosSetCPT = new Set(); });
@@ -126,6 +127,18 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
       .filter(([, info]) => (refMs - info.ts) <= CINCO_MIN_MS)
       .map(([usr]) => usr)
   );
+
+  // Lista de usuarios activos en los últimos 10 minutos, con su zona y tiempo relativo
+  const usuariosConectados = Array.from(ultimaActividadUsuario.entries())
+    .filter(([, info]) => (refMs - info.ts) <= DIEZ_MIN_MS)
+    .map(([usr, info]) => ({
+      nombre:  usr,
+      zona:    info.zona,
+      cpt:     info.cpt,
+      ts:      info.ts,
+      minutos: Math.round((refMs - info.ts) / 60000),
+    }))
+    .sort((a, b) => a.zona.localeCompare(b.zona) || a.nombre.localeCompare(b.nombre));
 
   const todosLosCPTs = [
     ...cptOrden.filter(c => cptData[c]),
@@ -197,5 +210,6 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
       diferenciaUsuarios: totalesHU.usuarios - usuariosNecesarios,
       pendientes: trabajoRestante,
     },
+    usuariosConectados,
   };
 };

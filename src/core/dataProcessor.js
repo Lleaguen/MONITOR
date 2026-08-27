@@ -114,7 +114,7 @@ export const processCombinedData = (
   const { chartData, vehiculosChartData } = buildChartData(easyDockingClean, bipeoPorHora, horaInicioArribos, volDataByHora);
 
   // 9. HU / CutOff
-  const { tableData, totalesHU, huStats } = buildHUData(csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU, zonaCPTOverrides, site);
+  const { tableData, totalesHU, huStats, usuariosConectados } = buildHUData(csvData, ultimaTs, objetivoHU, productividadHU, horaInicioHU, zonaCPTOverrides, site);
 
   // 10. Super Bigger + Arrivals Chasis
   const { superBiggerList, biggerList, superBiggerChartData, biggerChartData } = buildSuperBigger(csvData);
@@ -152,5 +152,6 @@ export const processCombinedData = (
     huStats,
     huVelocidadData,
     shipmentsSinMovimiento: shipmentsSinMovimientoList,
+    usuariosConectados,
   };
 };

@@ -7,8 +7,8 @@ import CutOff from './features/cutoff/pages/CutOff';
 import Voluminoso from './features/inventory/pages/Voluminoso';
 import SuperBigger from './features/inventory/pages/SuperBigger';
 import VehiculosPlan from './features/vehicles/pages/VehiculosPlan';
+import VoluminosoDashboard from './features/dashboard/pages/VoluminosoDashboard';
 import ArribosPage from './features/vehicles/pages/ArribosPage';
-import ZonasCPT from './features/configuration/pages/ZonasCPT';
 import FileUploader from './app/screens/FileUploader';
 import ModeSelector from './app/screens/ModeSelector';
 import LoadingScreen from './app/screens/LoadingScreen';
@@ -16,9 +16,10 @@ import ErrorScreen from './app/screens/ErrorScreen';
 import { fetchSnapshot, fetchStatus } from './core/api/index';
 import usePolling from './app/hooks/usePolling';
 import { useAdminSync } from './app/hooks/useAdminSync';
-import VelocidadDarsenas from './features/dashboard/pages/VelocidadDarsenas';
-import VoluminosoDashboard from './features/dashboard/pages/VoluminosoDashboard';
 import ComparativaDias from './features/dashboard/pages/ComparativaDias';
+import VelocidadDarsenas from './features/dashboard/pages/VelocidadDarsenas';
+import ZonasCPT from './features/configuration/pages/ZonasCPT';
+import Conectados from './features/connected/pages/Conectados';
 
 function App() {
   const [appMode, setAppMode] = useState('loading');
@@ -194,6 +195,7 @@ function App() {
     activeTab === 'superbigger' ? 'SUPER BIGGER / BIGGER' :
     activeTab === 'zonas'       ? 'ZONAS CPT' :
     activeTab === 'velocidad'   ? 'VELOCIDAD_OBJETIVO' :
+    activeTab === 'conectados'  ? 'CONECTADOS POR SUBCA / ZONA' :
     'AJUSTE DE PARÁMETROS';
 
   return (
@@ -233,8 +235,9 @@ function App() {
             <ZonasCPT overrides={zonaCPTOverrides} onOverridesChange={handleOverridesChange} />
           ) : activeTab === 'velocidad' ? (
             <VelocidadDarsenas data={dashboardData}/>
-          ) 
-          : (
+          ) : activeTab === 'conectados' ? (
+            <Conectados data={dashboardData} />
+          ) : (
             <Parameters config={config} setConfig={setConfig} />
           )}
         </div>
