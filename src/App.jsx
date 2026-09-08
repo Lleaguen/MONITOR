@@ -9,6 +9,7 @@ import SuperBigger from './features/inventory/pages/SuperBigger';
 import VehiculosPlan from './features/vehicles/pages/VehiculosPlan';
 import VoluminosoDashboard from './features/dashboard/pages/VoluminosoDashboard';
 import ArribosPage from './features/vehicles/pages/ArribosPage';
+import ZonasCPT from './features/configuration/pages/ZonasCPT';
 import FileUploader from './app/screens/FileUploader';
 import ModeSelector from './app/screens/ModeSelector';
 import LoadingScreen from './app/screens/LoadingScreen';
@@ -16,15 +17,12 @@ import ErrorScreen from './app/screens/ErrorScreen';
 import { fetchSnapshot, fetchStatus } from './core/api/index';
 import usePolling from './app/hooks/usePolling';
 import { useAdminSync } from './app/hooks/useAdminSync';
-import ComparativaDias from './features/dashboard/pages/ComparativaDias';
+import ConectadosHU from './features/dashboard/pages/ConectadosHU';
 import VelocidadDarsenas from './features/dashboard/pages/VelocidadDarsenas';
-import ZonasCPT from './features/configuration/pages/ZonasCPT';
-import Conectados from './features/connected/pages/Conectados';
+import ComparativaDias from './features/dashboard/pages/ComparativaDias';
 
 function App() {
   const [appMode, setAppMode] = useState('loading');
-  // 'loading' | 'mode-selector' | 'file-uploader' | 'dashboard-admin' | 'dashboard-viewer' | 'error'
-
   const [dashboardData, setDashboardData] = useState(null);
   const [rawFiles, setRawFiles] = useState(null);
   const [syncState, setSyncState] = useState('idle');
@@ -65,7 +63,6 @@ function App() {
 
   const [planVehiculos, setPlanVehiculos] = useState([]);
 
-  // ── Admin sync hook ──────────────────────────────────────────────────────────
   const { handleDataLoad, handlePlanChange: _handlePlanChange } = useAdminSync({
     rawFiles,
     config,
@@ -81,21 +78,17 @@ function App() {
     setActiveTab,
   });
 
-  // handlePlanChange también actualiza planVehiculos local
   const handlePlanChange = (nuevoPlan) => {
     setPlanVehiculos(nuevoPlan);
     _handlePlanChange(nuevoPlan);
   };
 
-  // ── fetchStatus al montar ────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
-      // Detectar si viene el parámetro tab=comparativa en la URL
       const urlParams = new URLSearchParams(window.location.search);
       const tabParam = urlParams.get('tab');
-      
+
       if (tabParam === 'comparativa') {
-        // Si es comparativa, intentar cargar datos del servidor pero no es obligatorio
         try {
           const status = await fetchStatus();
           if (status?.hasData) {
@@ -104,22 +97,17 @@ function App() {
             setServerLastUpdate(data?.kpis?.ultimaActualizacion ?? null);
             if (data?.planVehiculos?.length) setPlanVehiculos(data.planVehiculos);
           }
-        } catch (error) {
+        } catch {
           console.log('Servidor no disponible, continuando sin datos del día actual');
-          // No hacer nada, la comparativa puede funcionar sin datos del día actual
         }
         setActiveTab('comparativa');
         setAppMode('dashboard-viewer');
         return;
       }
 
-      // Flujo normal
       try {
         const status = await fetchStatus();
-        if (status?.hasData) {
-          setServerLastUpdate(status.lastUpdate ?? null);
-        }
-        // Siempre pasar por mode-selector para que el usuario elija el site
+        if (status?.hasData) setServerLastUpdate(status.lastUpdate ?? null);
         setAppMode('mode-selector');
       } catch {
         setServerError(true);
@@ -129,7 +117,6 @@ function App() {
     init();
   }, []);
 
-  // ── Flujo Viewer ─────────────────────────────────────────────────────────────
   const handleViewDashboard = async () => {
     try {
       const data = await fetchSnapshot();
@@ -142,7 +129,6 @@ function App() {
     }
   };
 
-  // ── Polling ──────────────────────────────────────────────────────────────────
   usePolling(
     appMode === 'dashboard-viewer',
     serverLastUpdate,
@@ -153,7 +139,6 @@ function App() {
     }
   );
 
-  // ── Renderizado condicional ──────────────────────────────────────────────────
   if (appMode === 'loading') return <LoadingScreen />;
 
   if (appMode === 'mode-selector') {
@@ -181,21 +166,20 @@ function App() {
 
   if (appMode === 'error') return <ErrorScreen />;
 
-  // dashboard-admin | dashboard-viewer
   const isViewer = appMode === 'dashboard-viewer';
 
   const pageTitle =
-    activeTab === 'command'     ? 'CENTRO DE MANDO OCASA' :
-    activeTab === 'cutoff'      ? 'CONTROL CPT / HU' :
-    activeTab === 'vehiculos'   ? 'VEHÍCULOS — PLAN VS REAL' :
-    activeTab === 'arribs'      ? 'ARRIBS. DE VEHÍCULOS' :
-    activeTab === 'comparativa' ? 'COMPARATIVA DE DÍAS' :
-    activeTab === 'voluminoso'  ? 'VOLUMINOSO / PAQUETERÍA' :
-    activeTab === 'voluminoso-dashboard' ? 'DASHBOARD VOLUMINOSO' :
-    activeTab === 'superbigger' ? 'SUPER BIGGER / BIGGER' :
-    activeTab === 'zonas'       ? 'ZONAS CPT' :
-    activeTab === 'velocidad'   ? 'VELOCIDAD_OBJETIVO' :
-    activeTab === 'conectados'  ? 'CONECTADOS POR SUBCA / ZONA' :
+    activeTab === 'command'              ? 'CENTRO DE MANDO OCASA'       :
+    activeTab === 'cutoff'               ? 'CONTROL CPT / HU'            :
+    activeTab === 'conectados'           ? 'CONECTADOS POR SUBCA'        :
+    activeTab === 'vehiculos'            ? 'VEHÍCULOS — PLAN VS REAL'    :
+    activeTab === 'arribs'               ? 'ARRIBS. DE VEHÍCULOS'        :
+    activeTab === 'comparativa'          ? 'COMPARATIVA DE DÍAS'         :
+    activeTab === 'voluminoso'           ? 'VOLUMINOSO / PAQUETERÍA'     :
+    activeTab === 'voluminoso-dashboard' ? 'DASHBOARD VOLUMINOSO'        :
+    activeTab === 'superbigger'          ? 'SUPER BIGGER / BIGGER'       :
+    activeTab === 'zonas'                ? 'ZONAS CPT'                   :
+    activeTab === 'velocidad'            ? 'VELOCIDAD_OBJETIVO'          :
     'AJUSTE DE PARÁMETROS';
 
   return (
@@ -219,6 +203,8 @@ function App() {
             <CommandCenter data={dashboardData} planVehiculos={planVehiculos} onPlanChange={handlePlanChange} isViewer={isViewer} rawCsvData={rawFiles?.csvData} />
           ) : activeTab === 'cutoff' ? (
             <CutOff data={dashboardData} site={selectedSite} />
+          ) : activeTab === 'conectados' ? (
+            <ConectadosHU data={dashboardData} />
           ) : activeTab === 'vehiculos' ? (
             <VehiculosPlan data={dashboardData} planVehiculos={planVehiculos} />
           ) : activeTab === 'arribs' ? (
@@ -234,9 +220,7 @@ function App() {
           ) : activeTab === 'zonas' ? (
             <ZonasCPT overrides={zonaCPTOverrides} onOverridesChange={handleOverridesChange} />
           ) : activeTab === 'velocidad' ? (
-            <VelocidadDarsenas data={dashboardData}/>
-          ) : activeTab === 'conectados' ? (
-            <Conectados data={dashboardData} />
+            <VelocidadDarsenas data={dashboardData} />
           ) : (
             <Parameters config={config} setConfig={setConfig} />
           )}

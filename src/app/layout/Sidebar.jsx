@@ -72,6 +72,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
           {[
             { tab: 'command',    icon: <LayoutDashboard size={18}/>, text: 'Centro de Mando' },
             { tab: 'cutoff',     icon: <ClipboardList size={18}/>,   text: 'CutOff' },
+            { tab: 'conectados', icon: <Users size={18}/>,            text: 'Conectados HU' },
             { tab: 'vehiculos',  icon: <BarChart2 size={18}/>,       text: 'Vehículos Plan' },
             { tab: 'arribs',     icon: <Truck size={18}/>,           text: 'Arribs. Vehículos' },
             { tab: 'velocidad',  icon: <Gauge size={18}/>,           text: 'Vel. Dársenas' },
@@ -124,6 +125,7 @@ const Sidebar = ({ activeTab, setActiveTab, onNewDispatch, isViewer = false }) =
         <nav className="flex-1 px-2 space-y-1">
           <NavItem icon={<LayoutDashboard size={18}/>} text="Centro de Mando"    active={activeTab === 'command'}     onClick={() => handleNav('command')}     expanded={expanded} />
           <NavItem icon={<ClipboardList size={18}/>}  text="CutOff"              active={activeTab === 'cutoff'}      onClick={() => handleNav('cutoff')}      expanded={expanded} />
+          <NavItem icon={<Users size={18}/>}           text="Conectados HU"       active={activeTab === 'conectados'}  onClick={() => handleNav('conectados')} expanded={expanded} />
           <NavItem icon={<BarChart2 size={18}/>}      text="Vehículos Plan"      active={activeTab === 'vehiculos'}   onClick={() => handleNav('vehiculos')}   expanded={expanded} />
           <NavItem icon={<Truck size={18}/>}          text="Arribs. Vehículos"   active={activeTab === 'arribs'}      onClick={() => handleNav('arribs')}      expanded={expanded} />
           <NavItem icon={<Gauge size={18}/>}       text="Velo. Darsenas"          active={activeTab === 'velocidad'}      onClick={() => handleNav('velocidad')}      expanded={expanded} />

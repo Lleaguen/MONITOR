@@ -13,7 +13,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
    * 1. Solo piezas con Shipment ID válido
    * 2. Solo zonas en MAYÚSCULAS (excluye zonas en minúscula del CSV)
    * 3. Excluye zonas Meli Air: terminan en _A o _B (ej: SNQ1_A, STW1_A)
-   * 4. Excluye FBA1_R
+   * 4. FBA1_R y FBA4_R → CPT 10:00 (incluidas en el conteo)
    * 5. Excluye piezas con Hub Status: cancelled, in_hub_reject, blocked
    * 6. Solo zonas mapeadas a un CPT (via zonaCPT.js o zonaCPTOverrides)
    * 7. Normaliza zonas: elimina guiones bajos al final (PCK390_ → PCK390)
@@ -25,6 +25,10 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
   const cptData = {};
   const ultimaActividadUsuario = new Map();
   cptOrden.forEach(c => { cptData[c] = { zonas: {}, usuariosSetCPT: new Set() }; });
+
+  // Bipeos por hora global (para sparkline de productividad)
+  const bipeoPorHoraGlobal = {};
+  for (let h = horaInicioHU; h <= 23; h++) bipeoPorHoraGlobal[h] = 0;
 
   const getOrCreateCPT = (cpt) => {
     if (!cptData[cpt]) cptData[cpt] = { zonas: {}, usuariosSetCPT: new Set() };
@@ -70,6 +74,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
         huEnDespachoSet: new Set(),
         despachadoSet:   new Set(),
         usuariosSet:     new Set(),
+        bipeoPorHora:    {}, // { hora: count }
       };
     }
     const z = cptEntry.zonas[zona];
@@ -83,9 +88,6 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     z.etiquetado++;
 
     // ── Clasificación HU ──────────────────────────────────────────────────────
-    // HU Cerrado = tiene Outbound Date Closed (HU completamente armado)
-    // HU Abierto = tiene Outbound Included Date pero sin fecha de cierre (en proceso)
-    // Para cambiar la lógica de clasificación, modificar estas dos líneas:
     if (d['Outbound Date Closed'] || hubStatus === 'dispatched') z.huCerrado++;
     else if (d['Outbound Included Date']) z.huAbierto++;
 
@@ -96,6 +98,16 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
       if (dh.isValid() && dh.hour() >= horaInicioHU) z.despachadoSet.add(dispatchId);
     }
 
+    // Bipeos por hora por zona y global
+    if (d['Outbound Included Date']) {
+      const tsOut = dayjs(d['Outbound Included Date'], "DD/MM/YYYY HH:mm:ss");
+      if (tsOut.isValid() && tsOut.hour() >= horaInicioHU) {
+        const h = tsOut.hour();
+        z.bipeoPorHora[h] = (z.bipeoPorHora[h] || 0) + 1;
+        bipeoPorHoraGlobal[h] = (bipeoPorHoraGlobal[h] || 0) + 1;
+      }
+    }
+
     const rawUsr = String(d['Outbound Added By'] || "").trim();
     if (rawUsr) {
       const usr = rawUsr.replace(/\(\d+\)$/, "").trim().toLowerCase();
@@ -103,8 +115,9 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
         const ts = d['Outbound Included Date']
           ? dayjs(d['Outbound Included Date'], "DD/MM/YYYY HH:mm:ss").valueOf()
           : 0;
+        const pos = String(d['Outbound Position'] || "").trim().toUpperCase();
         const prev = ultimaActividadUsuario.get(usr);
-        if (!prev || ts > prev.ts) ultimaActividadUsuario.set(usr, { cpt, zona, ts });
+        if (!prev || ts > prev.ts) ultimaActividadUsuario.set(usr, { cpt, zona, ts, pos });
       }
     }
   });
@@ -113,10 +126,32 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
   const DIEZ_MIN_MS   = 10 * 60 * 1000;
   const refMs = ultimaTs > 0 ? ultimaTs : Date.now();
 
+  // Derivar tipo de posición: AS?-?-1-? = PAQUETERIA, AS?-?-2-? = VOLUMINOSO
+  const getTipoPosicion = (pos) => {
+    if (!pos) return null;
+    const m = String(pos).match(/^AS\d-\d-(\d)-\d+$/i);
+    if (!m) return null;
+    return m[1] === '1' ? 'PAQUETERIA' : m[1] === '2' ? 'VOLUMINOSO' : null;
+  };
+
   Object.keys(cptData).forEach(c => { cptData[c].usuariosSetCPT = new Set(); });
+
+  // Detalle SIN filtrar por ventana — el frontend aplica el filtro dinámico
+  const usuariosActivosDetalle = [];
+
   ultimaActividadUsuario.forEach((info, usr) => {
+    const { cpt, zona, pos } = info;
+    // Agregar al detalle completo (sin filtro de tiempo)
+    usuariosActivosDetalle.push({
+      usr,
+      cpt,
+      zona,
+      pos: pos || null,
+      tipoPosicion: getTipoPosicion(pos),
+      ts: info.ts,
+    });
+    // Para los sets de tableData/totalesHU seguimos usando la ventana de 5 min
     if ((refMs - info.ts) > CINCO_MIN_MS) return;
-    const { cpt, zona } = info;
     if (!cptData[cpt]) return;
     cptData[cpt].usuariosSetCPT.add(usr);
     if (cptData[cpt].zonas[zona]) cptData[cpt].zonas[zona].usuariosSet.add(usr);
@@ -160,6 +195,7 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
           huEnDespacho: z.huEnDespachoSet.size,
           despachado: z.despachadoSet.size,
           usuarios: z.usuariosSet.size,
+          bipeoPorHora: z.bipeoPorHora,
         };
       });
 
@@ -199,9 +235,17 @@ export const buildHUData = (csvData, ultimaTs, objetivoHU, productividadHU, hora
     ? Math.ceil((trabajoRestante / productividadHU / horasHasta22) * 1.25)
     : 0;
 
+  // Convertir bipeoPorHoraGlobal a array ordenado
+  const bipeoPorHoraArray = Object.entries(bipeoPorHoraGlobal)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([h, count]) => ({ hora: `${h}:00`, bipeos: count }));
+
   return {
     tableData,
     totalesHU,
+    usuariosActivosDetalle,
+    refMs,
+    bipeoPorHoraArray,
     huStats: {
       objetivoHU,
       productividadHU,
