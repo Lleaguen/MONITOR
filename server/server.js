@@ -2,6 +2,7 @@ const express = require('express');
 const cors    = require('cors');
 const uploadRoutes = require('./routes/upload');
 const dataRoutes   = require('./routes/data');
+const autoUploadRoutes = require('./routes/autoUpload');
 const { requestLogger } = require('./middlewares/logger');
 
 const app  = express();
@@ -25,6 +26,7 @@ app.use(requestLogger);
 
 app.use('/', uploadRoutes);
 app.use('/', dataRoutes);
+app.use('/', autoUploadRoutes);
 
 app.listen(PORT, () => {
   console.log(`[server] running on port ${PORT}`);

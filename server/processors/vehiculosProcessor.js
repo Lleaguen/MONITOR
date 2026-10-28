@@ -1,0 +1,91 @@
+const dayjs = require('dayjs');
+const customParseFormat = require('dayjs/plugin/customParseFormat');
+dayjs.extend(customParseFormat);
+const { normalizarPatente, coincidenConTolerancia, getTipoVehiculo, getSectorDoca, extraerPatentesED, getTipoPorDoca, isDocaValida } = require('./helpers');
+
+const buildPatentesTMS = (csvData) => {
+  const map = new Map(), set = new Set();
+  csvData.forEach(d => {
+    const pat = normalizarPatente(d['Truck ID']);
+    if (pat.length < 4 || map.has(pat)) return;
+    map.set(pat, { status: String(d['Hub Status'] || "").toLowerCase().trim(), doca: String(d['Inbound Dock ID'] || "").trim() });
+    set.add(pat);
+  });
+  return { map, set, array: Array.from(map.entries()) };
+};
+
+const buildMatchEDaTMS = (easyDockingClean, patentesTMS) => {
+  const { map, set, array } = patentesTMS;
+  const matchEDaTMS = new Map();
+  easyDockingClean.forEach((doc, idx) => {
+    const patenteED = extraerPatentesED(doc['PATENTE']);
+    if (patenteED.length === 0) { matchEDaTMS.set(idx, null); return; }
+    let found = null;
+    for (const pED of patenteED) { if (set.has(pED)) { found = { patenteTMS: pED, ...map.get(pED) }; break; } }
+    if (!found) {
+      outer: for (const pED of patenteED) { for (const [patTMS, info] of array) { if (coincidenConTolerancia(pED, patTMS)) { found = { patenteTMS: patTMS, ...info }; break outer; } } }
+    }
+    matchEDaTMS.set(idx, found);
+  });
+  return matchEDaTMS;
+};
+
+const buildDarsenasActivas = (csvData, ultimaTs, site = 'CIU') => {
+  const DIEZ_MIN_MS = 10 * 60 * 1000;
+  const ultimoBipeoPorDoca = new Map();
+  csvData.forEach(d => {
+    const doca = String(d['Inbound Dock ID'] || "").trim();
+    if (!doca) return;
+    const f = dayjs(d['Inbound Date Included'], "DD/MM/YYYY HH:mm:ss");
+    if (!f.isValid()) return;
+    const ts = f.valueOf();
+    if (!ultimoBipeoPorDoca.has(doca) || ts > ultimoBipeoPorDoca.get(doca)) ultimoBipeoPorDoca.set(doca, ts);
+  });
+  const activas = { chasis: new Set(), camioneta: new Set(), semi: new Set(), otro: new Set() };
+  ultimoBipeoPorDoca.forEach((ts, doca) => {
+    if ((ultimaTs - ts) > DIEZ_MIN_MS) return;
+    const num = parseInt(doca.replace(/\D/g, ""), 10);
+    if (isNaN(num) || !isDocaValida(num, site)) return;
+    const tipo = getTipoPorDoca(doca, site);
+    if (tipo && activas[tipo]) activas[tipo].add(doca);
+  });
+  return activas;
+};
+
+const buildVehiculosEspera = (easyDockingClean, matchEDaTMS, patentesTMSMap, darsenasActivas) => {
+  const chasisEnCamionetaDescargando = new Set();
+  let chasisEnCamionetaTotal = 0, chasisEnCamionetaAhora = 0;
+  easyDockingClean.forEach((doc, idx) => {
+    const match = matchEDaTMS.get(idx);
+    if (!match) return;
+    const tipo = getTipoVehiculo(doc['TIPO DE VEHICULO']);
+    const sector = getSectorDoca(match.doca);
+    if (tipo === 'chasis' && sector === 'camioneta') {
+      chasisEnCamionetaDescargando.add(match.patenteTMS); chasisEnCamionetaTotal++;
+      if (match.status === 'in_hub') chasisEnCamionetaAhora++;
+    }
+  });
+  const vehiculosEnEspera = easyDockingClean.filter((_, idx) => matchEDaTMS.get(idx) === null);
+  const conteoEspera = { chasis: 0, camioneta: 0, semi: 0, total: 0, atracados: 0 };
+  vehiculosEnEspera.forEach(v => { const tipo = getTipoVehiculo(v['TIPO DE VEHICULO']); if (tipo === 'chasis') conteoEspera.chasis++; else if (tipo === 'camioneta') conteoEspera.camioneta++; else if (tipo === 'semi') conteoEspera.semi++; conteoEspera.total++; });
+  conteoEspera.chasis = Math.max(conteoEspera.chasis - chasisEnCamionetaDescargando.size, 0);
+  patentesTMSMap.forEach(info => { if (info.status === 'in_hub') conteoEspera.atracados++; });
+  conteoEspera.darsenasChasis = darsenasActivas.chasis.size;
+  conteoEspera.darsenasCamioneta = darsenasActivas.camioneta.size;
+  conteoEspera.darsenaSemi = darsenasActivas.semi.size;
+  conteoEspera.darsenasOtro = darsenasActivas.otro?.size ?? 0;
+  const desviosDoca = { chasisEnCamioneta: chasisEnCamionetaTotal, chasisEnCamionetaAhora, chasisEnCamionetaYaDescargados: chasisEnCamionetaTotal - chasisEnCamionetaAhora };
+  return { conteoEspera, desviosDoca };
+};
+
+const buildMapPatenteTipo = (easyDockingClean, matchEDaTMS) => {
+  const map = new Map();
+  easyDockingClean.forEach((doc, idx) => {
+    const match = matchEDaTMS.get(idx);
+    if (!match || map.has(match.patenteTMS)) return;
+    map.set(match.patenteTMS, getTipoVehiculo(doc['TIPO DE VEHICULO']));
+  });
+  return map;
+};
+
+module.exports = { buildPatentesTMS, buildMatchEDaTMS, buildDarsenasActivas, buildVehiculosEspera, buildMapPatenteTipo };
