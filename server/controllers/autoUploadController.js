@@ -1,6 +1,6 @@
 const Papa = require('papaparse');
 const { processCombinedData } = require('../processors/dataProcessor');
-const { setSnapshot, setPlan, getSnapshot, getLastUpdate } = require('../store/snapshot');
+const { setSnapshot, setPlan, getSnapshot, getLastUpdate, getPlan } = require('../store/snapshot');
 
 /**
  * POST /auto-upload
