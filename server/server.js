@@ -3,6 +3,7 @@ const cors    = require('cors');
 const uploadRoutes = require('./routes/upload');
 const dataRoutes   = require('./routes/data');
 const autoUploadRoutes = require('./routes/autoUpload');
+const pushSnapshotRoutes = require('./routes/pushSnapshot');
 const { requestLogger } = require('./middlewares/logger');
 
 const app  = express();
@@ -21,12 +22,13 @@ app.use(cors(corsOptions));
 // 🔥 IMPORTANTE: manejar preflight
 app.options('*', cors(corsOptions));
 
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '150mb' }));
 app.use(requestLogger);
 
 app.use('/', uploadRoutes);
 app.use('/', dataRoutes);
 app.use('/', autoUploadRoutes);
+app.use('/', pushSnapshotRoutes);
 
 app.listen(PORT, () => {
   console.log(`[server] running on port ${PORT}`);
