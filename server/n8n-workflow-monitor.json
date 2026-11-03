@@ -1,0 +1,142 @@
+{
+  "name": "Monitor Ocasa — Auto Upload (Soldati)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "minutes", "minutesInterval": 15 }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Cada 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generar fecha de hoy en formato YYYY-MM-DD\nconst now = new Date();\nconst yyyy = now.getFullYear();\nconst mm = String(now.getMonth() + 1).padStart(2, '0');\nconst dd = String(now.getDate()).padStart(2, '0');\nconst fecha = `${yyyy}-${mm}-${dd}`;\n\nreturn {\n  json: {\n    fecha,\n    startISO: `${fecha}T00:00:00Z`,\n    endISO: `${fecha}T23:59:59Z`,\n    fechaED: fecha\n  }\n};"
+      },
+      "id": "calc-fecha",
+      "name": "Calcular fecha",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://tms.adminml.com/api/fos/shipment/report/export?inbound_included_at_date_start=' + $json.startISO + '&inbound_included_at_date_end=' + $json.endISO }}",
+        "responseFormat": "text",
+        "options": {
+          "headers": {
+            "Cookie": "ext_fanromer-bc635c67-71a9-4e2f-888b-9b20282ef853"
+          }
+        }
+      },
+      "id": "fetch-tms",
+      "name": "Fetch TMS CSV",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [640, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://server4.easydocking.ar/meliciudad/root/locations/excel/' + $json.fechaED + '/' + $json.fechaED + '/xls' }}",
+        "responseFormat": "file",
+        "options": {}
+      },
+      "id": "fetch-ed",
+      "name": "Fetch ED Excel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [640, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Buscar datos del TMS y ED desde los nodos anteriores\nlet csvData = '';\nlet excelB64 = null;\n\n// CSV del TMS — viene del input directo\ntry {\n  const tmsItem = $input.first();\n  csvData = tmsItem.json.data || tmsItem.json.body || tmsItem.json || '';\n  if (typeof csvData !== 'string') csvData = JSON.stringify(csvData);\n} catch(e) {\n  console.log('Error obteniendo TMS:', e.message);\n}\n\n// Excel del ED — buscar en el nodo Fetch ED Excel\ntry {\n  const edItems = $items('Fetch ED Excel', 0, 0);\n  if (edItems && edItems.length > 0 && edItems[0].binary) {\n    const binaryKey = Object.keys(edItems[0].binary)[0];\n    if (binaryKey) {\n      excelB64 = edItems[0].binary[binaryKey].data || null;\n    }\n  }\n} catch(e) {\n  console.log('ED no disponible, continuando sin Excel:', e.message);\n}\n\nreturn {\n  json: {\n    csv: csvData,\n    excel: excelB64,\n    config: {\n      site: 'CIU',\n      proyectado: 239000,\n      objetivoHU: 75,\n      productividadHU: 180,\n      horaInicioHU: 10,\n      horaInicioBipeos: 9,\n      horaInicioArribos: 9\n    }\n  }\n};"
+      },
+      "id": "merge-data",
+      "name": "Merge CSV + ED",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://monitor-c0bd.onrender.com/auto-upload",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "post-server",
+      "name": "POST al server",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1140, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = items[0].json;\nconsole.log('Auto-upload resultado:', JSON.stringify(result, null, 2));\nreturn items;"
+      },
+      "id": "log-result",
+      "name": "Log resultado",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1360, 300]
+    }
+  ],
+  "connections": {
+    "Cada 15 min": {
+      "main": [
+        [
+          { "node": "Calcular fecha", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Calcular fecha": {
+      "main": [
+        [
+          { "node": "Fetch TMS CSV", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch TMS CSV": {
+      "main": [
+        [
+          { "node": "Fetch ED Excel", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Fetch ED Excel": {
+      "main": [
+        [
+          { "node": "Merge CSV + ED", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Merge CSV + ED": {
+      "main": [
+        [
+          { "node": "POST al server", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "POST al server": {
+      "main": [
+        [
+          { "node": "Log resultado", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
