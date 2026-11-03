@@ -51,6 +51,19 @@ function App() {
 
   const handleSetConfig = (newConfig) => {
     setConfig(newConfig);
+    // Actualizar proyectado localmente en el dashboard sin esperar al script
+    if (dashboardData) {
+      const proyNum = Number(newConfig.proyectado);
+      if (proyNum > 0) {
+        setDashboardData(prev => ({
+          ...prev,
+          kpis: prev?.kpis ? {
+            ...prev.kpis,
+            proyectado: proyNum.toLocaleString(),
+          } : prev?.kpis,
+        }));
+      }
+    }
     // Guardar en el servidor para que el script lo lea en el próximo ciclo
     if (appMode === 'dashboard-admin') {
       pushConfig(newConfig, selectedSite).catch(() => {});
