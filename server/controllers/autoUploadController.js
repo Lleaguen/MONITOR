@@ -43,17 +43,23 @@ const autoUpload = (req, res) => {
       excelBuffer = Buffer.from(excel, 'base64');
     }
 
-    // Defaults de config
+    // Defaults de config — si no viene proyectado, usar el del snapshot anterior
+    const site = config.site ?? 'CIU';
+    const snapshotAnterior = getSnapshot(site);
+    const proyectadoGuardado = snapshotAnterior?.kpis?.proyectado
+      ? parseInt(String(snapshotAnterior.kpis.proyectado).replace(/\./g, '').replace(/,/g, ''), 10)
+      : 239000;
+
     const cfg = {
-      proyectadoManual: config.proyectado ?? 239000,
-      objetivoHU: config.objetivoHU ?? 75,
-      productividadHU: config.productividadHU ?? 180,
+      proyectadoManual: config.proyectado ?? proyectadoGuardado,
+      objetivoHU: config.objetivoHU ?? snapshotAnterior?.huStats?.objetivoHU ?? 75,
+      productividadHU: config.productividadHU ?? snapshotAnterior?.huStats?.productividadHU ?? 180,
       config: {
         horaInicioArribos: config.horaInicioArribos ?? 9,
         horaInicioBipeos: config.horaInicioBipeos ?? 9,
         horaInicioHU: config.horaInicioHU ?? 10,
         zonaCPTOverrides: config.zonaCPTOverrides ?? {},
-        site: config.site ?? 'CIU',
+        site,
       },
     };
 
@@ -68,7 +74,6 @@ const autoUpload = (req, res) => {
     );
 
     // Preservar plan existente si el nuevo snapshot no trae uno
-    const site = cfg.config.site;
     const planGuardado = getPlan(site);
     if (planGuardado && (!dashboardData.planVehiculos || dashboardData.planVehiculos.length === 0)) {
       dashboardData.planVehiculos = planGuardado;
