@@ -56,6 +56,8 @@ function App() {
       pushConfig(newConfig, selectedSite).catch(() => {});
     }
   };
+
+  const [zonaCPTOverrides, setZonaCPTOverrides] = useState(() => {
     try {
       const saved = localStorage.getItem('zonaCPTOverrides');
       return saved ? JSON.parse(saved) : {};
