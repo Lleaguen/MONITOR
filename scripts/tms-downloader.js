@@ -45,7 +45,42 @@ function getFechaHoy() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// ── POST snapshot al servidor ─────────────────────────────────────────────────
+// ── Obtener config actual del servidor ───────────────────────────────────────
+function getConfigActual() {
+  return new Promise((resolve) => {
+    const defaults = {
+      proyectado: 239000,
+      objetivoHU: 75,
+      productividadHU: 180,
+      horaInicioHU: 10,
+      horaInicioBipeos: 9,
+      horaInicioArribos: 9,
+      zonaCPTOverrides: {},
+    };
+    const url = new URL(`https://monitor-c0bd.onrender.com/data?site=${CONFIG.site}`);
+    https.get({ hostname: url.hostname, path: url.pathname + url.search, timeout: 10000 }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const proyStr = json.kpis?.proyectado;
+          if (proyStr) {
+            const num = parseInt(String(proyStr).replace(/\./g, '').replace(/,/g, ''), 10);
+            if (!isNaN(num) && num > 0) defaults.proyectado = num;
+          }
+          if (json.huStats?.objetivoHU)      defaults.objetivoHU      = json.huStats.objetivoHU;
+          if (json.huStats?.productividadHU)  defaults.productividadHU  = json.huStats.productividadHU;
+          if (json.config?.horaInicioHU)      defaults.horaInicioHU     = json.config.horaInicioHU;
+          if (json.config?.horaInicioBipeos)  defaults.horaInicioBipeos = json.config.horaInicioBipeos;
+          if (json.config?.horaInicioArribos) defaults.horaInicioArribos = json.config.horaInicioArribos;
+          if (json.config?.zonaCPTOverrides)  defaults.zonaCPTOverrides = json.config.zonaCPTOverrides;
+        } catch (_) {}
+        resolve(defaults);
+      });
+    }).on('error', () => resolve(defaults)).on('timeout', () => resolve(defaults));
+  });
+}
 function postSnapshot(snapshot) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({ site: CONFIG.site, data: snapshot });
@@ -199,7 +234,12 @@ function wakeUpServer() {
       log(`Excel ED no disponible: ${e.message}`);
     }
 
-    // 4. Procesar datos localmente
+    // 4. Obtener config actual del servidor (proyectado, HU, horas, etc.)
+    log('Obteniendo config actual del servidor...');
+    const cfg = await getConfigActual();
+    log(`Config: proyectado=${cfg.proyectado}, objetivoHU=${cfg.objetivoHU}, productividad=${cfg.productividadHU}, horaInicioHU=${cfg.horaInicioHU}`);
+
+    // 5. Procesar datos localmente
     log('Procesando datos localmente...');
     const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
     log(`CSV parseado: ${parsed.data.length} filas`);
@@ -207,14 +247,14 @@ function wakeUpServer() {
     const dashboardData = processCombinedData(
       parsed.data,
       excelBuffer,
-      239000,           // proyectado default — el servidor lo preserva del snapshot anterior
-      CONFIG.objetivoHU,
-      CONFIG.productividadHU,
+      cfg.proyectado,
+      cfg.objetivoHU,
+      cfg.productividadHU,
       {
-        horaInicioArribos: CONFIG.horaInicioArribos,
-        horaInicioBipeos: CONFIG.horaInicioBipeos,
-        horaInicioHU: CONFIG.horaInicioHU,
-        zonaCPTOverrides: {},
+        horaInicioArribos: cfg.horaInicioArribos,
+        horaInicioBipeos:  cfg.horaInicioBipeos,
+        horaInicioHU:      cfg.horaInicioHU,
+        zonaCPTOverrides:  cfg.zonaCPTOverrides,
         site: CONFIG.site,
       }
     );

@@ -24,6 +24,11 @@ const pushSnapshot = (req, res) => {
     // Aseguramos que el site quede en el data
     data.site = siteKey;
 
+    // Preservar la config que mandó el frontend para que el script la lea
+    if (data.kpis && !data.config) {
+      data.config = data.config || {};
+    }
+
     setSnapshot(data, siteKey);
 
     console.log(

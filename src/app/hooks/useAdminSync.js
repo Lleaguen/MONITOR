@@ -55,7 +55,7 @@ export const useAdminSync = ({
       volDataByHora: data.volDataByHora?.length,
       huVelocidadData: data.huVelocidadData ? 'presente' : 'faltante',
     });
-    const dataWithPlan = { ...data, planVehiculos, site: selectedSite };
+    const dataWithPlan = { ...data, planVehiculos, site: selectedSite, config: { ...config, zonaCPTOverrides } };
     setDashboardData(dataWithPlan);
     setSyncState('syncing');
     pushSnapshot(dataWithPlan)
@@ -92,7 +92,7 @@ export const useAdminSync = ({
       volDataByHora: data.volDataByHora?.length,
       huVelocidadData: data.huVelocidadData ? 'presente' : 'faltante',
     });
-    const dataWithPlan = { ...data, planVehiculos, site: selectedSite };
+    const dataWithPlan = { ...data, planVehiculos, site: selectedSite, config: { ...config, zonaCPTOverrides } };
     setDashboardData(dataWithPlan);
     setAppMode('dashboard-admin');
     setActiveTab('command');
@@ -121,7 +121,7 @@ export const useAdminSync = ({
         site: selectedSite,
       }
     );
-    const dataWithPlan = { ...data, planVehiculos: nuevoPlan, site: selectedSite };
+    const dataWithPlan = { ...data, planVehiculos: nuevoPlan, site: selectedSite, config: { ...config, zonaCPTOverrides } };
     setDashboardData(dataWithPlan);
     setSyncState('syncing');
     // Guardar plan por separado en el servidor para que persista
