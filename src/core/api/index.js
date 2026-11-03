@@ -45,8 +45,25 @@ export const pushPlan = async (planVehiculos, site) => {
   return res.json();
 };
 
-// Obtiene el plan guardado en el servidor para el site activo
-export const fetchPlan = async (site) => {
+// Guarda la config de parámetros en el servidor (sin necesitar archivos)
+export const pushConfig = async (config, site) => {
+  const s = site || getSite();
+  const res = await fetch(`${BASE_URL}/config?site=${s}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...config, site: s }),
+  });
+  if (!res.ok) throw new Error(`Error al guardar config: ${res.status}`);
+  return res.json();
+};
+
+// Obtiene la config guardada en el servidor
+export const fetchConfig = async (site) => {
+  const s = site || getSite();
+  const res = await fetch(`${BASE_URL}/config?site=${s}`);
+  if (!res.ok) throw new Error(`Error al obtener config: ${res.status}`);
+  return res.json();
+};
   const s = site || getSite();
   const res = await fetch(`${BASE_URL}/plan?site=${s}`);
   if (!res.ok) throw new Error(`Error al obtener plan: ${res.status}`);

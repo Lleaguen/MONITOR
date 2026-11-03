@@ -14,7 +14,7 @@ import FileUploader from './app/screens/FileUploader';
 import ModeSelector from './app/screens/ModeSelector';
 import LoadingScreen from './app/screens/LoadingScreen';
 import ErrorScreen from './app/screens/ErrorScreen';
-import { fetchSnapshot, fetchStatus } from './core/api/index';
+import { fetchSnapshot, fetchStatus, pushConfig } from './core/api/index';
 import usePolling from './app/hooks/usePolling';
 import { useAdminSync } from './app/hooks/useAdminSync';
 import ConectadosHU from './features/dashboard/pages/ConectadosHU';
@@ -49,7 +49,13 @@ function App() {
     horaInicioHU: 10,
   });
 
-  const [zonaCPTOverrides, setZonaCPTOverrides] = useState(() => {
+  const handleSetConfig = (newConfig) => {
+    setConfig(newConfig);
+    // Guardar en el servidor para que el script lo lea en el próximo ciclo
+    if (appMode === 'dashboard-admin') {
+      pushConfig(newConfig, selectedSite).catch(() => {});
+    }
+  };
     try {
       const saved = localStorage.getItem('zonaCPTOverrides');
       return saved ? JSON.parse(saved) : {};
@@ -117,7 +123,29 @@ function App() {
     init();
   }, []);
 
-  const handleViewDashboard = async () => {
+  const handleEnterAdmin = async () => {
+    try {
+      const data = await fetchSnapshot(selectedSite);
+      setDashboardData(data);
+      setServerLastUpdate(data?.kpis?.ultimaActualizacion ?? null);
+      if (data?.planVehiculos?.length) setPlanVehiculos(data.planVehiculos);
+      // Cargar config del snapshot si existe
+      if (data?.config) {
+        setConfig(prev => ({
+          ...prev,
+          proyectado:        data.config.proyectado        ?? prev.proyectado,
+          objetivoHU:        data.config.objetivoHU        ?? prev.objetivoHU,
+          productividadHU:   data.config.productividadHU   ?? prev.productividadHU,
+          horaInicioArribos: data.config.horaInicioArribos ?? prev.horaInicioArribos,
+          horaInicioBipeos:  data.config.horaInicioBipeos  ?? prev.horaInicioBipeos,
+          horaInicioHU:      data.config.horaInicioHU      ?? prev.horaInicioHU,
+        }));
+      }
+    } catch {
+      // Si no hay datos del servidor igual entramos en modo admin
+    }
+    setAppMode('dashboard-admin');
+  };
     try {
       const data = await fetchSnapshot();
       setDashboardData(data);
@@ -148,7 +176,7 @@ function App() {
         selectedSite={selectedSite}
         onSiteChange={handleSiteChange}
         onViewDashboard={handleViewDashboard}
-        onLoadFiles={() => setAppMode('file-uploader')}
+        onLoadFiles={handleEnterAdmin}
         hasData={!!serverLastUpdate}
       />
     );
@@ -222,7 +250,7 @@ function App() {
           ) : activeTab === 'velocidad' ? (
             <VelocidadDarsenas data={dashboardData} />
           ) : (
-            <Parameters config={config} setConfig={setConfig} />
+            <Parameters config={config} setConfig={handleSetConfig} />
           )}
         </div>
       </main>

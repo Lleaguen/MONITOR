@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Monitor, UploadCloud, Lock, MapPin, Check } from 'lucide-react';
+import { Monitor, Lock, MapPin, Check } from 'lucide-react';
 
 const ADMIN_PIN = process.env.REACT_APP_ADMIN_PIN || '1234';
 
@@ -134,7 +134,7 @@ const ModeSelector = ({ lastUpdate, selectedSite, onSiteChange, onViewDashboard,
                 <Lock size={16} className="text-slate-400" />
                 <h2 className="text-[11px] font-black uppercase tracking-widest text-white">Acceso Admin</h2>
               </div>
-              <p className="text-[10px] text-slate-500">Ingresá el PIN de administrador para cargar archivos.</p>
+              <p className="text-[10px] text-slate-500">Ingresá el PIN de administrador para acceder a la configuración.</p>
               <input
                 type="password"
                 value={pin}
@@ -186,20 +186,20 @@ const ModeSelector = ({ lastUpdate, selectedSite, onSiteChange, onViewDashboard,
             </div>
           </button>
 
-          {/* Cargar Archivos — requiere PIN */}
+          {/* Modo Admin — requiere PIN */}
           <button
             onClick={handleAdminClick}
             className="flex flex-col items-center gap-4 p-6 rounded-2xl border border-white/5 bg-[#111827]/50 hover:bg-slate-700/20 hover:border-slate-500/30 transition-all group"
           >
             <div className="p-3 bg-slate-700/30 rounded-full text-slate-400 group-hover:scale-110 transition-transform">
-              <UploadCloud size={28} />
+              <Lock size={28} />
             </div>
             <div className="text-center">
               <p className="text-[11px] font-black uppercase tracking-widest text-white mb-1">
-                Cargar Archivos
+                Modo Admin
               </p>
               <p className="text-[10px] text-slate-500 font-medium">
-                Subir CSV y Excel (Admin)
+                Configurar parámetros
               </p>
             </div>
           </button>

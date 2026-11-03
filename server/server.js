@@ -4,6 +4,7 @@ const uploadRoutes = require('./routes/upload');
 const dataRoutes   = require('./routes/data');
 const autoUploadRoutes = require('./routes/autoUpload');
 const pushSnapshotRoutes = require('./routes/pushSnapshot');
+const configRoutes = require('./routes/config');
 const { requestLogger } = require('./middlewares/logger');
 
 const app  = express();
@@ -29,6 +30,7 @@ app.use('/', uploadRoutes);
 app.use('/', dataRoutes);
 app.use('/', autoUploadRoutes);
 app.use('/', pushSnapshotRoutes);
+app.use('/', configRoutes);
 
 app.listen(PORT, () => {
   console.log(`[server] running on port ${PORT}`);
