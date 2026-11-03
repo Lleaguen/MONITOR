@@ -64,6 +64,9 @@ export const fetchConfig = async (site) => {
   if (!res.ok) throw new Error(`Error al obtener config: ${res.status}`);
   return res.json();
 };
+
+// Obtiene el plan guardado en el servidor para el site activo
+export const fetchPlan = async (site) => {
   const s = site || getSite();
   const res = await fetch(`${BASE_URL}/plan?site=${s}`);
   if (!res.ok) throw new Error(`Error al obtener plan: ${res.status}`);
