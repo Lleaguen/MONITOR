@@ -131,7 +131,6 @@ function App() {
       setDashboardData(data);
       setServerLastUpdate(data?.kpis?.ultimaActualizacion ?? null);
       if (data?.planVehiculos?.length) setPlanVehiculos(data.planVehiculos);
-      // Cargar config del snapshot si existe
       if (data?.config) {
         setConfig(prev => ({
           ...prev,
@@ -148,8 +147,10 @@ function App() {
     }
     setAppMode('dashboard-admin');
   };
+
+  const handleViewDashboard = async () => {
     try {
-      const data = await fetchSnapshot();
+      const data = await fetchSnapshot(selectedSite);
       setDashboardData(data);
       setServerLastUpdate(data?.kpis?.ultimaActualizacion ?? null);
       if (data?.planVehiculos?.length) setPlanVehiculos(data.planVehiculos);
