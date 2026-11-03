@@ -1,26 +1,30 @@
 const { getSnapshot, setSnapshot } = require('../store/snapshot');
 
-// Almacén de config por site (persiste entre reinicios solo en memoria)
+// Almacén de config por site (persiste en memoria mientras el servidor está vivo)
 const configStore = {};
 
 /**
  * POST /config?site=CIU
- * Guarda la config de parámetros y la embebe en el snapshot actual.
  * Body: { proyectado, objetivoHU, productividadHU, horaInicioHU, horaInicioBipeos, horaInicioArribos, zonaCPTOverrides }
  */
 const saveConfig = (req, res) => {
   try {
-    const site = (req.query.site || req.body.site || 'CIU').toUpperCase();
-    const { proyectado, objetivoHU, productividadHU, horaInicioHU, horaInicioBipeos, horaInicioArribos, zonaCPTOverrides } = req.body;
+    const site = (req.query.site || req.body?.site || 'CIU').toUpperCase();
+    console.log(`[config] POST site=${site} body=`, JSON.stringify(req.body));
+
+    const body = req.body || {};
+
+    // Leer config anterior como base
+    const prev = configStore[site] || {};
 
     const cfg = {
-      proyectado:        Number(proyectado)        || configStore[site]?.proyectado        || 239000,
-      objetivoHU:        Number(objetivoHU)        || configStore[site]?.objetivoHU        || 75,
-      productividadHU:   Number(productividadHU)   || configStore[site]?.productividadHU   || 180,
-      horaInicioHU:      Number(horaInicioHU)      ?? configStore[site]?.horaInicioHU      ?? 10,
-      horaInicioBipeos:  Number(horaInicioBipeos)  ?? configStore[site]?.horaInicioBipeos  ?? 9,
-      horaInicioArribos: Number(horaInicioArribos) ?? configStore[site]?.horaInicioArribos ?? 9,
-      zonaCPTOverrides:  zonaCPTOverrides          || configStore[site]?.zonaCPTOverrides  || {},
+      proyectado:        body.proyectado        != null ? Number(body.proyectado)        : (prev.proyectado        ?? 239000),
+      objetivoHU:        body.objetivoHU        != null ? Number(body.objetivoHU)        : (prev.objetivoHU        ?? 75),
+      productividadHU:   body.productividadHU   != null ? Number(body.productividadHU)   : (prev.productividadHU   ?? 180),
+      horaInicioHU:      body.horaInicioHU      != null ? Number(body.horaInicioHU)      : (prev.horaInicioHU      ?? 10),
+      horaInicioBipeos:  body.horaInicioBipeos  != null ? Number(body.horaInicioBipeos)  : (prev.horaInicioBipeos  ?? 9),
+      horaInicioArribos: body.horaInicioArribos != null ? Number(body.horaInicioArribos) : (prev.horaInicioArribos ?? 9),
+      zonaCPTOverrides:  body.zonaCPTOverrides  != null ? body.zonaCPTOverrides          : (prev.zonaCPTOverrides  ?? {}),
     };
 
     configStore[site] = cfg;
@@ -32,29 +36,36 @@ const saveConfig = (req, res) => {
       setSnapshot(snap, site);
     }
 
-    console.log(`[config] site=${site} guardado:`, cfg);
+    console.log(`[config] guardado site=${site}:`, JSON.stringify(cfg));
     return res.json({ status: 'ok', site, config: cfg });
   } catch (err) {
+    console.error('[config] error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 };
 
 /**
  * GET /config?site=CIU
- * Devuelve la config guardada para el site.
  */
 const getConfig = (req, res) => {
   const site = (req.query.site || 'CIU').toUpperCase();
 
-  // Primero intentar desde el snapshot
+  // Primero desde el snapshot
   const snap = getSnapshot(site);
-  if (snap?.config) return res.json({ status: 'ok', site, config: snap.config });
+  if (snap?.config && Object.keys(snap.config).length > 0) {
+    return res.json({ status: 'ok', site, config: snap.config });
+  }
 
-  // Si no hay snapshot, devolver lo guardado en memoria o defaults
+  // Desde memoria
+  if (configStore[site] && Object.keys(configStore[site]).length > 0) {
+    return res.json({ status: 'ok', site, config: configStore[site] });
+  }
+
+  // Defaults
   return res.json({
     status: 'ok',
     site,
-    config: configStore[site] || {
+    config: {
       proyectado: 239000,
       objetivoHU: 75,
       productividadHU: 180,
