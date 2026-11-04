@@ -517,11 +517,15 @@ const TabProyeccion = ({ huStats, totalesHU, productividadHU, totalConectadosFil
   const act  = totalConectadosFiltrado;
   const hs18 = horasHasta(18);
   const hs20 = horasHasta(20);
+  const hs22 = horasHasta(22);
   const nec18 = prod > 0 ? Math.ceil((pendientes / prod / hs18) * 1.1) : 0;
   const nec20 = prod > 0 ? Math.ceil((pendientes * 1.1 / prod / hs20) * 1.1) : 0;
+  const nec22 = prod > 0 ? Math.ceil(pendientes / prod / hs22) : 0;
   const ok18  = act >= nec18;
+  const ok22  = act >= nec22;
   const d18   = act - nec18;
   const d20   = act - nec20;
+  const d22   = act - nec22;
 
   const StatCard = ({ label, value, color = 'text-white' }) => (
     <div className="bg-[#0d1420]/60 border border-white/8 rounded-xl p-4">
@@ -589,6 +593,27 @@ const TabProyeccion = ({ huStats, totalesHU, productividadHU, totalConectadosFil
           <p className="text-green-400 font-black text-sm uppercase tracking-widest">✓ Se llega al objetivo antes de las 18:00</p>
         </div>
       )}
+
+      {/* ── Cierre de turno 22:00 ── */}
+      <div className={`rounded-xl border p-5 ${ok22 ? 'border-slate-500/30 bg-slate-900/20' : 'border-amber-500/30 bg-amber-900/10'}`}>
+        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500 mb-3">Cierre de turno — 22:00 hs</p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className={`text-4xl font-black tabular-nums ${ok22 ? 'text-slate-300' : 'text-amber-400'}`}>
+              {nec22} <span className="text-base font-bold text-slate-500">usuarios necesarios</span>
+            </p>
+            <p className="text-[10px] text-slate-500 mt-1">
+              {pendientes?.toLocaleString('es-AR')} pzs · {hs22.toFixed(1)}h restantes · sin margen
+            </p>
+          </div>
+          <div className={`text-center px-5 py-3 rounded-xl ${d22 >= 0 ? 'bg-green-500/15' : 'bg-amber-500/15'}`}>
+            <p className={`text-2xl font-black ${d22 >= 0 ? 'text-green-400' : 'text-amber-400'}`}>
+              {d22 >= 0 ? `+${d22}` : d22}
+            </p>
+            <p className="text-[9px] text-slate-500 font-black uppercase">{d22 >= 0 ? 'Suficiente' : 'Faltan'}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
